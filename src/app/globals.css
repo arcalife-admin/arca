@@ -1,0 +1,332 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;500;600&family=Source+Sans+Pro:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&family=Crimson+Text:wght@400;600&family=Libre+Baskerville:wght@400;700&family=Fira+Code:wght@400;500&family=Source+Code+Pro:wght@400;600&family=Oswald:wght@400;600&family=Raleway:wght@400;600&family=Nunito:wght@400;600&family=Dancing+Script:wght@400;700&family=Pacifico&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leave blocking styles for calendar */
+.leave-blocked-slot {
+  position: relative;
+}
+
+.leave-blocked-slot:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  z-index: 1;
+}
+
+.day-with-leave {
+  position: relative;
+}
+
+.rbc-event.leave-block {
+  background-color: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: white !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+.rbc-event.leave-block:hover {
+  background-color: #dc2626 !important;
+}
+
+.rbc-addons-dnd .rbc-addons-dnd-drag-preview.leave-block {
+  cursor: not-allowed !important;
+}
+
+/* Custom notification animations and utilities */
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Notification slide in animation */
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.notification-enter {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.notification-exit {
+  animation: slideOutToRight 0.3s ease-in;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+
+    /* Organization Theme Variables (can be overridden) */
+    --org-primary: #3b82f6;
+    --org-primary-foreground: #ffffff;
+    --org-secondary: #f1f5f9;
+    --org-secondary-foreground: #0f172a;
+    --org-accent: #10b981;
+    --org-accent-foreground: #ffffff;
+    --org-background: #ffffff;
+    --org-surface: #f8fafc;
+    --org-border: #e2e8f0;
+    --org-text-primary: #0f172a;
+    --org-text-secondary: #64748b;
+    --org-text-muted: #94a3b8;
+    --org-success: #10b981;
+    --org-warning: #f59e0b;
+    --org-error: #ef4444;
+    --org-info: #3b82f6;
+    --org-font-family: 'Inter', sans-serif;
+    --org-heading-font-family: 'Inter', sans-serif;
+    --org-font-size: 14px;
+    --org-border-radius: 6px;
+    --org-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --org-animation-speed: 200ms;
+    --calendar-today-bg: #ddd6fe;
+    --calendar-accent-bg: #f3f4f6;
+  }
+
+  body {
+    color: rgb(var(--foreground-rgb));
+    background: linear-gradient(to bottom,
+        rgb(var(--background-start-rgb)),
+        rgb(var(--background-end-rgb)));
+    min-height: 100vh;
+
+  }
+}
+
+@layer components {
+  .btn-primary {
+    background-color: var(--org-primary);
+    color: var(--org-primary-foreground);
+    border-radius: var(--org-border-radius);
+    font-size: var(--org-button-font-size, 1rem);
+    padding: var(--org-button-padding, 0.5rem 1rem);
+    font-weight: 500;
+    transition: opacity var(--org-animation-speed) ease;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    background-color: var(--org-secondary);
+    color: var(--org-secondary-foreground);
+    border: 1px solid var(--org-border);
+    border-radius: var(--org-border-radius);
+    font-size: var(--org-button-font-size, 1rem);
+    padding: var(--org-button-padding, 0.5rem 1rem);
+    font-weight: 500;
+    transition: background-color var(--org-animation-speed) ease;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--org-surface);
+  }
+
+  .input-field {
+    width: 100%;
+    padding: var(--org-input-padding, 0.5rem 0.75rem);
+    border: 1px solid var(--org-border);
+    border-radius: var(--org-border-radius);
+    font-size: var(--org-input-font-size, 1rem);
+    font-family: var(--org-font-family);
+    background-color: var(--org-background);
+    color: var(--org-text-primary);
+    box-shadow: var(--org-shadow);
+    transition: border-color var(--org-animation-speed) ease;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--org-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .card {
+    background-color: var(--org-surface);
+    border-radius: var(--org-border-radius);
+    box-shadow: var(--org-shadow);
+    padding: 1.5rem;
+    border: 1px solid var(--org-border);
+  }
+
+  /* Organization-aware text colors */
+  .text-org-primary {
+    color: var(--org-text-primary);
+  }
+
+  .text-org-secondary {
+    color: var(--org-text-secondary);
+  }
+
+  .text-org-muted {
+    color: var(--org-text-muted);
+  }
+
+  /* Organization-aware background colors */
+  .bg-org-primary {
+    background-color: var(--org-primary);
+    color: var(--org-primary-foreground);
+  }
+
+  .bg-org-surface {
+    background-color: var(--org-surface);
+  }
+
+  .bg-org-background {
+    background-color: var(--org-background);
+  }
+
+  /* Custom slider styling for radio player */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .slider::-webkit-slider-track {
+    background: #e5e7eb;
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #3b82f6;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .slider::-webkit-slider-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+  }
+
+  .slider::-moz-range-track {
+    background: #e5e7eb;
+    height: 8px;
+    border-radius: 4px;
+    border: none;
+  }
+
+  .slider::-moz-range-thumb {
+    background: #3b82f6;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  .slider::-moz-range-thumb:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+  }
+
+  /* Custom rounded scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+.rbc-today {
+  background-color: var(--calendar-today-bg, #adaae1) !important;
+}
+
+/* Crown overlay hover effects */
+.crown-overlay {
+  transition: all 0.2s ease;
+}
+
+.crown-overlay:hover .crown-ellipse {
+  opacity: 0.8;
+  filter: brightness(1.2) !important;
+}
+
+.crown-overlay:hover .crown-highlight {
+  opacity: 0.9;
+  filter: brightness(1.3) !important;
+}

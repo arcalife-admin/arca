@@ -1,0 +1,1732 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                   String                     @id @default(cuid())
+  name                 String
+  address              String
+  latitude             Float
+  longitude            Float
+  phone                String
+  email                String
+  employeeCount        Int                        @default(1)
+  logoUrl              String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  roomCount            Int                        @default(1)
+  openingDays          String[]                   @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+  activityLogs         ActivityLog[]              @relation("ActivityLogOrganization")
+  chatRooms            ChatRoom[]
+  clinicSchedules      ClinicSchedule[]
+  contactPersons       ContactPerson[]
+  equipment            Equipment[]
+  itemCategories       ItemCategory[]
+  leaveRequests        LeaveRequest[]
+  locations            Location[]
+  managerPersonalNotes ManagerPersonalNotes[]     @relation("ManagerPersonalNotes")
+  orders               Order[]
+  orderRequests        OrderRequest[]
+  themeSettings        OrganizationThemeSettings?
+  patients             Patient[]
+  products             Product[]
+  repairRequests       RepairRequest[]
+  scheduleRules        ScheduleRule[]
+  tasks                Task[]
+  taskBoards           TaskBoard[]
+  users                User[]
+  vendors              Vendor[]
+  fluorideFlavors      FluorideFlavor[]
+}
+
+model User {
+  id                         String                 @id @default(cuid())
+  firstName                  String
+  lastName                   String
+  email                      String                 @unique
+  password                   String
+  phone                      String
+  address                    String
+  role                       UserRole
+  organizationId             String?
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+  disabledAt                 DateTime?
+  disabledBy                 String?
+  disabledReason             String?
+  isActive                   Boolean                @default(true)
+  isDisabled                 Boolean                @default(false)
+  lastLoginAt                DateTime?
+  activityLogs               ActivityLog[]          @relation("ActivityLogUser")
+  appointments               Appointment[]
+  addedBoardMembers          BoardMember[]          @relation("BoardMemberAdder")
+  boardMemberships           BoardMember[]          @relation("BoardMember")
+  calendarSettings           CalendarSettings?
+  chatRooms                  ChatParticipant[]
+  dentalProcedures           DentalProcedure[]
+  financialReports           FinancialReport[]      @relation("UserFinancialReport")
+  reviewedLeaveRequests      LeaveRequest[]         @relation("LeaveRequestReviewer")
+  leaveRequests              LeaveRequest[]         @relation("LeaveRequestUser")
+  managerPersonalNotes       ManagerPersonalNotes[] @relation("ManagerPersonalNotes")
+  messages                   Message[]
+  notes                      Note[]
+  ordersApproved             Order[]                @relation("ApprovedBy")
+  ordersCreated              Order[]                @relation("OrderedBy")
+  processedRequests          OrderRequest[]         @relation("ProcessedBy")
+  requestedItems             OrderRequest[]         @relation("RequestedBy")
+  orderTimelineEventsCreated OrderTimelineEvent[]   @relation("OrderTimelineEventCreatedBy")
+  otherWorkerSchedules       OtherWorkerSchedule[]
+  pendingAppointments        PendingAppointment[]
+  personalThemeSettings      PersonalThemeSettings?
+  repairRequestsCreated      RepairRequest[]        @relation("RepairRequestedBy")
+  mainRoomAssignments        RoomAssignment[]       @relation("MainPractitioner")
+  sideRoomAssignments        RoomAssignment[]       @relation("SidePractitioner")
+  mainRoomShifts             RoomShift[]            @relation("RoomShiftMainPractitioner")
+  sideRoomShifts             RoomShift[]            @relation("RoomShiftSidePractitioner")
+  scheduleOverrides          ScheduleOverride[]
+  completedTasks             Task[]                 @relation("TaskCompleter")
+  createdTasks               Task[]                 @relation("TaskCreator")
+  assignedTasks              TaskAssignment[]       @relation("TaskAssigner")
+  taskAssignments            TaskAssignment[]       @relation("TaskAssignee")
+  createdBoards              TaskBoard[]            @relation("BoardCreator")
+  taskMessages               TaskMessage[]          @relation("TaskMessageSender")
+  taskVotes                  TaskVote[]             @relation("TaskVoter")
+  disabledByUser             User?                  @relation("UserDisabledBy", fields: [disabledBy], references: [id])
+  disabledUsers              User[]                 @relation("UserDisabledBy")
+  organization               Organization?          @relation(fields: [organizationId], references: [id])
+  dashboardData              UserDashboard?
+  expenses                   UserExpense[]          @relation("UserExpense")
+  financeSettings            UserFinanceSettings?
+  income                     UserIncome[]           @relation("UserIncome")
+  waitingAppointmentsCreated WaitingAppointment[]
+  waitingListAsCreator       WaitingListEntry[]     @relation("WaitingListCreator")
+  waitingListAsPractitioner  WaitingListEntry[]     @relation("WaitingListPractitioner")
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([isDisabled])
+  @@index([role])
+}
+
+model Patient {
+  id                     String                  @id @default(cuid())
+  patientCode            String                  @unique
+  familyHeadCode         String?
+  familyPosition         Int?
+  firstName              String
+  lastName               String
+  dateOfBirth            DateTime
+  gender                 String
+  email                  String?
+  phone                  String?
+  address                Json
+  bsn                    String
+  country                String
+  healthInsurance        Json?
+  medicalHistory         Json?
+  dentalHistory          Json?
+  asaScore               Int?
+  ppsScores              Json?
+  ppsTreatment           String?
+  statusPraesens         Json?
+  dentalChart            Json?
+  periodontalCharts      Json[]
+  recallTerm             Int?
+  organizationId         String
+  isDisabled             Boolean                 @default(false)
+  disabledReason         String?
+  disabledAt             DateTime?
+  disabledBy             String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  allowEarlySpotContact  Boolean                 @default(true)
+  isLongTermCareAct      Boolean                 @default(false)
+  activityLogs           ActivityLog[]           @relation("ActivityLogPatient")
+  appointments           Appointment[]
+  asaHistory             AsaRecord[]
+  carePlan               CarePlan?
+  cleaningRecallHistory  CleaningRecallRecord[]
+  dentalProcedures       DentalProcedure[]
+  files                  File[]
+  images                 Image[]
+  notes                  Note[]
+  noteFolders            NoteFolder[]
+  organization           Organization            @relation(fields: [organizationId], references: [id])
+  statusHistory          PatientStatusRecord[]
+  pendingAppointments    PendingAppointment[]
+  ppsHistory             PpsRecord[]
+  screeningRecallHistory ScreeningRecallRecord[]
+  shopPurchases          ShopPurchase[]
+  tasks                  Task[]
+  treatments             Treatment[]
+  waitingAppointments    WaitingAppointment[]
+  waitingListEntries     WaitingListEntry[]
+
+  @@index([organizationId])
+  @@index([patientCode])
+  @@index([familyHeadCode])
+}
+
+model DentalCode {
+  id           String            @id @default(cuid())
+  code         String            @unique
+  description  String
+  points       Int?
+  rate         Float?
+  category     String
+  requirements Json
+  section      String
+  subSection   String
+  patientType  String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  procedures   DentalProcedure[]
+}
+
+model DentalProcedure {
+  id              String         @id @default(cuid())
+  patientId       String
+  codeId          String
+  date            DateTime
+  notes           String?
+  status          String         @default("PENDING")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  practitionerId  String?
+  toothNumber     Int?
+  quantity        Int            @default(1)
+  invoiceEmail    Boolean        @default(false)
+  invoicePrinted  Boolean        @default(false)
+  isPaid          Boolean        @default(false)
+  paidAt          DateTime?
+  paymentAmount   Float?
+  paymentMethod   PaymentMethod?
+  cost            Float?
+  subSurfaces     String[]
+  fillingMaterial String?
+  code            DentalCode     @relation(fields: [codeId], references: [id])
+  patient         Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  practitioner    User?          @relation(fields: [practitionerId], references: [id])
+
+  @@index([patientId])
+  @@index([codeId])
+  @@index([practitionerId])
+  @@unique([patientId, toothNumber, codeId])
+}
+
+model Appointment {
+  id                  String              @id @default(cuid())
+  startTime           DateTime
+  endTime             DateTime?
+  duration            Int?
+  type                String
+  status              AppointmentStatus
+  notes               String?
+  appointmentType     AppointmentTypeEnum @default(REGULAR)
+  reservationColor    String?
+  isReservation       Boolean             @default(false)
+  isFamilyAppointment Boolean             @default(false)
+  familyAppointmentId String?
+  patientId           String?
+  practitionerId      String
+  treatmentId         String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  appointmentStatus   Json?
+  activityLogs        ActivityLog[]       @relation("ActivityLogAppointment")
+  patient             Patient?            @relation(fields: [patientId], references: [id])
+  practitioner        User                @relation(fields: [practitionerId], references: [id])
+  treatment           Treatment?          @relation(fields: [treatmentId], references: [id])
+
+  @@index([patientId])
+  @@index([practitionerId])
+  @@index([treatmentId])
+  @@index([familyAppointmentId])
+}
+
+model Treatment {
+  id           String          @id @default(cuid())
+  name         String
+  description  String
+  cost         Float
+  status       TreatmentStatus
+  patientId    String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  appointments Appointment[]
+  patient      Patient         @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+}
+
+model Image {
+  id          String       @id @default(cuid())
+  url         String
+  type        ImageType
+  side        String?
+  toothNumber Int?
+  dateTaken   DateTime
+  notes       String?
+  patientId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  annotations Annotation[]
+  calibration Calibration?
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model PendingAppointment {
+  id             String    @id @default(cuid())
+  patientId      String
+  practitionerId String?
+  startTime      DateTime?
+  endTime        DateTime?
+  duration       Int
+  type           String
+  status         String    @default("PENDING")
+  notes          String?
+  requestedBy    String?
+  priority       String    @default("medium")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  patient        Patient   @relation(fields: [patientId], references: [id])
+  doctor         User?     @relation(fields: [practitionerId], references: [id])
+
+  @@index([patientId])
+  @@index([practitionerId])
+}
+
+model ScheduleRule {
+  id             String       @id @default(cuid())
+  startDate      DateTime
+  endDate        DateTime
+  repeatType     String
+  daysOfWeek     String[]
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  schedule       Json?
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model CalendarSettings {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  color       String   @default("#cfdbff")
+  visibleDays String[] @default(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ChatRoom {
+  id             String            @id @default(cuid())
+  name           String?
+  type           ChatType          @default(PRIVATE)
+  organizationId String
+  isGlobal       Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  participants   ChatParticipant[]
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  messages       Message[]
+
+  @@index([organizationId])
+}
+
+model ChatParticipant {
+  id         String   @id @default(cuid())
+  userId     String
+  chatRoomId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chatRoomId])
+  @@index([userId])
+  @@index([chatRoomId])
+}
+
+model Message {
+  id         String      @id @default(cuid())
+  content    String
+  type       MessageType @default(TEXT)
+  fileUrl    String?
+  fileName   String?
+  chatRoomId String
+  senderId   String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
+  chatRoom   ChatRoom    @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender     User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatRoomId])
+  @@index([senderId])
+}
+
+model File {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      FileType
+  size      Int
+  patientId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+}
+
+model AsaRecord {
+  id        String   @id @default(cuid())
+  score     Int
+  notes     String?
+  date      DateTime @default(now())
+  patientId String
+  createdBy String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model PpsRecord {
+  id        String       @id @default(cuid())
+  quadrant1 Int
+  quadrant2 Int
+  quadrant3 Int
+  quadrant4 Int
+  treatment PPSTreatment
+  notes     String?
+  date      DateTime     @default(now())
+  patientId String
+  createdBy String
+  patient   Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model ScreeningRecallRecord {
+  id              String   @id @default(cuid())
+  screeningMonths Int
+  notes           String?
+  date            DateTime @default(now())
+  patientId       String
+  createdBy       String
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model CleaningRecallRecord {
+  id             String   @id @default(cuid())
+  cleaningMonths Int
+  procedureCode  String
+  notes          String?
+  date           DateTime @default(now())
+  patientId      String
+  createdBy      String
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model CarePlan {
+  id          String   @id @default(cuid())
+  careRequest String
+  careGoal    String
+  policy      String
+  riskProfile Json
+  updatedAt   DateTime @default(now())
+  createdBy   String
+  patientId   String   @unique
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model NoteFolder {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  patientId String
+  notes     Note[]
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model Note {
+  id        String      @id @default(cuid())
+  content   String
+  isPinned  Boolean     @default(false)
+  pinOrder  Int?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  createdBy String
+  folderId  String?
+  patientId String
+  user      User        @relation(fields: [createdBy], references: [id])
+  folder    NoteFolder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  patient   Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([folderId])
+  @@index([createdBy])
+}
+
+model PatientStatusRecord {
+  id        String   @id @default(cuid())
+  patientId String
+  action    String
+  reason    String?
+  date      DateTime @default(now())
+  createdBy String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([createdBy])
+}
+
+model Calibration {
+  id          String   @id @default(cuid())
+  pixelWidth  Float
+  pixelHeight Float
+  realWidth   Float
+  realHeight  Float
+  unit        String
+  imageId     String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+}
+
+model Annotation {
+  id          String   @id @default(cuid())
+  type        String
+  points      Json
+  text        String?
+  color       String
+  size        Int
+  measurement Float?
+  imageId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationThemeSettings {
+  id                  String       @id @default(cuid())
+  organizationId      String       @unique
+  primaryColor        String       @default("#3b82f6")
+  primaryForeground   String       @default("#ffffff")
+  secondaryColor      String       @default("#f1f5f9")
+  secondaryForeground String       @default("#0f172a")
+  accentColor         String       @default("#10b981")
+  accentForeground    String       @default("#ffffff")
+  backgroundColor     String       @default("#ffffff")
+  surfaceColor        String       @default("#f8fafc")
+  borderColor         String       @default("#e2e8f0")
+  textPrimary         String       @default("#0f172a")
+  textSecondary       String       @default("#64748b")
+  textMuted           String       @default("#94a3b8")
+  successColor        String       @default("#10b981")
+  warningColor        String       @default("#f59e0b")
+  errorColor          String       @default("#ef4444")
+  infoColor           String       @default("#3b82f6")
+  fontFamily          String       @default("Inter")
+  headingFontFamily   String       @default("Inter")
+  fontSize            String       @default("14")
+  headingScale        String       @default("1.25")
+  lineHeight          String       @default("1.5")
+  letterSpacing       String       @default("0")
+  borderRadius        String       @default("6")
+  spacing             String       @default("1")
+  maxWidth            String       @default("1200")
+  sidebarWidth        String       @default("280")
+  buttonSize          String       @default("md")
+  inputSize           String       @default("md")
+  avatarSize          String       @default("md")
+  iconSize            String       @default("20")
+  shadowLevel         String       @default("md")
+  animationSpeed      String       @default("200")
+  calendarTodayBg     String       @default("#ddd6fe")
+  calendarAccentBg    String       @default("#f3f4f6")
+  customVariables     Json?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model PersonalThemeSettings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  primaryColor        String   @default("#3b82f6")
+  primaryForeground   String   @default("#ffffff")
+  secondaryColor      String   @default("#f1f5f9")
+  secondaryForeground String   @default("#0f172a")
+  accentColor         String   @default("#10b981")
+  accentForeground    String   @default("#ffffff")
+  backgroundColor     String   @default("#ffffff")
+  surfaceColor        String   @default("#f8fafc")
+  borderColor         String   @default("#e2e8f0")
+  textPrimary         String   @default("#0f172a")
+  textSecondary       String   @default("#64748b")
+  textMuted           String   @default("#94a3b8")
+  successColor        String   @default("#10b981")
+  warningColor        String   @default("#f59e0b")
+  errorColor          String   @default("#ef4444")
+  infoColor           String   @default("#3b82f6")
+  fontFamily          String   @default("Inter")
+  headingFontFamily   String   @default("Inter")
+  fontSize            String   @default("14")
+  headingScale        String   @default("1.25")
+  lineHeight          String   @default("1.5")
+  letterSpacing       String   @default("0")
+  borderRadius        String   @default("6")
+  spacing             String   @default("1")
+  maxWidth            String   @default("1200")
+  sidebarWidth        String   @default("280")
+  buttonSize          String   @default("md")
+  inputSize           String   @default("md")
+  avatarSize          String   @default("md")
+  iconSize            String   @default("20")
+  shadowLevel         String   @default("md")
+  animationSpeed      String   @default("200")
+  calendarTodayBg     String   @default("#ddd6fe")
+  calendarAccentBg    String   @default("#f3f4f6")
+  customVariables     Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserDashboard {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  quickNote  String?
+  quickLinks Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id             String           @id @default(cuid())
+  title          String
+  description    String?
+  status         TaskStatus       @default(PENDING)
+  priority       TaskPriority     @default(MEDIUM)
+  deadline       DateTime?
+  patientId      String?
+  createdBy      String
+  organizationId String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  completedAt    DateTime?
+  completedBy    String?
+  boardId        String?
+  type           TaskType         @default(TASK)
+  visibility     TaskVisibility   @default(PRIVATE)
+  activityLogs   ActivityLog[]    @relation("ActivityLogTask")
+  board          TaskBoard?       @relation(fields: [boardId], references: [id])
+  completer      User?            @relation("TaskCompleter", fields: [completedBy], references: [id])
+  creator        User             @relation("TaskCreator", fields: [createdBy], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  patient        Patient?         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  assignments    TaskAssignment[]
+  messages       TaskMessage[]
+  options        TaskOption[]
+  reminders      TaskReminder[]
+  votes          TaskVote[]
+
+  @@index([patientId])
+  @@index([boardId])
+  @@index([createdBy])
+  @@index([organizationId])
+  @@index([status])
+  @@index([deadline])
+  @@index([visibility])
+  @@index([type])
+}
+
+model TaskBoard {
+  id             String        @id @default(cuid())
+  name           String
+  description    String?
+  color          String?
+  isPublic       Boolean       @default(false)
+  createdBy      String
+  organizationId String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  members        BoardMember[]
+  tasks          Task[]
+  creator        User          @relation("BoardCreator", fields: [createdBy], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([createdBy])
+  @@index([organizationId])
+  @@index([isPublic])
+}
+
+model BoardMember {
+  id        String    @id @default(cuid())
+  boardId   String
+  userId    String
+  role      BoardRole @default(MEMBER)
+  addedBy   String
+  createdAt DateTime  @default(now())
+  adder     User      @relation("BoardMemberAdder", fields: [addedBy], references: [id])
+  board     TaskBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User      @relation("BoardMember", fields: [userId], references: [id])
+
+  @@unique([boardId, userId])
+  @@index([boardId])
+  @@index([userId])
+}
+
+model TaskOption {
+  id        String     @id @default(cuid())
+  taskId    String
+  text      String
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  votes     TaskVote[]
+
+  @@index([taskId])
+}
+
+model TaskVote {
+  id        String      @id @default(cuid())
+  taskId    String
+  optionId  String?
+  userId    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  option    TaskOption? @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  task      Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User        @relation("TaskVoter", fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([optionId])
+  @@index([userId])
+}
+
+model TaskAssignment {
+  id             String   @id @default(cuid())
+  taskId         String
+  userId         String
+  assignedBy     String
+  createdAt      DateTime @default(now())
+  isSelfAssigned Boolean  @default(false)
+  assigner       User     @relation("TaskAssigner", fields: [assignedBy], references: [id])
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user           User     @relation("TaskAssignee", fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+}
+
+model TaskMessage {
+  id        String   @id @default(cuid())
+  taskId    String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sender    User     @relation("TaskMessageSender", fields: [senderId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([senderId])
+}
+
+model TaskReminder {
+  id           String    @id @default(cuid())
+  taskId       String
+  reminderTime DateTime
+  message      String?
+  sent         Boolean   @default(false)
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([reminderTime])
+}
+
+model WaitingListEntry {
+  id                   String              @id @default(cuid())
+  patientId            String
+  practitionerId       String
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  createdBy            String
+  waitingAppointmentId String?             @unique
+  status               WaitingListStatus   @default(ACTIVE)
+  creator              User                @relation("WaitingListCreator", fields: [createdBy], references: [id])
+  patient              Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  practitioner         User                @relation("WaitingListPractitioner", fields: [practitionerId], references: [id])
+  waitingAppointment   WaitingAppointment? @relation(fields: [waitingAppointmentId], references: [id])
+
+  @@index([patientId])
+  @@index([practitionerId])
+  @@index([createdBy])
+  @@index([status])
+}
+
+model WaitingAppointment {
+  id               String            @id @default(cuid())
+  patientId        String
+  type             String
+  duration         Int
+  notes            String?
+  status           String            @default("WAITING")
+  priority         String            @default("medium")
+  startTime        DateTime?
+  endTime          DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdBy        String
+  creator          User              @relation(fields: [createdBy], references: [id])
+  patient          Patient           @relation(fields: [patientId], references: [id])
+  waitingListEntry WaitingListEntry?
+
+  @@index([patientId])
+  @@index([createdBy])
+}
+
+model UserFinanceSettings {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  vatPercentage              Float    @default(21.0)
+  incomeTaxReservePercentage Float    @default(30.0)
+  monthlyIncomeGoal          Float?
+  quarterlyIncomeGoal        Float?
+  preferredCurrency          String   @default("EUR")
+  accountantName             String?
+  accountantEmail            String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserIncome {
+  id            String     @id @default(cuid())
+  userId        String
+  amount        Float
+  description   String?
+  source        String?
+  type          IncomeType @default(TREATMENT)
+  date          DateTime
+  invoiceNumber String?
+  clientName    String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  user          User       @relation("UserIncome", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+}
+
+model UserExpense {
+  id                      String          @id @default(cuid())
+  userId                  String
+  amount                  Float
+  description             String
+  category                ExpenseCategory
+  vendor                  String?
+  isTaxDeductible         Boolean         @default(true)
+  taxDeductiblePercentage Float           @default(100.0)
+  receiptUrl              String?
+  receiptFileName         String?
+  date                    DateTime
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  user                    User            @relation("UserExpense", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@index([category])
+}
+
+model FinancialReport {
+  id            String     @id @default(cuid())
+  userId        String
+  title         String
+  type          ReportType
+  startDate     DateTime
+  endDate       DateTime
+  totalIncome   Float
+  totalExpenses Float
+  netIncome     Float
+  estimatedTax  Float
+  pdfUrl        String?
+  csvUrl        String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  user          User       @relation("UserFinancialReport", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+}
+
+model InstructionVideo {
+  id        String   @id @default(cuid())
+  title     String
+  embedUrl  String
+  isCustom  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+  @@index([isCustom])
+}
+
+model InstructionImage {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  isCustom  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+  @@index([isCustom])
+}
+
+model Product {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  defaultPrice   Float
+  category       String?
+  isActive       Boolean        @default(true)
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchases      ShopPurchase[]
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([isActive])
+}
+
+model ShopPurchase {
+  id             String         @id @default(cuid())
+  patientId      String
+  productId      String
+  quantity       Int            @default(1)
+  unitPrice      Float
+  totalAmount    Float
+  notes          String?
+  isPaid         Boolean        @default(false)
+  paymentMethod  PaymentMethod?
+  paidAt         DateTime?
+  invoiceEmail   Boolean        @default(false)
+  invoicePrinted Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  patient        Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([productId])
+  @@index([isPaid])
+}
+
+model Vendor {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  category       String?
+  contactEmail   String?
+  contactPhone   String?
+  website        String?
+  orderingUrl    String?
+  accountNumber  String?
+  paymentTerms   String?
+  deliveryTime   Int?
+  minimumOrder   Float?
+  isActive       Boolean        @default(true)
+  isPreferred    Boolean        @default(false)
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  orders         Order[]
+  orderRequests  OrderRequest[]
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([isActive])
+  @@index([isPreferred])
+}
+
+model ItemCategory {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  color          String?
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  orderRequests  OrderRequest[]
+
+  @@index([organizationId])
+}
+
+model OrderRequest {
+  id             String         @id @default(cuid())
+  itemName       String
+  description    String?
+  quantity       Int            @default(1)
+  urgency        RequestUrgency @default(NORMAL)
+  reason         String?
+  requestedById  String
+  categoryId     String?
+  vendorId       String?
+  status         RequestStatus  @default(PENDING)
+  processedById  String?
+  processedAt    DateTime?
+  orderId        String?
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  category       ItemCategory?  @relation(fields: [categoryId], references: [id])
+  order          Order?         @relation(fields: [orderId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  processedBy    User?          @relation("ProcessedBy", fields: [processedById], references: [id])
+  requestedBy    User           @relation("RequestedBy", fields: [requestedById], references: [id])
+  vendor         Vendor?        @relation(fields: [vendorId], references: [id])
+
+  @@index([organizationId])
+  @@index([requestedById])
+  @@index([status])
+  @@index([urgency])
+}
+
+model Order {
+  id               String               @id @default(cuid())
+  orderNumber      String               @unique
+  vendorId         String
+  status           OrderStatus          @default(DRAFT)
+  priority         OrderPriority        @default(NORMAL)
+  expectedDelivery DateTime?
+  actualDelivery   DateTime?
+  subtotal         Float                @default(0)
+  taxAmount        Float                @default(0)
+  shippingCost     Float                @default(0)
+  totalAmount      Float                @default(0)
+  trackingNumber   String?
+  externalOrderId  String?
+  orderedById      String
+  approvedById     String?
+  approvedAt       DateTime?
+  notes            String?
+  attachments      String[]
+  organizationId   String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  approvedBy       User?                @relation("ApprovedBy", fields: [approvedById], references: [id])
+  orderedBy        User                 @relation("OrderedBy", fields: [orderedById], references: [id])
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vendor           Vendor               @relation(fields: [vendorId], references: [id])
+  items            OrderItem[]
+  requests         OrderRequest[]
+  timelineEvents   OrderTimelineEvent[]
+
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([orderedById])
+  @@index([expectedDelivery])
+}
+
+model OrderItem {
+  id               String               @id @default(cuid())
+  orderId          String
+  itemName         String
+  description      String?
+  productCode      String?
+  brand            String?
+  quantity         Int
+  unitPrice        Float
+  totalPrice       Float
+  categoryId       String?
+  stockLevel       Int?
+  minimumStock     Int?
+  maxStock         Int?
+  location         String?
+  quantityReceived Int                  @default(0)
+  isReceived       Boolean              @default(false)
+  receivedAt       DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  notes            String?
+  category         ItemCategory?        @relation(fields: [categoryId], references: [id])
+  order            Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  timelineEvents   OrderTimelineEvent[]
+
+  @@index([orderId])
+  @@index([categoryId])
+  @@index([isReceived])
+}
+
+model Location {
+  id             String            @id @default(cuid())
+  name           String
+  description    String?
+  color          String?
+  organizationId String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  equipment      Equipment[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactPersons LocationContact[]
+  repairRequests RepairRequest[]
+
+  @@index([organizationId])
+}
+
+model Equipment {
+  id             String            @id @default(cuid())
+  name           String
+  description    String?
+  brand          String?
+  model          String?
+  serialNumber   String?
+  purchaseDate   DateTime?
+  warrantyExpiry DateTime?
+  category       EquipmentCategory
+  locationId     String
+  isActive       Boolean           @default(true)
+  organizationId String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  location       Location          @relation(fields: [locationId], references: [id])
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  repairRequests RepairRequest[]
+
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([category])
+}
+
+model ContactPerson {
+  id               String            @id @default(cuid())
+  name             String
+  company          String?
+  role             String?
+  email            String?
+  phone            String?
+  mobile           String?
+  specialties      String[]
+  isActive         Boolean           @default(true)
+  isPreferred      Boolean           @default(false)
+  organizationId   String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locationContacts LocationContact[]
+  repairRequests   RepairRequest[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model LocationContact {
+  id              String        @id @default(cuid())
+  locationId      String
+  contactPersonId String
+  isPrimary       Boolean       @default(false)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  contactPerson   ContactPerson @relation(fields: [contactPersonId], references: [id], onDelete: Cascade)
+  location        Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, contactPersonId])
+  @@index([locationId])
+  @@index([contactPersonId])
+}
+
+model RepairRequest {
+  id                String         @id @default(cuid())
+  title             String
+  description       String
+  urgency           RepairUrgency  @default(NORMAL)
+  equipmentId       String?
+  locationId        String
+  issueCategory     IssueCategory
+  symptoms          String[]
+  requestedById     String
+  status            RepairStatus   @default(REPORTED)
+  contactPersonId   String?
+  assignedAt        DateTime?
+  scheduledDate     DateTime?
+  scheduledTime     String?
+  estimatedDuration Int?
+  arrivedAt         DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  workPerformed     String?
+  partsUsed         String?
+  cost              Float?
+  notes             String?
+  followUpDate      DateTime?
+  warrantyUntil     DateTime?
+  organizationId    String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  contactPerson     ContactPerson? @relation(fields: [contactPersonId], references: [id])
+  equipment         Equipment?     @relation(fields: [equipmentId], references: [id])
+  location          Location       @relation(fields: [locationId], references: [id])
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedBy       User           @relation("RepairRequestedBy", fields: [requestedById], references: [id])
+
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([equipmentId])
+  @@index([contactPersonId])
+  @@index([status])
+  @@index([urgency])
+  @@index([scheduledDate])
+}
+
+model OrderTimelineEvent {
+  id          String     @id @default(cuid())
+  orderId     String
+  orderItemId String?
+  type        String
+  message     String?
+  createdById String?
+  createdAt   DateTime   @default(now())
+  createdBy   User?      @relation("OrderTimelineEventCreatedBy", fields: [createdById], references: [id])
+  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([createdById])
+}
+
+model LeaveRequest {
+  id                     String             @id @default(cuid())
+  title                  String
+  description            String?
+  leaveType              LeaveType
+  startDate              DateTime
+  endDate                DateTime
+  isPartialDay           Boolean            @default(false)
+  startTime              String?
+  endTime                String?
+  totalDays              Float
+  userId                 String
+  status                 LeaveRequestStatus @default(PENDING)
+  reviewedById           String?
+  reviewedAt             DateTime?
+  reviewComments         String?
+  hasAlternative         Boolean            @default(false)
+  alternativeStartDate   DateTime?
+  alternativeEndDate     DateTime?
+  alternativeComments    String?
+  alternativeAccepted    Boolean?
+  alternativeRespondedAt DateTime?
+  organizationId         String
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reviewedBy             User?              @relation("LeaveRequestReviewer", fields: [reviewedById], references: [id])
+  user                   User               @relation("LeaveRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([reviewedById])
+}
+
+model ActivityLog {
+  id             String       @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String?
+  description    String
+  details        Json?
+  ipAddress      String?
+  userAgent      String?
+  page           String?
+  severity       LogSeverity  @default(INFO)
+  userId         String
+  organizationId String
+  patientId      String?
+  appointmentId  String?
+  taskId         String?
+  createdAt      DateTime     @default(now())
+  appointment    Appointment? @relation("ActivityLogAppointment", fields: [appointmentId], references: [id])
+  organization   Organization @relation("ActivityLogOrganization", fields: [organizationId], references: [id])
+  patient        Patient?     @relation("ActivityLogPatient", fields: [patientId], references: [id])
+  task           Task?        @relation("ActivityLogTask", fields: [taskId], references: [id])
+  user           User         @relation("ActivityLogUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([page])
+  @@index([severity])
+}
+
+model ClinicSchedule {
+  id                   String                @id @default(cuid())
+  organizationId       String
+  name                 String
+  startDate            DateTime
+  endDate              DateTime
+  roomCount            Int
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  otherWorkerSchedules OtherWorkerSchedule[]
+  roomAssignments      RoomAssignment[]
+  roomShifts           RoomShift[]
+  scheduleOverrides    ScheduleOverride[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([startDate, endDate])
+}
+
+model RoomAssignment {
+  id                 String         @id @default(cuid())
+  scheduleId         String
+  roomNumber         Int
+  mainPractitionerId String?
+  sidePractitionerId String?
+  startTime          String
+  endTime            String
+  workingDays        String[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  mainPractitioner   User?          @relation("MainPractitioner", fields: [mainPractitionerId], references: [id])
+  schedule           ClinicSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  sidePractitioner   User?          @relation("SidePractitioner", fields: [sidePractitionerId], references: [id])
+
+  @@unique([scheduleId, roomNumber])
+  @@index([scheduleId])
+  @@index([roomNumber])
+  @@index([mainPractitionerId])
+  @@index([sidePractitionerId])
+}
+
+model ScheduleOverride {
+  id             String         @id @default(cuid())
+  scheduleId     String
+  date           DateTime
+  roomNumber     Int?
+  practitionerId String?
+  startTime      String?
+  endTime        String?
+  isUnavailable  Boolean        @default(false)
+  reason         String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  practitioner   User?          @relation(fields: [practitionerId], references: [id])
+  schedule       ClinicSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, date, roomNumber, practitionerId])
+  @@index([scheduleId])
+  @@index([date])
+  @@index([practitionerId])
+}
+
+model OtherWorkerSchedule {
+  id             String         @id @default(cuid())
+  scheduleId     String
+  practitionerId String
+  startTime      String
+  endTime        String
+  workingDays    String[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  practitioner   User           @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  schedule       ClinicSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, practitionerId])
+  @@index([scheduleId])
+  @@index([practitionerId])
+}
+
+model RoomShift {
+  id                 String         @id @default(cuid())
+  scheduleId         String
+  roomNumber         Int
+  practitionerId     String
+  sidePractitionerId String?
+  startTime          String
+  endTime            String
+  date               DateTime?
+  dayOfWeek          String?
+  priority           Int            @default(0)
+  isOverride         Boolean        @default(false)
+  reason             String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  practitioner       User           @relation("RoomShiftMainPractitioner", fields: [practitionerId], references: [id], onDelete: Cascade)
+  schedule           ClinicSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  sidePractitioner   User?          @relation("RoomShiftSidePractitioner", fields: [sidePractitionerId], references: [id])
+
+  @@index([scheduleId])
+  @@index([roomNumber])
+  @@index([practitionerId])
+  @@index([sidePractitionerId])
+  @@index([date])
+  @@index([dayOfWeek])
+  @@index([scheduleId, roomNumber, date])
+  @@index([scheduleId, roomNumber, dayOfWeek])
+}
+
+model ManagerPersonalNotes {
+  id             String                @id @default(cuid())
+  userId         String
+  organizationId String
+  notes          String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  links          ManagerPersonalLink[]
+  organization   Organization          @relation("ManagerPersonalNotes", fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User                  @relation("ManagerPersonalNotes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model ManagerPersonalLink {
+  id              String               @id @default(cuid())
+  personalNotesId String
+  title           String
+  url             String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  personalNotes   ManagerPersonalNotes @relation(fields: [personalNotesId], references: [id], onDelete: Cascade)
+
+  @@index([personalNotesId])
+}
+
+model FluorideFlavor {
+  id             String      @id @default(uuid())
+  organizationId String
+  name           String     @db.VarChar(64)
+  color          String     @db.VarChar(8)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+}
+
+model ProcedureBackup {
+  id             String   @id @default(cuid())
+  procedureId    String
+  organizationId String
+  backupType     String   // 'delete' or 'edit'
+  data           Json
+  createdAt      DateTime @default(now())
+
+  @@unique([id]) // Only one row in the table at any time
+}
+
+enum UserRole {
+  ORGANIZATION_OWNER
+  MANAGER
+  DENTIST
+  HYGIENIST
+  RECEPTIONIST
+  ASSISTANT
+  ORTHODONTIST
+  PERIODONTOLOGIST
+  IMPLANTOLOGIST
+  ENDODONTIST
+  ANESTHESIOLOGIST
+  DENTAL_TECHNICIAN
+  DENTAL_LAB_TECHNICIAN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum TreatmentStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ImageType {
+  BITEWING
+  OPG
+  SOLO
+  XRAY
+  INTRAORAL
+  EXTRAORAL
+  PANORAMIC
+  CBCT
+}
+
+enum ChatType {
+  PRIVATE
+  GROUP
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+}
+
+enum FileType {
+  XRAY
+  DOCUMENT
+  IMAGE
+  OTHER
+}
+
+enum PPSTreatment {
+  NONE
+  PREVENTIVE
+  PERIODONTAL
+}
+
+enum TaskType {
+  TASK
+  POLL
+  PLAN
+}
+
+enum TaskVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum BoardRole {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AppointmentTypeEnum {
+  REGULAR
+  RESERVATION
+  FAMILY
+}
+
+enum WaitingListStatus {
+  ACTIVE
+  CALLED
+  CONFIRMED
+  CANCELLED
+}
+
+enum IncomeType {
+  TREATMENT
+  CONSULTATION
+  INSURANCE
+  OTHER
+}
+
+enum ExpenseCategory {
+  MATERIALS
+  EQUIPMENT
+  RENT
+  UTILITIES
+  INSURANCE
+  MARKETING
+  PROFESSIONAL_DEVELOPMENT
+  TRAVEL
+  MEALS
+  SOFTWARE
+  OFFICE_SUPPLIES
+  PROFESSIONAL_SERVICES
+  PHONE_INTERNET
+  OTHER
+}
+
+enum ReportType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum RequestUrgency {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  ORDERED
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum EquipmentCategory {
+  DENTAL_CHAIR
+  XRAY_MACHINE
+  AUTOCLAVE
+  COMPRESSOR
+  VACUUM_SYSTEM
+  LIGHTING
+  HVAC
+  INSTRUMENTS
+  COMPUTER_EQUIPMENT
+  PHONE_SYSTEM
+  SECURITY_SYSTEM
+  OTHER
+}
+
+enum RepairUrgency {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  EMERGENCY
+}
+
+enum RepairStatus {
+  REPORTED
+  ACKNOWLEDGED
+  SCHEDULED
+  IN_PROGRESS
+  WAITING_PARTS
+  COMPLETED
+  TESTED
+  CLOSED
+  CANCELLED
+}
+
+enum IssueCategory {
+  MECHANICAL
+  ELECTRICAL
+  SOFTWARE
+  MAINTENANCE
+  CALIBRATION
+  CLEANING
+  INSTALLATION
+  UPGRADE
+  EMERGENCY
+  OTHER
+}
+
+enum LeaveType {
+  VACATION
+  SICK_LEAVE
+  PERSONAL
+  MATERNITY
+  PATERNITY
+  BEREAVEMENT
+  EMERGENCY
+  UNPAID
+  COMPENSATORY
+  STUDY
+  OTHER
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELLED
+  ALTERNATIVE_PROPOSED
+  ALTERNATIVE_ACCEPTED
+  ALTERNATIVE_REJECTED
+}
+
+enum LogSeverity {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}

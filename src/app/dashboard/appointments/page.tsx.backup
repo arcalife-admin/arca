@@ -1,0 +1,2934 @@
+'use client';
+
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { EnhancedAppointmentForm } from '@/components/appointments/EnhancedAppointmentForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { Patient } from '@/types/prisma';
+import { treatmentTypes } from '@/data/treatmentTypes';
+import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, isWithinInterval, addMonths, endOfMonth, startOfMonth, addDays, isSameDay } from 'date-fns';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { Appointment, PendingAppointment } from '@/types/appointment';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import { useSession } from 'next-auth/react';
+import { Settings, ArrowLeft, ArrowRight, Calendar as CalendarIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { convertPendingToAppointment } from '@/lib/appointments';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React from 'react';
+
+const daysOfWeek = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+const locales = { 'en-US': require('date-fns/locale/en-US') };
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }), // 1 represents Monday
+  getDay,
+  locales
+});
+
+const DnDCalendar = withDragAndDrop(Calendar);
+
+type ClipboardAction = 'copy' | 'cut' | null;
+type ClipboardData = {
+  appointment: Appointment;
+  action: ClipboardAction;
+} | null;
+
+type PendingContextMenuState = { x: number; y: number; pending: PendingAppointment } | null;
+
+// Custom appointment content component that handles all display cases
+function AppointmentContent({
+  event,
+  appointmentDuration,
+  isShortAppointment,
+  getTextColor,
+  treatmentTypes,
+  onPatientClick
+}: {
+  event: any;
+  appointmentDuration: number;
+  isShortAppointment: boolean;
+  getTextColor: (color: string) => string;
+  treatmentTypes: any[];
+  onPatientClick: (patientId: string) => void;
+}) {
+  // Get the appointment type and its color for dynamic text color
+  const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
+    ? event.appointment.type
+    : treatmentTypes.find(t => t.name === String(event.appointment?.type));
+  const backgroundColor = type?.color || '#60a5fa';
+  const textColor = getTextColor(backgroundColor);
+  const shadowColor = textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
+
+  const patient = event.patient;
+  const appointment = event.appointment;
+  const isReservation = !patient || appointment?.isReservation;
+
+  // Base text styles
+  const baseTextStyle = {
+    color: textColor,
+    textShadow: `0 1px 3px ${shadowColor}`,
+    fontWeight: 'bold' as const,
+    lineHeight: '1.2' as const
+  };
+
+  // Check if this is a reservation with a connected patient
+  const isReservationWithPatient = isReservation && appointment?.patientId;
+
+
+
+  if (isReservationWithPatient) {
+    // Reservation with patient - show person icon button
+    return (
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'auto',
+          cursor: 'pointer',
+          color: textColor,
+          textShadow: `0 1px 3px ${shadowColor}`,
+          fontSize: '16px',
+          fontWeight: 'bold',
+          lineHeight: '1.2',
+          zIndex: 15
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onPatientClick(appointment.patientId);
+        }}
+      >
+        👤
+      </div>
+    );
+  }
+
+  if (isReservation) {
+    // Regular reservation - show only notes
+    return (
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px',
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          color: textColor,
+          textShadow: `0 1px 3px ${shadowColor}`,
+          fontSize: isShortAppointment ? '10px' : '11px',
+          fontWeight: 'bold',
+          lineHeight: '1.2',
+          zIndex: 15
+        }}
+      >
+        <span style={{
+          color: textColor,
+          textShadow: `0 1px 3px ${shadowColor}`,
+          fontWeight: 'bold',
+          fontSize: 'inherit'
+        }}>
+          {appointment?.notes || 'Reservation'}
+        </span>
+      </div>
+    );
+  }
+
+  // Regular appointment with patient
+  if (isShortAppointment) {
+    // Short appointment (≤20 minutes) - show "Patient Name - Notes" horizontally
+    const displayText = appointment?.notes
+      ? `${event.title} - ${appointment.notes}`
+      : event.title;
+
+    return (
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px',
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          color: textColor,
+          textShadow: `0 1px 3px ${shadowColor}`,
+          fontSize: '10px',
+          fontWeight: 'bold',
+          lineHeight: '1.2',
+          zIndex: 15
+        }}
+      >
+        <span style={{
+          color: textColor,
+          textShadow: `0 1px 3px ${shadowColor}`,
+          fontWeight: 'bold',
+          fontSize: 'inherit'
+        }}>
+          {displayText}
+        </span>
+      </div>
+    );
+  }
+
+  // Normal appointment (>20 minutes) - show patient name and notes vertically
+  return (
+    <div
+      style={{
+        height: '100%',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '4px',
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        color: textColor,
+        textShadow: `0 1px 3px ${shadowColor}`,
+        fontWeight: 'bold',
+        lineHeight: '1.2',
+        zIndex: 15
+      }}
+    >
+      <div
+        style={{
+          fontSize: '11px',
+          lineHeight: '1.3',
+          color: textColor,
+          textShadow: `0 1px 3px ${shadowColor}`,
+          fontWeight: 'bold'
+        }}
+      >
+        {event.title}
+      </div>
+      {appointment?.notes && (
+        <div
+          style={{
+            fontSize: '9px',
+            lineHeight: '1.2',
+            opacity: 0.9,
+            color: textColor,
+            textShadow: `0 1px 3px ${shadowColor}`,
+            fontWeight: 'normal',
+            marginTop: '2px'
+          }}
+        >
+          {appointment.notes}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AppointmentsPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [view, setView] = useState<'day' | 'week'>('day');
+  const [pendingAppointments, setPendingAppointments] = useState<PendingAppointment[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Partial<Appointment> | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [practitioners, setPractitioners] = useState<any[]>([]);
+  const [practitionerSchedule, setPractitionerSchedule] = useState<{ [day: string]: string[] }>({});
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [familyGroups, setFamilyGroups] = useState<any[]>([]);
+  const [individualPatients, setIndividualPatients] = useState<any[]>([]);
+  const [selectedPractitionerId, setSelectedPractitionerId] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [tooltipData, setTooltipData] = useState<{ content: React.ReactNode; x: number; y: number } | null>(null);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout>();
+  const tooltipPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const isOverAppointmentRef = useRef(false);
+  const [scheduleRules, setScheduleRules] = useState<any[]>([]);
+  const [availablePractitionerIds, setAvailablePractitionerIds] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<number>(3); // Default to 3 months
+  const [searchQuery, setSearchQuery] = useState('');
+  const [calendarColor, setCalendarColor] = useState<string | null>(null);
+  const [practitionerColors, setPractitionerColors] = useState<Record<string, string>>({});
+  const [colorLoaded, setColorLoaded] = useState(false);
+  const [visibleDays, setVisibleDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
+  const tooltipAnimationFrame = useRef<number>();
+  const [clipboardData, setClipboardData] = useState<ClipboardData>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    appointment: Appointment;
+  } | null>(null);
+  const [slotContextMenu, setSlotContextMenu] = useState<{
+    x: number;
+    y: number;
+    slotDate: Date;
+    resourceId: string | null;
+  } | null>(null);
+  const calendarContainerRef = useRef<HTMLDivElement>(null);
+  const [pendingContextMenu, setPendingContextMenu] = useState<PendingContextMenuState>(null);
+  const [selectedAppointmentPractitionerId, setSelectedAppointmentPractitionerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchColor = async () => {
+      // Get personal color for the logged-in user (for default settings)
+      const res = await fetch('/api/calendar-settings/personal');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.color) {
+          setCalendarColor(data.color);
+        } else {
+          setCalendarColor('#ffffff');
+        }
+        if (data?.visibleDays) {
+          setVisibleDays(data.visibleDays);
+        }
+      } else {
+        setCalendarColor('#ffffff');
+      }
+      setColorLoaded(true);
+    };
+    fetchColor();
+  }, [session?.user?.id]);
+
+  // useEffect(() => {
+  //   if (calendarColor) {
+  //     // document.documentElement.style.setProperty('--calendar-today-bg', calendarColor);
+  //   }
+  // }, [calendarColor]);
+
+  // Clean CSS approach - surgical fixes without breaking layout
+  useEffect(() => {
+    const appointmentStyles = document.createElement('style');
+    appointmentStyles.id = 'appointment-content-styles';
+    appointmentStyles.textContent = `
+      /* HIDE ALL-DAY ROW COMPLETELY */
+      .rbc-allday-cell,
+      .rbc-allday-events,
+      .rbc-row-content,
+      .rbc-allday-cell-content,
+      .rbc-allday-event {
+        display: none !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+      }
+      
+      /* Hide the allday slot completely */
+      .rbc-time-view .rbc-allday-cell {
+        display: none !important;
+      }
+      
+      /* Clear, minimal approach to text visibility */
+      .custom-text-overlay {
+        position: absolute;
+        top: 2px;
+        left: 4px;
+        right: 4px;
+        bottom: 2px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        pointer-events: none;
+        z-index: 5;
+        font-size: 11px;
+        line-height: 1.2;
+        font-weight: 500;
+        overflow: hidden;
+        word-wrap: break-word;
+        white-space: normal;
+      }
+
+      .custom-text-overlay .patient-name {
+        font-weight: 600;
+        margin-bottom: 1px;
+        display: block;
+        width: 100%;
+      }
+
+      .custom-text-overlay .appointment-notes {
+        font-size: 10px;
+        opacity: 0.9;
+        display: block;
+        width: 100%;
+      }
+
+      /* Ensure our custom content shows and clickable elements work */
+      .rbc-event .custom-text-overlay {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      .rbc-event .custom-text-overlay * {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      .custom-text-overlay .clickable {
+        pointer-events: auto !important;
+      }
+
+      /* Hide React Big Calendar's default content that interferes */
+      .rbc-event .rbc-event-content > *:not(.custom-text-overlay) {
+        display: none !important;
+      }
+
+      .rbc-event .rbc-event-label {
+        display: none !important;
+      }
+      
+      /* Ensure resize handles work properly */
+      .rbc-event .rbc-addons-dnd-resize-ns-anchor {
+        z-index: 10;
+        pointer-events: auto;
+        background: rgba(255,255,255,0.15);
+        position: absolute;
+        height: 8px;
+      }
+      
+      .rbc-event .rbc-addons-dnd-resize-ns-anchor[data-resize="top"] {
+        top: 0;
+      }
+      
+      .rbc-event .rbc-addons-dnd-resize-ns-anchor[data-resize="bottom"] {
+        bottom: 0;
+      }
+    `;
+    document.head.appendChild(appointmentStyles);
+
+    return () => {
+      const el = document.getElementById('appointment-content-styles');
+      if (el) el.remove();
+    };
+  }, []);
+
+  // REMOVED: Complex CSS styling - replaced with simple solution above
+
+  // REMOVED: More complex styling - using simple solution instead
+
+  const getAvailablePractitioners = (date: Date) => {
+    // Find applicable schedule rules for the given date
+    const applicableRules = scheduleRules.filter(rule => {
+      const ruleStart = new Date(rule.startDate);
+      const ruleEnd = new Date(rule.endDate);
+      return isWithinInterval(date, { start: ruleStart, end: ruleEnd });
+    });
+
+    if (applicableRules.length === 0) {
+      return practitioners; // If no rules apply, show all practitioners
+    }
+
+    // Get the day of week for the date
+    const dayOfWeek = format(date, 'EEEE');
+
+    // Find practitioners assigned for this day
+    const availablePractitioners = new Set<string>();
+
+    applicableRules.forEach(rule => {
+      if (rule.repeatType === 'weekly' && rule.daysOfWeek.includes(dayOfWeek)) {
+        // For weekly rules, check the schedule for the specific day
+        const daySchedule = rule.schedule?.[dayOfWeek];
+        if (daySchedule) {
+          Object.values(daySchedule).forEach((room: any) => {
+            if (room.userId) {
+              availablePractitioners.add(room.userId);
+            }
+          });
+        }
+      } else if (rule.repeatType === 'daily') {
+        // For daily rules, check the 'ALL' schedule
+        const allSchedule = rule.schedule?.['ALL'];
+        if (allSchedule) {
+          Object.values(allSchedule).forEach((room: any) => {
+            if (room.userId) {
+              availablePractitioners.add(room.userId);
+            }
+          });
+        }
+      }
+    });
+
+    // If no practitioners are assigned in the rules, show all practitioners
+    if (availablePractitioners.size === 0) {
+      return practitioners;
+    }
+
+    // Filter practitioners based on the schedule rules
+    return practitioners.filter(p => availablePractitioners.has(p.id));
+  };
+
+  const getAvailableResourcesForCurrentDate = () => {
+    if (view === 'week' && selectedPractitionerId) {
+      return resources.filter(doc => doc.resourceId === selectedPractitionerId);
+    }
+    const practitionerIdSet = new Set(availablePractitionerIds);
+    return resources.filter(resource => practitionerIdSet.has(resource.resourceId));
+  };
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      setSelectedPractitionerId(session.user.id);
+    }
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      // Fetch practitioners first and wait for completion (includes color loading)
+      await fetchPractitioners();
+
+      // Then fetch other data in parallel
+      fetchPatients();
+      fetchFamilies();
+      fetchPendingAppointments();
+      fetchScheduleRules();
+      fetchCalendarSettings();
+    };
+
+    initializeData();
+  }, []);
+
+  useEffect(() => {
+    if (selectedPractitionerId) {
+      fetchAppointments();
+    }
+  }, [selectedPractitionerId, view]);
+
+  useEffect(() => {
+    const practitioners = getAvailablePractitioners(currentDate);
+    setAvailablePractitionerIds(practitioners.map(p => p.id));
+  }, [currentDate, scheduleRules]);
+
+  const fetchPractitioners = async () => {
+    try {
+      // Fetch practitioners
+      const response = await fetch('/api/practitioners');
+      const data = await response.json();
+      setPractitioners(data);
+      setPractitionerSchedule(prev => {
+        if (Object.keys(prev).length === 0) {
+          const initial: { [day: string]: string[] } = {};
+          daysOfWeek.forEach(day => { initial[day] = data.map((d: any) => d.id); });
+          return initial;
+        }
+        return prev;
+      });
+
+      // Fetch color settings for each practitioner
+      const colorMap: Record<string, string> = {};
+
+      // Sequential fetches to avoid rate limiting
+      for (const practitioner of data) {
+        try {
+          const colorRes = await fetch(`/api/calendar-settings/personal?userId=${practitioner.id}`);
+
+          if (colorRes.ok) {
+            const colorData = await colorRes.json();
+            colorMap[practitioner.id] = colorData.color || '#ffffff';
+          } else {
+            colorMap[practitioner.id] = '#ffffff';
+          }
+        } catch (error) {
+          console.error(`Error fetching color for ${practitioner.id}:`, error);
+          colorMap[practitioner.id] = '#ffffff';
+        }
+      }
+      setPractitionerColors(colorMap);
+
+      // Apply the colors to calendar columns immediately
+      applyPractitionerColorsToDOM(colorMap);
+    } catch (error) {
+      console.error('Error fetching practitioners:', error);
+      toast.error('Failed to fetch practitioners');
+    }
+  };
+
+  // Helper function to directly apply colors to DOM elements
+  const applyPractitionerColorsToDOM = (colorMap: Record<string, string>) => {
+    // Create or update our color stylesheet
+    let styleEl = document.getElementById('practitioner-column-colors');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'practitioner-column-colors';
+      document.head.appendChild(styleEl);
+    }
+
+
+
+    // Generate CSS for each practitioner
+    const cssRules = Object.entries(colorMap).map(([practitionerId, color]) => {
+
+      return `
+        /* Base column styles for practitioner ${practitionerId} */
+        .rbc-time-column[data-resource-id="${practitionerId}"],
+        .rbc-day-slot[data-resource-id="${practitionerId}"],
+        .rbc-header[data-resource-id="${practitionerId}"],
+        [data-resource-id="${practitionerId}"] {
+          background-color: ${color}15 !important;
+        }
+        
+        /* Today's column specific styling */
+        .rbc-today.rbc-time-column[data-resource-id="${practitionerId}"],
+        .rbc-today.rbc-day-slot[data-resource-id="${practitionerId}"],
+        .rbc-today [data-resource-id="${practitionerId}"] {
+          background-color: ${color}30 !important;
+        }
+        
+        /* Time slots within columns */
+        .rbc-time-column[data-resource-id="${practitionerId}"] .rbc-timeslot-group,
+        .rbc-time-column[data-resource-id="${practitionerId}"] .rbc-time-slot,
+        [data-resource-id="${practitionerId}"] .rbc-timeslot-group,
+        [data-resource-id="${practitionerId}"] .rbc-time-slot {
+          background-color: ${color}15 !important;
+        }
+        
+        /* Today's time slots */
+        .rbc-today.rbc-time-column[data-resource-id="${practitionerId}"] .rbc-time-slot,
+        .rbc-today.rbc-day-slot[data-resource-id="${practitionerId}"] .rbc-time-slot,
+        .rbc-today [data-resource-id="${practitionerId}"] .rbc-time-slot {
+          background-color: ${color}30 !important;
+        }
+        
+        /* Header styles */
+        .rbc-time-header-content[data-resource-id="${practitionerId}"] {
+          background-color: ${color}15 !important;
+        }
+        
+        /* Today's header styles */
+        .rbc-today .rbc-time-header-content[data-resource-id="${practitionerId}"] {
+          background-color: ${color}30 !important;
+        }
+      `;
+    }).join('\n');
+
+    styleEl.textContent = cssRules;
+  };
+
+  const fetchPatients = async () => {
+    try {
+      const response = await fetch('/api/patients');
+      const data = await response.json();
+      setPatients(data);
+    } catch (error) {
+      toast.error('Failed to fetch patients');
+    }
+  };
+
+  const fetchFamilies = async () => {
+    try {
+      const response = await fetch('/api/families');
+      const data = await response.json();
+      setFamilyGroups(data.familyGroups || []);
+      setIndividualPatients(data.individualPatients || []);
+    } catch (error) {
+      console.error('Error fetching families:', error);
+    }
+  };
+
+  const fetchPendingAppointments = async () => {
+    try {
+      const response = await fetch('/api/pending-appointments');
+      const data = await response.json();
+      setPendingAppointments(data);
+    } catch (error) {
+      toast.error('Failed to fetch pending appointments');
+    }
+  };
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('/api/appointments'); // No filters
+      const data = await response.json();
+      setAppointments(data);
+    } catch (error) {
+      toast.error('Failed to fetch appointments');
+    }
+  };
+
+  const fetchScheduleRules = async () => {
+    try {
+      const response = await fetch('/api/calendar-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setScheduleRules(data);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule rules:', error);
+    }
+  };
+
+  const fetchCalendarSettings = async () => {
+    try {
+      const response = await fetch('/api/calendar-settings/personal');
+      if (response.ok) {
+        const data = await response.json();
+        setCalendarColor(data.color || '#ffffff');
+
+        // Don't override practitioner colors here - they're set in fetchPractitioners
+        // This was causing the issue where only one practitioner color was shown
+      } else {
+        setCalendarColor('#ffffff');
+      }
+    } catch (error) {
+      console.error('Error fetching calendar settings:', error);
+      setCalendarColor('#ffffff');
+    }
+  };
+
+  // Broadcast to other panes that appointments changed
+  function broadcastRefresh() {
+    try {
+      localStorage.setItem('appointments_refresh', Date.now().toString());
+    } catch { }
+  }
+
+  // Debug function to inspect DOM elements
+  const debugDOM = () => {
+    console.log('🔍 DOM INSPECTION:');
+    const events = document.querySelectorAll('.rbc-event');
+    console.log(`Found ${events.length} appointment events`);
+
+    events.forEach((event, index) => {
+      const overlay = event.querySelector('.custom-text-overlay');
+      const content = event.querySelector('.rbc-event-content');
+
+      console.log(`Event ${index + 1}:`, {
+        element: event,
+        hasOverlay: !!overlay,
+        overlayVisible: overlay ? getComputedStyle(overlay).display : 'none',
+        overlayContent: overlay ? overlay.textContent : 'none',
+        overlayStyles: overlay ? {
+          display: getComputedStyle(overlay).display,
+          visibility: getComputedStyle(overlay).visibility,
+          opacity: getComputedStyle(overlay).opacity,
+          color: getComputedStyle(overlay).color,
+          fontSize: getComputedStyle(overlay).fontSize,
+          zIndex: getComputedStyle(overlay).zIndex
+        } : 'none',
+        hasContent: !!content,
+        contentDisplay: content ? getComputedStyle(content).display : 'none',
+        innerHTML: event.innerHTML.substring(0, 200) + '...'
+      });
+    });
+  };
+
+  // Auto-debug DOM after appointments load
+  useEffect(() => {
+    if (appointments.length > 0) {
+      setTimeout(() => {
+        debugDOM();
+      }, 2000); // Wait 2 seconds for DOM to settle
+    }
+  }, [appointments]);
+
+  // Make debugDOM available globally for console use
+  useEffect(() => {
+    (window as any).debugDOM = debugDOM;
+    return () => {
+      delete (window as any).debugDOM;
+    };
+  }, []);
+
+  const handleFormSubmit = async (appointment: any) => {
+    try {
+      // Handle family appointments
+      if (appointment.isFamilyAppointment && appointment.familyAppointmentRequest) {
+        const { familyAppointmentRequest } = appointment;
+        const { selectedPatientCodes, ...baseAppointment } = familyAppointmentRequest;
+
+        // Create multiple appointments, one for each family member in sequence
+
+        const promises = selectedPatientCodes.map(async (patientCode: string, index: number) => {
+          // Try to find patient by both ID and any identifying field
+          const patient = patients.find(p =>
+            p.id === patientCode ||
+            (p as any).patientCode === patientCode ||
+            `${p.firstName} ${p.lastName}` === patientCode
+          );
+          if (!patient) {
+            console.error('Patient not found for code/ID:', patientCode, 'Available patients:', patients.map(p => ({ id: p.id, name: `${p.firstName} ${p.lastName}` })));
+            return;
+          }
+
+
+          // Calculate sequential start times: each appointment starts when the previous one ends
+          const appointmentStartTime = new Date(baseAppointment.startTime.getTime() + (index * baseAppointment.duration * 60000));
+          const appointmentEndTime = new Date(appointmentStartTime.getTime() + baseAppointment.duration * 60000);
+
+          const appointmentData = {
+            ...baseAppointment,
+            patientId: patient.id,
+            endTime: appointmentEndTime,
+            startTime: appointmentStartTime.toISOString(),
+            status: 'SCHEDULED',
+            appointmentType: 'FAMILY',
+            type: baseAppointment.type
+          };
+
+
+
+          const response = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appointmentData),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Family appointment API error:', { status: response.status, error: errorText });
+            throw new Error(`Failed to create family appointment: ${response.status} ${errorText}`);
+          }
+
+          const result = await response.json();
+
+          return result;
+        });
+
+        await Promise.all(promises);
+        toast.success(`Family appointments created successfully`);
+      }
+      // Handle reservations (both new and editing)
+      else if (appointment.isReservation && appointment.reservationRequest) {
+        const { reservationRequest } = appointment;
+
+
+        // If editing, use PUT with direct data structure
+        if (selectedAppointment?.id) {
+          const updateData = {
+            id: selectedAppointment.id,
+            practitionerId: reservationRequest.practitionerId,
+            startTime: reservationRequest.startTime instanceof Date ? reservationRequest.startTime.toISOString() : reservationRequest.startTime,
+            endTime: new Date(reservationRequest.startTime.getTime() + reservationRequest.duration * 60000).toISOString(),
+            duration: reservationRequest.duration,
+            notes: reservationRequest.notes,
+            status: 'SCHEDULED',
+            appointmentType: 'RESERVATION',
+            isReservation: true,
+            reservationColor: reservationRequest.reservationColor,
+            // Include patientId if connected to a patient (null if none)
+            patientId: reservationRequest.patientId || null
+          };
+
+
+
+          const response = await fetch('/api/appointments', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Reservation update API error:', { status: response.status, error: errorText });
+            throw new Error(`Failed to update reservation: ${response.status} ${errorText}`);
+          }
+
+          const result = await response.json();
+
+          toast.success('Reservation updated successfully');
+        } else {
+          // Creating new reservation - use POST with reservation structure
+
+
+          const response = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appointment), // Send the full structure with isReservation and reservationRequest
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Reservation create API error:', { status: response.status, error: errorText });
+            throw new Error(`Failed to create reservation: ${response.status} ${errorText}`);
+          }
+
+          const result = await response.json();
+
+          toast.success('Reservation created successfully');
+        }
+      }
+      // Handle regular appointments
+      else {
+        const payload = {
+          ...appointment,
+          startTime: appointment.startTime instanceof Date ? appointment.startTime.toISOString() : appointment.startTime,
+          endTime: appointment.endTime instanceof Date ? appointment.endTime.toISOString() : appointment.endTime,
+          patientId: appointment.patientId,
+          practitionerId: appointment.practitionerId,
+          status: appointment.status || 'SCHEDULED',
+          type: appointment.type,
+          // Include reservation color for updates
+          ...(appointment.reservationColor && { reservationColor: appointment.reservationColor })
+        };
+
+
+
+        const response = await fetch('/api/appointments', {
+          method: appointment.id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) throw new Error('Failed to save appointment');
+        toast.success(`Appointment ${appointment.id ? 'updated' : 'created'} successfully`);
+      }
+
+      // Always refresh appointments from the server after save
+      await fetchAppointments();
+      setIsFormOpen(false);
+      broadcastRefresh();
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+      toast.error('Failed to save appointment');
+      fetchAppointments();
+    }
+  };
+
+  const handleFormCancel = () => {
+    setIsFormOpen(false);
+    setSelectedAppointment(null);
+    setSelectedDate(null);
+    setSelectedAppointmentPractitionerId(null);
+  };
+
+  const resources = practitioners.map(practitioner => ({
+    resourceId: practitioner.id,
+    resourceTitle: practitioner.firstName + ' ' + practitioner.lastName,
+  }));
+
+  const events = appointments
+    .filter(appt => appt.startTime && appt.endTime)
+    .map(appt => {
+      const patient = patients.find(p => p.id === appt.patientId);
+
+      // If there's a patient, show patient name
+      // If no patient (reservation), show the note
+      let title;
+      if (patient) {
+        title = `${patient.firstName} ${patient.lastName}`;
+      } else {
+        // No patient - this is a reservation, show the note
+        title = appt.notes || 'Reservation';
+      }
+
+
+
+      const type = typeof appt.type === 'object' && appt.type !== null
+        ? appt.type
+        : treatmentTypes.find(t => t.name === String(appt.type));
+
+      return {
+        id: appt.id,
+        title,
+        start: new Date(appt.startTime),
+        end: new Date(appt.endTime),
+        resourceId: appt.practitionerId,
+        allDay: false,
+        appointment: appt,
+        patient,
+        tooltip: [
+          <span key="type" style={{ color: type?.color || '#60a5fa' }}>
+            {type?.name || 'Appointment'}
+          </span>,
+          appt.notes && <div key="notes">{appt.notes}</div>,
+          patient?.phone && <div key="phone">{patient.phone}</div>
+        ].filter(Boolean)
+      };
+    });
+
+  // Add a test appointment for debugging (remove this later!)
+  if (events.length === 0 && practitioners.length > 0) {
+    const now = new Date();
+    const testStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
+    const testEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 0, 0);
+    const testEnd2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 30, 0);
+
+    events.push(
+      // Normal long appointment with patient and notes
+      {
+        id: 'test-appointment-123',
+        title: 'Test Patient',
+        start: testStart,
+        end: testEnd,
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-appointment-123',
+          notes: 'This is a test appointment with notes that should be visible',
+          duration: 60,
+          isReservation: false,
+        } as any,
+        patient: { firstName: 'Test', lastName: 'Patient' } as any,
+        tooltip: [<span key="test">Test Appointment</span>]
+      },
+      // Short appointment (≤20 minutes) with patient and notes - should show "Patient - Notes"
+      {
+        id: 'test-appointment-456',
+        title: 'Jane Doe',
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 20, 0),
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-appointment-456',
+          notes: 'Cleaning',
+          duration: 20,
+          isReservation: false,
+        } as any,
+        patient: { firstName: 'Jane', lastName: 'Doe' } as any,
+        tooltip: [<span key="test2">Short Appointment</span>]
+      },
+      // Regular reservation - should show only notes
+      {
+        id: 'test-reservation-789',
+        title: 'Lunch Break',
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0, 0),
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-reservation-789',
+          notes: 'Lunch Break',
+          duration: 60,
+          isReservation: true,
+        } as any,
+        patient: null,
+        tooltip: [<span key="test3">Reservation</span>]
+      },
+      // Reservation with connected patient - should show person icon
+      {
+        id: 'test-reservation-with-patient-101',
+        title: 'Reserved for John Smith',
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 16, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0),
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-reservation-with-patient-101',
+          notes: 'Reserved slot',
+          duration: 60,
+          isReservation: true,
+          patientId: 'patient-john-smith-123',
+        } as any,
+        patient: null,
+        tooltip: [<span key="test4">Reservation with Patient</span>]
+      }
+    );
+
+
+  }
+
+  // Helper function to determine if a color is light or dark
+  const isLightColor = (color: string) => {
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return brightness > 128;
+  };
+
+  // Helper function to get optimal text color
+  const getTextColor = (backgroundColor: string) => {
+    if (!backgroundColor || backgroundColor === 'transparent') {
+      return 'white';
+    }
+    return isLightColor(backgroundColor) ? '#333333' : 'white';
+  };
+
+  const effectivePractitionerId = view === 'week' ? selectedPractitionerId : null;
+  const filteredResources = getAvailableResourcesForCurrentDate();
+  const filteredEvents = events.filter(event => {
+    // Filter by practitioner if in week view
+    if (view === 'week' && event.resourceId !== effectivePractitionerId) {
+      return false;
+    }
+
+    // Filter by visible days
+    const eventDay = format(event.start, 'EEEE').toLowerCase();
+    if (!visibleDays.includes(eventDay)) {
+      return false;
+    }
+
+    // Filter by search query
+    if (!searchQuery.trim()) return true;
+    const search = searchQuery.trim().toLowerCase();
+    const patient = event.patient;
+    if (!patient) return false;
+
+    return [
+      `${patient.firstName} ${patient.lastName}`,
+      patient.email || '',
+      patient.phone || '',
+      patient.address || '',
+      patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : '',
+    ].some(field => String(field).toLowerCase().includes(search));
+  });
+
+  // Disable the default context menu globally
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('contextmenu', handleContextMenu);
+    return () => window.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
+  // Update handleDateSelect to immediately paste if clipboardData exists and it's a right-click
+  const handleDateSelect = (selectInfo: any) => {
+    const date = new Date(selectInfo.start);
+
+    // Ensure calendar colors are applied correctly after interactions
+    const reapplyColors = () => {
+      // Trigger a reapplication of colors when the user interacts with calendar
+      if (Object.keys(practitionerColors).length > 0) {
+
+
+        // Force removal of any conflicting styles
+        const conflictingStyles = [
+          'today-calendar-styles',
+          'column-direct-styles',
+          'practitioner-column-colors',
+          'today-column-override'
+        ];
+
+        conflictingStyles.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.remove();
+        });
+
+        // Reapply in the correct order
+        setTimeout(() => {
+          applyPractitionerColorsToDOM(practitionerColors);
+
+          // Find today columns and directly style them
+          const todayColumns = document.querySelectorAll('.rbc-today[data-resource-id]');
+          todayColumns.forEach(column => {
+            const resourceId = column.getAttribute('data-resource-id');
+            if (resourceId && practitionerColors[resourceId]) {
+              const color = practitionerColors[resourceId];
+
+              (column as HTMLElement).setAttribute('style',
+                `background-color: ${color}30 !important;`);
+            }
+          });
+        }, 50);
+      }
+    };
+
+    // If right-click and clipboardData exists, immediately paste
+    if (selectInfo.action === 'contextMenu' && clipboardData) {
+      // Paste the appointment at this cell
+      const duration = clipboardData.appointment.duration || 30;
+      const endTime = new Date(date.getTime() + duration * 60000);
+      handleFormSubmit({
+        ...clipboardData.appointment,
+        id: undefined,
+        startTime: date,
+        endTime,
+        practitionerId: selectInfo.resourceId || clipboardData.appointment.practitionerId,
+      });
+      // If it was a cut, clear clipboard after paste
+      if (clipboardData.action === 'cut') setClipboardData(null);
+
+      // Reapply colors after interaction
+      reapplyColors();
+      return;
+    }
+
+    if (selectInfo.action === 'contextMenu') {
+      setContextMenu({
+        x: selectInfo.clientX,
+        y: selectInfo.clientY,
+        appointment: {
+          startTime: date,
+          endTime: new Date(date.getTime() + 30 * 60000),
+          practitionerId: selectInfo.resourceId || selectedPractitionerId,
+        } as Appointment,
+      });
+
+      // Reapply colors after interaction
+      reapplyColors();
+      return;
+    }
+
+    // Left-click: open modal as usual
+    setSelectedDate(date);
+    setSelectedAppointment(null);
+    setSelectedAppointmentPractitionerId(selectInfo.resourceId || selectedPractitionerId);
+    setIsFormOpen(true);
+
+    // Reapply colors after interaction
+    reapplyColors();
+  };
+
+  const handleViewChange = (newView: string) => {
+    const isWeekView = newView === Views.WEEK;
+    setView(isWeekView ? 'week' : 'day');
+    if (isWeekView && !selectedPractitionerId && session?.user?.id) {
+      setSelectedPractitionerId(session.user.id);
+    }
+
+    // Re-apply colors after view change, as the DOM structure changes
+    setTimeout(() => {
+      if (Object.keys(practitionerColors).length > 0) {
+
+        applyPractitionerColorsToDOM(practitionerColors);
+
+        // Directly apply colors to today's column after view change
+        const today = new Date();
+        const isCurrentDateToday = isSameDay(currentDate, today);
+
+        if (isCurrentDateToday) {
+
+
+          // Give DOM time to update
+          setTimeout(() => {
+            // Find today's columns in the DOM
+            const todayColumns = document.querySelectorAll('.rbc-today[data-resource-id]');
+            todayColumns.forEach((column) => {
+              const resourceId = column.getAttribute('data-resource-id');
+              if (resourceId && practitionerColors[resourceId]) {
+                const color = practitionerColors[resourceId];
+
+
+                // Apply color directly to the element
+                (column as HTMLElement).style.backgroundColor = `${color}30`;
+                (column as HTMLElement).style.borderLeft = `4px solid ${color}`;
+
+                // Also apply to time slots
+                const timeSlots = column.querySelectorAll('.rbc-time-slot');
+                timeSlots.forEach(slot => {
+                  (slot as HTMLElement).style.backgroundColor = `${color}25`;
+                });
+              }
+            });
+          }, 300);
+        }
+      }
+    }, 200);
+  };
+
+  const clearTooltip = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = undefined;
+    }
+    setTooltipData(null);
+    tooltipPositionRef.current = null;
+    isOverAppointmentRef.current = false;
+  };
+
+  useEffect(() => {
+    const handleGlobal = (e: MouseEvent) => {
+      const tooltipElement = document.querySelector('.tooltip-container');
+      if (tooltipElement?.contains(e.target as Node)) {
+        return;
+      }
+      clearTooltip();
+    };
+
+    const handleScroll = () => clearTooltip();
+    const handleResize = () => clearTooltip();
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearTooltip();
+      }
+    };
+
+    window.addEventListener('mousedown', handleGlobal);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('mousedown', handleGlobal);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
+  // Function to set date range
+  const handleDateRange = (months: number) => {
+    setDateRange(months);
+  };
+
+  // Update this function to refresh resources when date changes
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
+
+    // Re-apply practitioner colors after date change (which may affect DOM)
+    setTimeout(() => {
+      if (Object.keys(practitionerColors).length > 0) {
+        applyPractitionerColorsToDOM(practitionerColors);
+
+        // Extra step: directly target and color today's column
+        const today = new Date();
+        const isCurrentDateToday = isSameDay(date, today);
+
+        console.log(`HandleDateChange: navigated to ${date.toDateString()}, isCurrentDateToday=${isCurrentDateToday}`);
+
+        // Apply colors to all columns based on whether we're viewing today
+        const allColumns = document.querySelectorAll('[data-resource-id]');
+        allColumns.forEach((column) => {
+          const resourceId = column.getAttribute('data-resource-id');
+          if (resourceId && practitionerColors[resourceId]) {
+            const color = practitionerColors[resourceId];
+            console.log(`DIRECT DOM UPDATE for column ${resourceId}: applying color ${color}, isToday=${isCurrentDateToday}`);
+
+            // Apply color based on whether we're viewing today's date
+            (column as HTMLElement).style.backgroundColor = isCurrentDateToday ? `${color}30` : `${color}15`;
+
+            // Also apply to time slots
+            const timeSlots = column.querySelectorAll('.rbc-time-slot');
+            timeSlots.forEach(slot => {
+              (slot as HTMLElement).style.backgroundColor = isCurrentDateToday ? `${color}30` : `${color}15`;
+            });
+          }
+        });
+      }
+    }, 100);
+  };
+
+  // Calculate the date range limits
+  const getDateRangeLimits = () => {
+    const start = new Date();
+    const end = addMonths(new Date(), dateRange);
+    return { start, end };
+  };
+
+  // Update date range when it changes
+  useEffect(() => {
+    // If we're in a view where the range matters, fetch more data if needed
+    if (view === 'week' || view === 'day') {
+      fetchAppointments();
+    }
+  }, [dateRange]);
+
+  // Handle adding a pending appointment to a practitioner's calendar
+  const handleAddToPractitioner = async (appointment: any, practitionerId: string) => {
+    try {
+      const result = await convertPendingToAppointment(appointment, practitionerId);
+      if (result) {
+        toast.success('Appointment assigned successfully');
+        fetchPendingAppointments();
+        fetchAppointments();
+      } else {
+        toast.error('Failed to assign appointment');
+      }
+    } catch (error) {
+      toast.error('Error assigning appointment');
+    }
+  };
+
+  const updateTooltipPosition = (x: number, y: number) => {
+    if (tooltipAnimationFrame.current) {
+      cancelAnimationFrame(tooltipAnimationFrame.current);
+    }
+
+    tooltipAnimationFrame.current = requestAnimationFrame(() => {
+      setTooltipData(prev => prev && ({
+        ...prev,
+        x,
+        y
+      }));
+    });
+  };
+
+  // NEW: Send confirmation email to patient
+  const handleSendConfirmationEmail = async (appointment: Appointment) => {
+    try {
+      const res = await fetch('/api/appointments/send-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: appointment.patientId }),
+      });
+      if (!res.ok) throw new Error('Request failed');
+      toast.success('Confirmation email sent');
+    } catch (error) {
+      console.error('Error sending confirmation email', error);
+      toast.error('Failed to send confirmation email');
+    }
+  };
+
+  // NEW: Print ticket helper
+  const handlePrintTicket = (appointment: Appointment, includeAllFuture: boolean) => {
+    try {
+      const now = new Date();
+      const patientAppointments = appointments.filter(a => a.patientId === appointment.patientId && new Date(a.startTime) >= now);
+      const list = includeAllFuture ? patientAppointments : [appointment];
+      const patient = patients.find(p => p.id === appointment.patientId);
+      const html = `<!DOCTYPE html>
+        <html><head><title>Appointment Ticket</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { font-size: 20px; margin-bottom: 10px; }
+          ul { list-style: none; padding: 0; }
+          li { margin-bottom: 6px; }
+        </style></head><body>
+        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'} – Appointments</h1>
+        <ul>
+          ${list.map(appt => `<li><strong>${new Date(appt.startTime).toLocaleString()}</strong> – ${appt.type}</li>`).join('')}
+        </ul>
+        </body></html>`;
+      const printWindow = window.open('', '_blank', 'width=600,height=800');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        // Delay print slightly to ensure content is rendered
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error printing ticket', error);
+      toast.error('Failed to print ticket');
+    }
+  };
+
+  const ContextMenu = ({ x, y, appointment, onClose }: {
+    x: number;
+    y: number;
+    appointment: Appointment;
+    onClose: () => void;
+  }) => {
+    const menuRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          onClose();
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
+
+    const handleOpenPatientCard = () => {
+      if (appointment.patientId) {
+        // Check if in iframe
+        const isEmbed = typeof window !== 'undefined' && window.location.search.includes('embed=1');
+        if (isEmbed && window.parent) {
+          // Send message to parent to open patient in a new pane
+          window.parent.postMessage({
+            type: 'openPane',
+            pane: 'patient',
+            patientId: appointment.patientId
+          }, '*');
+        } else {
+          // Navigate directly
+          router.push(`/dashboard/patients/${appointment.patientId}`);
+        }
+        onClose();
+      }
+    };
+
+    const handleSendToPending = async () => {
+      try {
+        // Create a clean pending appointment object with proper date handling
+        const pendingAppointmentData = {
+          patientId: appointment.patientId,
+          type: appointment.type,
+          duration: appointment.duration || 30, // Ensure we have a default duration
+          notes: appointment.notes,
+          status: 'PENDING',
+          priority: 'medium',
+          startTime: appointment.startTime instanceof Date ? appointment.startTime.toISOString() : appointment.startTime,
+          endTime: appointment.endTime instanceof Date ? appointment.endTime.toISOString() : appointment.endTime,
+          practitionerId: null
+        };
+
+        const response = await fetch('/api/pending-appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pendingAppointmentData),
+        });
+
+        if (!response.ok) throw new Error('Failed to create pending appointment');
+
+        // Delete the original appointment
+        await fetch(`/api/appointments?id=${appointment.id}`, {
+          method: 'DELETE',
+        });
+
+        // Update both lists immediately
+        await Promise.all([
+          fetchAppointments(),
+          fetchPendingAppointments()
+        ]);
+
+        toast.success('Appointment moved to pending');
+        broadcastRefresh();
+        onClose();
+      } catch (error) {
+        console.error('Error creating pending appointment:', error);
+        toast.error('Failed to move appointment to pending');
+      }
+    };
+
+    const handleCopy = () => {
+      setClipboardData({ appointment, action: 'copy' });
+      onClose();
+    };
+
+    const handleCut = () => {
+      setClipboardData({ appointment, action: 'cut' });
+      onClose();
+    };
+
+    const handlePaste = async () => {
+      if (!clipboardData) return;
+
+      try {
+        const response = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...clipboardData.appointment,
+            id: undefined, // Remove the ID to create a new appointment
+            startTime: appointment.startTime,
+            endTime: appointment.endTime,
+            practitionerId: appointment.practitionerId,
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to paste appointment');
+
+        if (clipboardData.action === 'cut') {
+          // Delete the original appointment
+          await fetch(`/api/appointments?id=${clipboardData.appointment.id}`, {
+            method: 'DELETE',
+          });
+          setClipboardData(null);
+        }
+
+        toast.success('Appointment pasted successfully');
+        // Immediately fetch appointments to update the calendar
+        await fetchAppointments();
+        onClose();
+      } catch (error) {
+        toast.error('Failed to paste appointment');
+      }
+    };
+
+    return (
+      <div
+        ref={menuRef}
+        className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]"
+        style={{ left: x, top: y }}
+      >
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm font-medium text-blue-600"
+          onClick={handleOpenPatientCard}
+        >
+          Open patient card
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={handleSendToPending}
+        >
+          Send to pending
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={handleCopy}
+        >
+          Copy
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={handleCut}
+        >
+          Cut
+        </button>
+        {clipboardData && (
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+            onClick={handlePaste}
+          >
+            Paste
+          </button>
+        )}
+        {/* NEW OPTIONS */}
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={() => { handleSendConfirmationEmail(appointment); onClose(); }}
+        >
+          Send confirmation email
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={() => { handlePrintTicket(appointment, false); onClose(); }}
+        >
+          Print ticket (selected)
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={() => { handlePrintTicket(appointment, true); onClose(); }}
+        >
+          Print ticket (all future)
+        </button>
+      </div>
+    );
+  };
+
+  // Add a handler to show the custom context menu on empty space
+  const handleCalendarContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only trigger if not right-clicking on an appointment (let appointment handler take precedence)
+    // We'll always show the menu for simplicity
+    e.preventDefault();
+    if (clipboardData) {
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        appointment: {
+          // Provide a minimal appointment object for paste
+          startTime: currentDate,
+          endTime: new Date(currentDate.getTime() + 30 * 60000),
+          practitionerId: null,
+        } as Appointment,
+      });
+    }
+  };
+
+  // Helper to compute slot date from mouse position within a column
+  const getSlotDateFromPosition = (e: MouseEvent, columnEl: HTMLElement | null): Date => {
+    const dayDate = columnEl?.getAttribute('data-date')
+      ? new Date(columnEl.getAttribute('data-date')!)
+      : new Date(currentDate);
+
+    // Our calendar shows from 6:00 to 22:00
+    const minMinutes = 6 * 60;
+    const maxMinutes = 22 * 60;
+    const totalMinutes = maxMinutes - minMinutes;
+
+    if (!columnEl) return new Date(dayDate);
+
+    const rect = columnEl.getBoundingClientRect();
+    const yPct = Math.min(Math.max((e.clientY - rect.top) / rect.height, 0), 1);
+    const minutesFromStart = Math.floor((yPct * totalMinutes) / 5) * 5; // round to 5-min slot
+    const minutesOfDay = minMinutes + minutesFromStart;
+
+    const date = new Date(dayDate);
+    date.setHours(0, 0, 0, 0);
+    date.setMinutes(minutesOfDay);
+    return date;
+  };
+
+  // Add right-click support for empty calendar cells
+  useEffect(() => {
+    const handleSlotContextMenu = (e: MouseEvent) => {
+      // Ignore event cells
+      if ((e.target as HTMLElement).closest('.rbc-event')) return;
+
+      // Ensure click inside calendar
+      if (!calendarContainerRef.current || !calendarContainerRef.current.contains(e.target as Node)) return;
+
+      e.preventDefault();
+
+      // Identify column element (time column/day slot)
+      const colEl = (e.target as HTMLElement).closest('.rbc-time-column, .rbc-day-slot') as HTMLElement | null;
+      if (!colEl) return;
+
+      // Try direct attribute first
+      const allCols = Array.from(calendarContainerRef.current.querySelectorAll('.rbc-time-column, .rbc-day-slot')) as HTMLElement[];
+      const colIndex = allCols.indexOf(colEl);
+
+      let resourceId: string | null;
+      if (view === 'week') {
+        // In week view columns are days; practitioner already selected
+        resourceId = selectedPractitionerId;
+      } else {
+        // Day view columns represent practitioners after the time gutter
+        const resourceIndex = Math.max(0, colIndex - 1); // skip gutter
+        resourceId = colEl.getAttribute('data-resource-id') || (colEl as any).dataset?.resourceId || resources[resourceIndex]?.resourceId || selectedPractitionerId;
+      }
+
+      // Compute clicked time (6:00 – 22:00 range rounded to 5-min)
+      const rect = colEl.getBoundingClientRect();
+      const pct = Math.min(Math.max((e.clientY - rect.top) / rect.height, 0), 1);
+      const minMinutes = 6 * 60;
+      const totalMinutes = 16 * 60; // 6 -> 22 = 16 hours
+      const minutesFromStart = Math.floor((pct * totalMinutes) / 5) * 5;
+      const minutesOfDay = minMinutes + minutesFromStart;
+      let slotDate: Date;
+      if (view === 'week') {
+        const dayOffset = Math.max(0, colIndex - 1); // first day column after gutter is offset 0
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        slotDate = addDays(weekStart, dayOffset);
+      } else {
+        const baseDateStr = colEl.getAttribute('data-date');
+        slotDate = baseDateStr ? new Date(baseDateStr) : new Date(currentDate);
+      }
+      slotDate.setHours(0, 0, 0, 0);
+      slotDate.setMinutes(minutesOfDay);
+
+      setSlotContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        slotDate,
+        resourceId,
+      });
+      setContextMenu(null);
+    };
+    document.addEventListener('contextmenu', handleSlotContextMenu, true);
+    return () => document.removeEventListener('contextmenu', handleSlotContextMenu, true);
+  }, [clipboardData, selectedPractitionerId, currentDate, view]);
+
+  // Minimal context menu for empty slots
+  const SlotContextMenu = ({ x, y, slotDate, resourceId, onClose }: {
+    x: number;
+    y: number;
+    slotDate: Date;
+    resourceId: string | null;
+    onClose: () => void;
+  }) => {
+    const menuRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+      const handleOutside = (ev: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(ev.target as Node)) {
+          onClose();
+        }
+      };
+      document.addEventListener('mousedown', handleOutside);
+      return () => document.removeEventListener('mousedown', handleOutside);
+    }, [onClose]);
+
+    return (
+      <div
+        ref={menuRef}
+        className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[100px]"
+        style={{ left: x, top: y }}
+      >
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm disabled:opacity-50"
+          disabled={!clipboardData}
+          onClick={async () => {
+            if (!clipboardData) return;
+            const duration = clipboardData.appointment.duration || 30;
+            const endTime = new Date(slotDate.getTime() + duration * 60000);
+            await handleFormSubmit({
+              ...clipboardData.appointment,
+              id: undefined,
+              startTime: slotDate,
+              endTime,
+              practitionerId: resourceId,
+              status: 'SCHEDULED',
+            });
+            if (clipboardData.action === 'cut') setClipboardData(null);
+            onClose();
+          }}
+        >
+          Paste
+        </button>
+      </div>
+    );
+  };
+
+  const PendingMenu = ({ x, y, pending, onClose }: { x: number; y: number; pending: PendingAppointment; onClose: () => void }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => { const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { onClose(); } }; document.addEventListener('mousedown', handler); return () => document.removeEventListener('mousedown', handler); }, [onClose]);
+    return (
+      <div ref={ref} className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]" style={{ left: x, top: y }}>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copy</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Cut</button>
+      </div>
+    );
+  };
+
+  // Auto-refresh when other panes broadcast changes
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === 'appointments_refresh') {
+        fetchAppointments();
+        fetchPendingAppointments();
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+
+  // Create and inject specific styles for each practitioner column
+  const columnStylesCSS = useMemo(() => {
+    if (!colorLoaded || Object.keys(practitionerColors).length === 0) return '';
+
+    return Object.entries(practitionerColors).map(([practitionerId, color]) => `
+      /* TimeslotGroup styles for practitioner ${practitionerId} */
+      .rbc-timeslot-group[data-resource-id="${practitionerId}"],
+      [data-resource-id="${practitionerId}"] .rbc-timeslot-group {
+        background-color: ${color}15 !important;
+      }
+      
+      /* Today's TimeslotGroup styles for practitioner ${practitionerId} */
+      .rbc-today .rbc-timeslot-group[data-resource-id="${practitionerId}"],
+      .rbc-today [data-resource-id="${practitionerId}"] .rbc-timeslot-group {
+        background-color: ${color}30 !important;
+      }
+    `).join('\n');
+  }, [practitionerColors, colorLoaded]);
+
+  // Apply column colors directly to time slots using CSS
+  useEffect(() => {
+    if (!colorLoaded || Object.keys(practitionerColors).length === 0) return;
+
+    // Create a style element for direct CSS injection
+    const styleEl = document.createElement('style');
+    styleEl.id = 'calendar-column-colors';
+
+    // Create CSS rules for each practitioner
+    const cssRules = Object.entries(practitionerColors).map(([practitionerId, color]) => `
+      /* Target all elements in this practitioner's column */
+      .rbc-time-header-content[data-resource-id="${practitionerId}"],
+      .rbc-time-column[data-resource-id="${practitionerId}"],
+      .rbc-day-slot[data-resource-id="${practitionerId}"] {
+        background-color: ${color}15 !important;
+      }
+      
+      /* Target today's column - FIXED TO USE /30 */
+      .rbc-today.rbc-time-column[data-resource-id="${practitionerId}"],
+      .rbc-today.rbc-day-slot[data-resource-id="${practitionerId}"] {
+        background-color: ${color}30 !important;
+      }
+    `).join('\n');
+
+    styleEl.textContent = cssRules;
+    document.head.appendChild(styleEl);
+
+    return () => {
+      const el = document.getElementById('calendar-column-colors');
+      if (el) el.remove();
+    };
+  }, [practitionerColors, colorLoaded]);
+
+  // REMOVED: All complex DOM manipulation useEffects - replaced with simple CSS solution above
+
+  // REMOVED: MutationObserver and direct DOM styling 
+
+  // REMOVED: Force color corrections - using simple approach instead
+
+  // Simple direct color application - fix for React Big Calendar not applying data-resource-id
+  useEffect(() => {
+    if (!colorLoaded || Object.keys(practitionerColors).length === 0) return;
+
+
+
+    const applyColorsByPosition = () => {
+      // Find all time columns (exclude the time gutter)
+      const timeColumns = document.querySelectorAll('.rbc-time-column');
+      const daySlots = document.querySelectorAll('.rbc-day-slot');
+
+
+
+      // CENTER THE PRACTITIONER HEADERS - Apply Tailwind classes to outer .rbc-header divs
+      const headers = document.querySelectorAll('.rbc-header');
+      headers.forEach((header) => {
+        // Add the Tailwind classes that the user confirmed work
+        header.classList.add('max-w-full', 'flex', 'justify-center');
+      });
+
+      // ROBUST TODAY DETECTION - compare currentDate with actual today
+      const today = new Date();
+      const isCurrentDateToday = isSameDay(currentDate, today);
+
+
+      if (view === 'week' && selectedPractitionerId) {
+        // In week view: columns are days, apply selected practitioner's color to all days
+        const selectedColor = practitionerColors[selectedPractitionerId];
+
+
+        if (selectedColor) {
+          // Apply to time columns (skip first one which is the time gutter)
+          timeColumns.forEach((column, index) => {
+            if (index === 0) return; // Skip time gutter
+
+            // Use the robust date-based today detection
+            const columnColor = isCurrentDateToday ? `${selectedColor}30` : `${selectedColor}15`;
+            console.log(`🎯 Week view: column ${index} -> ${columnColor} (isCurrentDateToday=${isCurrentDateToday})`);
+
+            (column as HTMLElement).style.setProperty('background-color', columnColor, 'important');
+            (column as HTMLElement).style.setProperty('background', columnColor, 'important');
+          });
+
+          // Apply to day slots
+          daySlots.forEach((slot, index) => {
+            const slotColor = isCurrentDateToday ? `${selectedColor}30` : `${selectedColor}15`;
+            (slot as HTMLElement).style.setProperty('background-color', slotColor, 'important');
+            (slot as HTMLElement).style.setProperty('background', slotColor, 'important');
+          });
+
+          // Fix today's header specifically
+          const todayHeader = document.querySelector(`.rbc-header.rbc-today`);
+          if (todayHeader) {
+            console.log(`Week view: fixing today's header with color ${selectedColor}`);
+            (todayHeader as HTMLElement).style.setProperty('background-color', `${selectedColor}30`, 'important');
+          }
+        }
+      } else {
+        // Day view: columns are practitioners
+        const practitionerIds = filteredResources.map(r => r.resourceId);
+        console.log('Day view practitioner order:', practitionerIds);
+
+        // For day view, we only need to check if we're currently viewing today
+        const isViewingToday = isCurrentDateToday;
+
+        // Apply colors to time columns (skip first one which is the time gutter)
+        timeColumns.forEach((column, index) => {
+          // Skip the time gutter column (index 0)
+          if (index === 0) return;
+
+          const practitionerIndex = index - 1;
+          const practitionerId = practitionerIds[practitionerIndex];
+          const color = practitionerColors[practitionerId];
+
+          if (color) {
+            // In day view, if we're viewing today, all practitioner columns should be darker
+            console.log(`Day view: practitioner ${practitionerId} isViewingToday=${isViewingToday}`);
+
+            (column as HTMLElement).style.setProperty('background-color', isViewingToday ? `${color}30` : `${color}15`, 'important');
+            (column as HTMLElement).style.setProperty('background', isViewingToday ? `${color}30` : `${color}15`, 'important');
+            (column as HTMLElement).setAttribute('data-resource-id', practitionerId);
+          }
+        });
+
+        // Apply colors to day slots as well
+        daySlots.forEach((slot, index) => {
+          const practitionerId = practitionerIds[index];
+          const color = practitionerColors[practitionerId];
+
+          if (color) {
+            (slot as HTMLElement).style.setProperty('background-color', isViewingToday ? `${color}30` : `${color}15`, 'important');
+            (slot as HTMLElement).style.setProperty('background', isViewingToday ? `${color}30` : `${color}15`, 'important');
+            (slot as HTMLElement).setAttribute('data-resource-id', practitionerId);
+          }
+        });
+      }
+    };
+
+    // Apply immediately
+    applyColorsByPosition();
+
+    // Reapply when DOM changes
+    const observer = new MutationObserver(() => {
+      console.log('DOM changed, reapplying colors by position');
+      setTimeout(applyColorsByPosition, 100);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [practitionerColors, colorLoaded, filteredResources, currentDate]);
+
+  return (
+    <div className="flex h-full">
+      {!colorLoaded || Object.keys(practitionerColors).length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div>Loading...</div>
+        </div>
+      ) : (
+        <>
+          <div
+            ref={calendarContainerRef}
+            className="flex-1 px-4"
+            style={{ userSelect: 'none' }}
+          >
+            <Card className="p-4">
+              <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="font-medium">
+                      Jump to:
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newDate = addMonths(currentDate, 3);
+                        handleDateChange(newDate);
+                      }}
+                    >
+                      +3 Months
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newDate = addMonths(currentDate, 6);
+                        handleDateChange(newDate);
+                      }}
+                    >
+                      +6 Months
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newDate = addMonths(currentDate, 12);
+                        handleDateChange(newDate);
+                      }}
+                    >
+                      +1 Year
+                    </Button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="text"
+                      placeholder="Search patients..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-[200px]"
+                    />
+                  </div>
+                  {view === 'week' && (
+                    <div className="flex items-center space-x-2">
+                      <div className="font-medium">Practitioner:</div>
+                      <Select
+                        value={selectedPractitionerId || ''}
+                        onValueChange={(value) => setSelectedPractitionerId(value)}
+                      >
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="Select practitioner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {practitioners.map((practitioner) => (
+                            <SelectItem key={practitioner.id} value={practitioner.id}>
+                              {practitioner.firstName} {practitioner.lastName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    // If this page is embedded in an iframe (embed=1) we don't
+                    // want to navigate inside the iframe. Instead, ask the
+                    // parent DynamicPane to switch to the Calendar Settings
+                    // pane.
+                    const isEmbed = typeof window !== 'undefined' && window.location.search.includes('embed=1');
+                    if (isEmbed && window.parent) {
+                      window.parent.postMessage({ type: 'openPane', pane: 'calendarSettings' }, '*');
+                    } else {
+                      router.push('/dashboard/calendar-settings');
+                    }
+                  }}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
+              <DnDCalendar
+                key={`${calendarColor}-${visibleDays.join(',')}-${JSON.stringify(practitionerColors)}`}
+                localizer={localizer}
+                events={filteredEvents}
+                resourceIdAccessor="resourceId"
+                resourceTitleAccessor="resourceTitle"
+                defaultView={Views.DAY}
+                view={view === 'week' ? Views.WEEK : Views.DAY}
+                views={{ day: true, week: true }}
+                tooltipAccessor={null}
+                step={5}
+                timeslots={4}
+                min={new Date(0, 0, 0, 6, 0)}
+                max={new Date(0, 0, 0, 22, 0)}
+                allDaySlot={false}
+                showAllDay={false}
+                selectable
+                date={currentDate}
+                onNavigate={handleDateChange}
+                onView={handleViewChange}
+                onSelectSlot={(selectInfo) => {
+                  console.log('DEBUG: onSelectSlot called with:', selectInfo);
+                  if (selectInfo.action === 'contextMenu') {
+                    handleDateSelect(selectInfo);
+                  } else {
+                    handleDateSelect(selectInfo);
+                  }
+                }}
+                toolbar={true}
+                onSelectEvent={event => {
+                  clearTooltip();
+                  setSelectedAppointment(event.appointment);
+                  setIsFormOpen(true);
+                }}
+                style={{ height: 'calc(100vh - 200px)' }}
+                eventPropGetter={event => {
+                  let type = event.appointment?.type || event.type;
+                  if (typeof type === 'string') {
+                    type = treatmentTypes.find(t => t.name === type || t.id === type);
+                  }
+
+                  // Color priority: 1. Reservation color (for reservations), 2. Treatment type color, 3. Practitioner color, 4. Default color
+                  const practitionerColor = practitionerColors[event.resourceId];
+                  let color;
+
+                  if (event.appointment?.isReservation || event.appointment?.appointmentType === 'RESERVATION') {
+                    color = event.appointment?.reservationColor || '#3b82f6'; // Use reservation color or default blue
+                    console.log('Reservation color debug:', {
+                      appointmentId: event.appointment.id,
+                      isReservation: event.appointment?.isReservation,
+                      appointmentType: event.appointment?.appointmentType,
+                      reservationColor: event.appointment?.reservationColor,
+                      finalColor: color
+                    });
+                  } else {
+                    color = type?.color || practitionerColor || calendarColor;
+                  }
+
+                  // Determine if this is a short appointment
+                  const appointmentDuration = event.appointment?.duration || 0;
+                  const isShortAppointment = appointmentDuration <= 20;
+
+                  return {
+                    style: {
+                      backgroundColor: color,
+                      color: '#fff',
+                      border: '1px solid #222',
+                      transition: 'all 0.15s ease-in-out',
+                      transform: 'translateZ(0)',
+                      // Removed border - keeping just background colors
+                    },
+                    className: isShortAppointment ? 'short-appointment no-time-display' : 'no-time-display',
+                    'data-resource-id': event.resourceId // Add data attribute for CSS targeting
+                  };
+                }}
+                components={{
+                  event: ({ event }) => {
+                    const eventRef = useRef<HTMLDivElement>(null);
+
+                    const handleMouseMove = (e: React.MouseEvent) => {
+                      if (!eventRef.current) return;
+
+                      const rect = eventRef.current.getBoundingClientRect();
+                      const isInside =
+                        e.clientX >= rect.left &&
+                        e.clientX <= rect.right &&
+                        e.clientY >= rect.top &&
+                        e.clientY <= rect.bottom;
+
+                      if (!isInside) {
+                        clearTooltip();
+                        return;
+                      }
+
+                      if (tooltipData) {
+                        updateTooltipPosition(e.clientX + 10, e.clientY + 10);
+                      }
+                    };
+
+                    const handleMouseEnter = (e: React.MouseEvent) => {
+                      // Clear any existing tooltip first
+                      clearTooltip();
+
+                      const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
+                        ? event.appointment.type
+                        : treatmentTypes.find(t => t.name === String(event.appointment?.type));
+                      const typeName = type?.name || 'Appointment';
+                      const typeColor = type?.color || '#60a5fa';
+
+                      const tooltipContent = (
+                        <div className="space-y-1">
+                          <div className="font-semibold text-sm" style={{ color: typeColor }}>
+                            {typeName}
+                          </div>
+                          {event.patient ? (
+                            <div className="text-sm font-medium text-gray-900">
+                              {event.patient.firstName} {event.patient.lastName}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-600 italic">
+                              Reservation
+                            </div>
+                          )}
+                          {event.appointment?.notes && (
+                            <div className="text-sm text-gray-700 max-w-[250px]">
+                              <strong>Notes:</strong> {event.appointment.notes}
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 border-t pt-1">
+                            Duration: {event.appointment?.duration || 30} minutes
+                          </div>
+                        </div>
+                      );
+
+                      // Add a small delay to prevent flickering
+                      console.log('TOOLTIP DEBUG: Creating tooltip for', {
+                        eventId: event.id,
+                        title: event.title,
+                        typeName,
+                        hasNotes: !!event.appointment?.notes
+                      });
+
+                      setTimeout(() => {
+                        setTooltipData({
+                          content: tooltipContent,
+                          x: e.clientX + 15,
+                          y: e.clientY - 10
+                        });
+                        console.log('TOOLTIP DEBUG: Tooltip shown');
+                      }, 100);
+                    };
+
+                    const handleContextMenu = (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      setContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        appointment: event.appointment,
+                      });
+                    };
+
+                    useEffect(() => {
+                      const handleGlobalMouseMove = (e: MouseEvent) => {
+                        if (!eventRef.current || !tooltipData) return;
+
+                        const rect = eventRef.current.getBoundingClientRect();
+                        const isInside =
+                          e.clientX >= rect.left &&
+                          e.clientX <= rect.right &&
+                          e.clientY >= rect.top &&
+                          e.clientY <= rect.bottom;
+
+                        if (!isInside) {
+                          clearTooltip();
+                        }
+                      };
+
+                      window.addEventListener('mousemove', handleGlobalMouseMove);
+                      return () => {
+                        window.removeEventListener('mousemove', handleGlobalMouseMove);
+                      };
+                    }, [tooltipData]);
+
+                    const appointmentDuration = event.appointment?.duration || 0;
+                    const isShortAppointment = appointmentDuration <= 20;
+
+                    console.log('EVENT WRAPPER DEBUG:', {
+                      eventId: event.id,
+                      title: event.title,
+                      duration: appointmentDuration,
+                      isShortAppointment,
+                      hasPatient: !!event.patient
+                    });
+
+                    return (
+                      <div
+                        ref={eventRef}
+                        className={`h-full w-full p-1 cursor-move ${clipboardData?.appointment.id === event.appointment.id && clipboardData.action === 'cut'
+                          ? 'opacity-50 border-dashed'
+                          : ''
+                          }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearTooltip();
+                          setSelectedAppointment(event.appointment);
+                          setIsFormOpen(true);
+                        }}
+                        onContextMenu={handleContextMenu}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={() => clearTooltip()}
+                        onMouseMove={handleMouseMove}
+                      >
+                        {/* CUSTOM TEXT DISPLAY */}
+                        <div
+                          className="custom-text-overlay"
+                          style={{
+                            padding: '2px 4px',
+                            overflow: 'hidden',
+                            flexDirection: 'column',
+                            justifyContent: 'flex-start',
+                            alignItems: 'flex-start'
+                          }}
+                        >
+                          {(() => {
+                            const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
+                              ? event.appointment.type
+                              : treatmentTypes.find(t => t.name === String(event.appointment?.type));
+
+                            // Use reservation color if it's a reservation, otherwise use treatment type color
+                            let backgroundColor = type?.color || '#60a5fa';
+                            if (event.appointment?.isReservation || event.appointment?.appointmentType === 'RESERVATION') {
+                              backgroundColor = event.appointment?.reservationColor || '#3b82f6';
+                            }
+
+                            const textColor = getTextColor(backgroundColor);
+
+                            const patient = event.patient;
+                            const appointment = event.appointment;
+                            const isReservation = !patient || appointment?.isReservation;
+                            const isReservationWithPatient = isReservation && appointment?.patientId;
+
+                            const commonStyle = {
+                              color: textColor,
+                              fontWeight: 'bold',
+                              textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`,
+                              lineHeight: '1.2',
+                              whiteSpace: 'pre-wrap' as const,
+                              wordBreak: 'break-word' as const
+                            };
+
+                            if (isReservationWithPatient) {
+                              return (
+                                <div
+                                  className="clickable"
+                                  style={{
+                                    ...commonStyle,
+                                    fontSize: '20px',
+                                    textAlign: 'center',
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '100%',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(`/dashboard/patients/${appointment.patientId}`, '_blank');
+                                  }}
+                                >
+                                  👤
+                                </div>
+                              );
+                            }
+
+                            if (isReservation) {
+                              const reservationText = appointment?.notes || 'Reservation';
+                              console.log('RESERVATION TEXT DEBUG:', {
+                                eventId: event.id,
+                                text: reservationText,
+                                textColor,
+                                backgroundColor
+                              });
+
+                              return (
+                                <div style={{
+                                  ...commonStyle,
+                                  fontSize: '12px',
+                                  textAlign: 'center',
+                                  width: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  height: '100%'
+                                }}>
+                                  {reservationText}
+                                </div>
+                              );
+                            }
+
+                            // Regular patient appointments - always show in consistent format
+                            console.log('APPOINTMENT TEXT DEBUG:', {
+                              eventId: event.id,
+                              patientName: event.title,
+                              notes: appointment?.notes,
+                              textColor,
+                              backgroundColor,
+                              duration: appointmentDuration,
+                              isShort: isShortAppointment
+                            });
+
+                            const fontSize = isShortAppointment ? '10px' : '11px';
+                            const layout = isShortAppointment ? 'horizontal' : 'vertical';
+
+                            return (
+                              <div style={{
+                                ...commonStyle,
+                                fontSize: fontSize,
+                                padding: '4px',
+                                height: '100%',
+                                width: '100%',
+                                display: 'flex',
+                                flexDirection: layout === 'horizontal' ? 'row' : 'column',
+                                alignItems: layout === 'horizontal' ? 'center' : 'flex-start',
+                                justifyContent: 'flex-start',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                zIndex: 999999
+                              }}>
+                                <div style={{
+                                  marginBottom: layout === 'vertical' ? '2px' : '0',
+                                  marginRight: layout === 'horizontal' ? '4px' : '0',
+                                  color: textColor,
+                                  fontWeight: 'bold',
+                                  textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
+                                }}>
+                                  {event.title}
+                                </div>
+                                {appointment?.notes && (
+                                  <div style={{
+                                    fontSize: isShortAppointment ? '9px' : '9px',
+                                    opacity: 0.9,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    color: textColor,
+                                    fontWeight: 'normal',
+                                    textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
+                                  }}>
+                                    {appointment.notes}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  },
+                  resourceHeader: ({ resource }) => {
+                    // Custom resource header with color
+                    const color = practitionerColors[resource.resourceId] || calendarColor;
+                    return (
+                      <div
+                        className="rbc-header max-w-full"
+                        data-practitioner-id={resource.resourceId}
+                        data-resource-id={resource.resourceId}
+                        style={{
+                          backgroundColor: `${color}30`
+                        }}
+                      >
+                        <span>{resource.resourceTitle}</span>
+                      </div>
+                    );
+                  },
+                  timeGutterHeader: () => {
+                    // Keep time gutter header consistent with resource headers
+                    return (
+                      <div
+                        className="rbc-header max-w-full"
+                        style={{ backgroundColor: '#ffffff' }}
+                      >
+                        <span>Time</span>
+                      </div>
+                    );
+                  },
+                  // Add data-resource-id to time columns for CSS targeting
+                  timeSlotWrapper: ({ children, ...props }) => {
+                    // timeSlotWrapper doesn't reliably receive resource info in React Big Calendar
+                    // We'll rely on CSS-based solutions instead
+                    return (
+                      <div className="rbc-time-slot-wrapper">
+                        {children}
+                      </div>
+                    );
+                  },
+                  // Custom time gutter cell to add resource ID attributes
+                  timeGutterCell: (props) => {
+                    // Time gutter doesn't actually get resource props, just the time
+                    const { date } = props;
+                    return (
+                      <div
+                        data-date={date.toISOString()}
+                        className="time-gutter-cell"
+                      >
+                        {format(date, 'HH:mm')}
+                      </div>
+                    );
+                  },
+                  // Custom time indicator with practitioner color
+                  now: ({ resourceId, ...restProps }) => {
+                    // Always prioritize practitioner's custom color from database
+                    const color = resourceId && practitionerColors[resourceId]
+                      ? practitionerColors[resourceId]
+                      : calendarColor || '#ffffff';
+
+                    return (
+                      <div
+                        {...restProps}
+                        className="rbc-current-time-indicator"
+                        data-resource-id={resourceId} // Add resourceId for CSS targeting
+                        style={{
+                          backgroundColor: color,
+                          height: '2px', // Make the time indicator more visible
+                          zIndex: 5 // Ensure it's above other elements
+                        }}
+                      />
+                    );
+                  },
+                  // Style individual day columns
+                  dayWrapper: ({ resource, children }) => {
+                    if (resource) {
+                      const color = practitionerColors[resource.resourceId];
+
+                      if (color) {
+                        return (
+                          <div
+                            style={{
+                              backgroundColor: `${color}15`, // dayWrapper always light
+                              height: '100%'
+                            }}
+                            data-practitioner-id={resource.resourceId}
+                          >
+                            {children}
+                          </div>
+                        );
+                      }
+                    }
+                    return <>{children}</>;
+                  },
+
+                  // Add a wrapper for resources to style entire columns
+                  resourceWrapper: ({ resource, children }) => {
+                    if (!resource) return <>{children}</>;
+
+                    const color = practitionerColors[resource.resourceId];
+
+                    if (color) {
+                      return (
+                        <div
+                          className="resource-wrapper"
+                          style={{
+                            height: '100%',
+                            backgroundColor: `${color}10`
+                          }}
+                          data-resource-id={resource.resourceId}
+                        >
+                          {children}
+                        </div>
+                      );
+                    }
+                    return <>{children}</>;
+                  },
+                  slotPropGetter: (date, resourceId) => {
+                    // Style each time slot according to the practitioner's custom color from CalendarSettings
+                    if (resourceId) {
+                      // Get the practitioner's specific color from their calendar settings
+                      const color = practitionerColors[resourceId];
+                      const isToday = isSameDay(date, new Date());
+
+
+
+                      // Only apply styles if we have a valid practitioner color
+                      if (color) {
+                        return {
+                          'data-resource-id': resourceId,
+                          'data-is-today': isToday ? 'true' : 'false',
+                          className: `practitioner-slot practitioner-${resourceId} ${isToday ? 'today-slot' : ''}`,
+                          style: {
+                            backgroundColor: `${color}${isToday ? '30' : '15'} !important`,
+                            position: 'relative',
+                            background: `${color}${isToday ? '30' : '15'} !important`,
+                            // Use CSS custom properties to force the color
+                            '--practitioner-color': color,
+                            '--practitioner-bg': `${color}${isToday ? '30' : '15'}`,
+                            '--practitioner-border': `${isToday ? color : `${color}40`}`,
+                          }
+                        };
+                      }
+                    }
+                    return {};
+                  },
+                  slotGroupPropGetter: (date, resourceId) => {
+                    // This prop getter is specifically for slot groups (rows of time slots)
+                    if (resourceId) {
+                      const color = practitionerColors[resourceId];
+                      const isToday = isSameDay(date, new Date());
+
+                      // Log what color we're using for slot groups
+                      if (isToday) {
+                        console.log(`SLOT GROUP for ${resourceId}: using color ${color}, practitionerColors:`, practitionerColors);
+                      }
+
+                      // Only apply style if we have a valid practitioner color
+                      if (color) {
+                        return {
+                          className: `custom-time-slot-group ${isToday ? 'is-today' : ''}`,
+                          'data-resource-id': resourceId,
+                          style: {
+                            backgroundColor: `${color}${isToday ? '30' : '15'}`,
+                            position: 'relative',
+                          }
+                        };
+                      }
+                    }
+                    return {};
+                  }
+                }}
+                resources={(() => {
+                  console.log('DEBUG: Calendar resources being passed:', filteredResources);
+                  console.log('DEBUG: Practitioner colors available:', practitionerColors);
+                  return filteredResources;
+                })()}
+                draggableAccessor={() => true}
+                onEventDrop={({ event, start, end, resourceId }) => {
+                  const newDuration = Math.round((end.getTime() - start.getTime()) / 60000);
+                  handleFormSubmit({
+                    ...event.appointment,
+                    startTime: start,
+                    endTime: end,
+                    duration: newDuration,
+                    practitionerId: resourceId,
+                  });
+                }}
+                onEventResize={({ event, start, end }) => {
+                  const newDuration = Math.round((end.getTime() - start.getTime()) / 60000);
+                  handleFormSubmit({
+                    ...event.appointment,
+                    startTime: start,
+                    endTime: end,
+                    duration: newDuration,
+                  });
+                }}
+                dragFromOutsideItem={(item) => {
+                  try {
+                    const dataRaw = (window.event as DragEvent)?.dataTransfer?.getData('text/plain');
+                    if (!dataRaw) return null;
+
+                    const data = JSON.parse(dataRaw);
+                    if (data?.type === 'PENDING') {
+                      const pending = pendingAppointments.find(p => p.id === data.appointmentId);
+                      if (!pending) return null;
+
+                      const type = typeof pending.type === 'object' && pending.type !== null
+                        ? pending.type
+                        : treatmentTypes.find(t => t.name === String(pending.type));
+                      const duration = type?.duration || 30;
+
+                      return {
+                        id: pending.id,
+                        title: pending.patient?.name || 'Unknown patient',
+                        start: new Date(),
+                        end: new Date(Date.now() + duration * 60000),
+                        resourceId: null,
+                        appointment: pending,
+                        type: type
+                      };
+                    }
+                    return null;
+                  } catch (error) {
+                    console.error('Error in dragFromOutsideItem:', error);
+                    return null;
+                  }
+                }}
+                onDropFromOutside={({ start, end, resource }) => {
+                  try {
+                    const dataRaw = (window.event as DragEvent)?.dataTransfer?.getData('text/plain');
+                    if (!dataRaw) return;
+
+                    const data = JSON.parse(dataRaw);
+                    if (data?.type === 'PENDING') {
+                      const pending = pendingAppointments.find(p => p.id === data.appointmentId);
+                      if (!pending) return;
+
+                      const practitionerId = resource?.resourceId || resource;
+                      const type = typeof pending.type === 'object' && pending.type !== null
+                        ? pending.type
+                        : treatmentTypes.find(t => t.name === String(pending.type));
+                      const duration = pending.duration || type?.duration || 30;
+                      const endTime = new Date(start.getTime() + duration * 60000);
+
+                      // Create new appointment instead of updating
+                      handleFormSubmit({
+                        patientId: pending.patientId,
+                        practitionerId,
+                        startTime: start,
+                        endTime: endTime,
+                        duration,
+                        type: type || treatmentTypes.find(t => t.name === String(pending.type)) || treatmentTypes[0],
+                        status: 'SCHEDULED',
+                        notes: pending.notes
+                      }).then(() => {
+                        // Delete the pending appointment after successful creation
+                        fetch(`/api/pending-appointments?id=${pending.id}`, {
+                          method: 'DELETE'
+                        }).then(() => {
+                          fetchPendingAppointments();
+                        });
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Error in onDropFromOutside:', error);
+                  }
+                }}
+                dayLayoutAlgorithm="no-overlap"
+                formats={{
+                  weekdayFormat: (date, culture, localizer) => {
+                    const day = localizer.format(date, 'EEEE', culture).toLowerCase();
+                    return visibleDays.includes(day) ? localizer.format(date, 'EEEE', culture) : '';
+                  },
+                  // OVERRIDE ALL TIME FORMATS TO RETURN EMPTY STRINGS - NO TIMES ANYWHERE
+                  eventTimeRangeFormat: () => '',
+                  eventTimeRangeStartFormat: () => '',
+                  eventTimeRangeEndFormat: () => '',
+                  timeGutterFormat: (date, culture, localizer) => localizer.format(date, 'HH:mm', culture), // Keep time gutter for navigation
+                  selectRangeFormat: () => '',
+                  agendaTimeFormat: () => '',
+                  agendaTimeRangeFormat: () => '',
+                  dayFormat: 'dd',
+                  dayRangeHeaderFormat: () => '',
+                  dayHeaderFormat: (date, culture, localizer) => {
+                    return localizer.format(date, 'EEEE dd/MM', culture);
+                  },
+                  monthHeaderFormat: 'MMMM yyyy'
+                }}
+                dayPropGetter={(date, resourceId) => {
+                  // Style each day column according to the practitioner's color from CalendarSettings
+                  const day = format(date, 'EEEE').toLowerCase();
+                  const isToday = isSameDay(date, new Date());
+                  const isVisible = visibleDays.includes(day);
+
+                  if (resourceId) {
+                    // Always use the practitioner's specific color from the CalendarSettings table
+                    const color = practitionerColors[resourceId];
+
+                    // Log today's column color for debugging
+                    if (isToday) {
+                      console.log(`TODAY'S COLUMN for ${resourceId}: using color ${color} (no fallback)`);
+                    }
+
+                    // Only apply styles if we have a valid practitioner color
+                    if (color) {
+                      return {
+                        className: isVisible ? 'rbc-day-with-custom-bg' : 'hidden',
+                        'data-resource-id': resourceId,
+                        'data-is-today': isToday ? 'true' : 'false',
+                        style: {
+                          display: isVisible ? 'block' : 'none',
+                          backgroundColor: `${color}${isToday ? '30' : '15'}`, // Today darker, others light
+                          position: 'relative'
+                        }
+                      };
+                    }
+                  }
+
+                  return {
+                    className: isVisible ? '' : 'hidden',
+                    style: {
+                      display: isVisible ? 'block' : 'none'
+                    }
+                  };
+                }}
+              />
+            </Card>
+          </div>
+
+          {tooltipData && (
+            <div
+              className="fixed z-[9999] bg-white text-black p-3 rounded-lg shadow-xl border border-gray-200 text-sm pointer-events-none max-w-sm"
+              style={{
+                left: Math.min(tooltipData.x, window.innerWidth - 300),
+                top: Math.max(10, tooltipData.y - 10),
+                opacity: 1,
+                transform: 'translate3d(0, 0, 0)',
+                transition: 'all 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
+                willChange: 'transform, opacity',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+              }}
+            >
+              {tooltipData.content}
+            </div>
+          )}
+
+          {/* Pending Appointments Mini-Calendar */}
+          <div className="w-80 border-l bg-background my-4 rounded-lg">
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold">Pending Appointments</h2>
+            </div>
+            <div className="h-[calc(100vh-200px)] overflow-auto">
+              <div className="p-2">
+                {pendingAppointments.length === 0 ? (
+                  <p className="text-muted-foreground p-4">No pending appointments</p>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingAppointments.map((appointment) => {
+                      const type = typeof appointment.type === 'object' && appointment.type !== null
+                        ? appointment.type
+                        : treatmentTypes.find(t => t.name === String(appointment.type));
+                      const patient = patients.find(p => p.id === appointment.patientId);
+                      return (
+                        <div
+                          key={appointment.id}
+                          className="p-2 rounded cursor-move"
+                          style={{
+                            backgroundColor: type?.color || '#888888',
+                            color: '#fff',
+                            border: '1px solid #222',
+                            transition: 'all 0.15s ease-in-out',
+                            transform: 'translateZ(0)',
+                          }}
+                          draggable
+                          onContextMenu={(e) => { e.preventDefault(); setPendingContextMenu({ x: e.clientX, y: e.clientY, pending: appointment }); }}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify({
+                              type: 'PENDING',
+                              appointmentId: appointment.id
+                            }));
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium">
+                                {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown patient'}
+                              </div>
+                            </div>
+                            <div className="text-xs opacity-75">
+                              {appointment.createdAt ? new Date(appointment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}
+                            </div>
+                          </div>
+                          <div className="text-sm mt-1">
+                            {typeof appointment.type === 'string' ? appointment.type : appointment.type?.name || ''}
+                          </div>
+                          {appointment.notes && (
+                            <p className="text-xs opacity-75 mt-1">{appointment.notes}</p>
+                          )}
+                          {appointment.duration && (
+                            <p className="text-xs opacity-75 mt-1">Duration: {appointment.duration} minutes</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Appointment Form Dialog */}
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-[600px] bg-background">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedAppointment ? 'Edit Appointment' : 'New Appointment'}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedAppointment
+                    ? 'Edit the details of your appointment.'
+                    : 'Fill in the details to create a new appointment.'}
+                </DialogDescription>
+              </DialogHeader>
+              <EnhancedAppointmentForm
+                initialData={selectedAppointment || undefined}
+                onSubmit={handleFormSubmit}
+                onCancel={handleFormCancel}
+                patients={[
+                  ...individualPatients.map((p) => ({
+                    id: p.id,
+                    patientCode: p.patientCode,
+                    firstName: p.firstName,
+                    lastName: p.lastName,
+                    dateOfBirth: p.dateOfBirth,
+                    email: p.email,
+                    phone: p.phone,
+                    familyHeadCode: p.familyHeadCode,
+                    familyPosition: p.familyPosition,
+                    isDisabled: p.isDisabled
+                  })),
+                  ...familyGroups.flatMap(family =>
+                    family.patients.map((p) => ({
+                      id: p.id,
+                      patientCode: p.patientCode,
+                      firstName: p.firstName,
+                      lastName: p.lastName,
+                      dateOfBirth: p.dateOfBirth,
+                      email: p.email,
+                      phone: p.phone,
+                      familyHeadCode: p.familyHeadCode,
+                      familyPosition: p.familyPosition,
+                      isDisabled: p.isDisabled
+                    }))
+                  )
+                ]}
+                familyGroups={familyGroups}
+                selectedDate={selectedDate}
+                initialPractitionerId={selectedAppointmentPractitionerId || selectedPractitionerId}
+                practitioners={selectedDate ? getAvailablePractitioners(selectedDate) : practitioners}
+              />
+              <div className="flex justify-center mt-4">
+                {selectedAppointment ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      className="w-10 h-10 p-0"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`/api/appointments?id=${selectedAppointment.id}`, {
+                            method: 'DELETE',
+                          });
+                          if (!response.ok) throw new Error('Failed to delete appointment');
+                          toast.success('Appointment deleted successfully');
+                          setIsFormOpen(false);
+                          await fetchAppointments();
+                        } catch (error) {
+                          toast.error('Failed to delete appointment');
+                        }
+                      }}
+                    >
+                      🗑️
+                    </Button>
+                    <Button variant="outline" onClick={handleFormCancel}>
+                      ❌
+                    </Button>
+                    <Button type="submit" form="appointment-form">
+                      💾
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleFormCancel}>
+                      ❌
+                    </Button>
+                    <Button type="submit" form="appointment-form">
+                      💾
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {contextMenu && (
+            <ContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              appointment={contextMenu.appointment}
+              onClose={() => setContextMenu(null)}
+            />
+          )}
+          {slotContextMenu && (
+            <SlotContextMenu
+              x={slotContextMenu.x}
+              y={slotContextMenu.y}
+              slotDate={slotContextMenu.slotDate}
+              resourceId={slotContextMenu.resourceId}
+              onClose={() => setSlotContextMenu(null)}
+            />
+          )}
+          {pendingContextMenu && (
+            <PendingMenu x={pendingContextMenu.x} y={pendingContextMenu.y} pending={pendingContextMenu.pending} onClose={() => setPendingContextMenu(null)} />
+          )}
+        </>
+      )}
+    </div>
+  );
+}

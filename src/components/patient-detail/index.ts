@@ -1,0 +1,5 @@
+export { default as PatientInfoCard } from './PatientInfoCard'
+export { default as PatientCenterPanel } from './PatientCenterPanel'
+export { default as PatientEditModal } from './PatientEditModal'
+export { default as EmailModal } from './EmailModal'
+export { FilesModal } from './FilesModal' 

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "esnext",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": "src",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowJs": true
+  },
+  "include": [
+    "src/data/dental-codes/**/*.ts",
+    "src/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
