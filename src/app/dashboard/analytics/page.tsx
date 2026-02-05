@@ -87,13 +87,13 @@ export default function AnalyticsPage() {
             ) : (
               filteredTimeline.map(event => (
                 <div key={event.id} className="relative">
-                  <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full bg-blue-500"></div>
+                  <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full bg-red-500"></div>
                   <div className="ml-2">
                     <div className="text-xs text-gray-400">{new Date(event.createdAt).toLocaleString()}</div>
                     <div className="text-sm">
                       <span className="font-medium">{event.type.replace(/_/g, ' ')}</span>
                       {event.order && (
-                        <span className="ml-2 text-blue-700">[{event.order.orderNumber}]</span>
+                        <span className="ml-2 text-red-500">[{event.order.orderNumber}]</span>
                       )}
                       {event.orderItem && (
                         <span className="ml-2 text-purple-700">[{event.orderItem.itemName}]</span>

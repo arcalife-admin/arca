@@ -13,7 +13,6 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { C002CheckupModal } from './C002CheckupModal';
-import { useTimer } from '@/contexts/TimerContext';
 
 interface DentalCode {
   id: string;
@@ -191,9 +190,6 @@ export function TreatmentModal({
   // C002 modal state
   const [showC002Modal, setShowC002Modal] = useState(false);
 
-  // Timer context for M03 auto-calculation
-  const { time: timerTime, isRunning: timerIsRunning } = useTimer();
-
   // Initialize form data
   useEffect(() => {
     if (treatmentData) {
@@ -254,29 +250,6 @@ export function TreatmentModal({
     }
   }, [formData.codeId, availableCodes]);
 
-  // Auto-calculate sessions for M03 codes when timer is paused
-  useEffect(() => {
-    if (selectedCode?.code === 'M03' && !timerIsRunning && timerTime > 0) {
-      // Timer is paused and has time - calculate sessions based on 5-minute units
-      const minutes = Math.floor(timerTime / 60);
-      const seconds = timerTime % 60;
-      const totalMinutes = minutes + (seconds / 60);
-
-      // Round to nearest 5-minute unit as per M03 requirements
-      const roundedMinutes = Math.round(totalMinutes / 5) * 5;
-      const calculatedSessions = Math.max(1, Math.ceil(roundedMinutes / 5));
-
-      // Only update if we don't have a tooth number (since sessions are only relevant for non-tooth-specific treatments)
-      // and if the calculated sessions are different from current sessions to avoid unnecessary updates
-      if (!formData.toothNumber && formData.sessions !== calculatedSessions) {
-        setFormData(prev => ({
-          ...prev,
-          sessions: calculatedSessions,
-          timeMultiplier: calculatedSessions
-        }));
-      }
-    }
-  }, [selectedCode, timerIsRunning, timerTime, formData.toothNumber, formData.sessions]);
 
   // Calculate cost based on selected code and form inputs
   useEffect(() => {
@@ -796,11 +769,6 @@ export function TreatmentModal({
                                         (units of {selectedCode.timeUnit} minutes)
                                       </span>
                                     )}
-                                    {selectedCode.code === 'M03' && !timerIsRunning && timerTime > 0 && (
-                                      <span className="text-sm text-blue-600 font-normal ml-2">
-                                        (auto-calculated from timer)
-                                      </span>
-                                    )}
                                   </Label>
                                   <Input
                                     id="timeMultiplier"
@@ -810,24 +778,13 @@ export function TreatmentModal({
                                     value={formData.timeMultiplier || ''}
                                     onChange={(e) => updateFormData('timeMultiplier', parseInt(e.target.value) || null)}
                                     placeholder={`Number of ${selectedCode.timeUnit || 5}-minute units`}
-                                    className={selectedCode.code === 'M03' && !timerIsRunning && timerTime > 0 ? 'border-blue-300 bg-blue-50' : ''}
                                   />
-                                  {selectedCode.code === 'M03' && !timerIsRunning && timerTime > 0 && (
-                                    <p className="text-xs text-blue-600">
-                                      ⏱️ Time multiplier auto-calculated from paused timer. Rounded to nearest 5-minute unit per M03 requirements.
-                                    </p>
-                                  )}
                                 </div>
 
                                 {!formData.toothNumber && (
                                   <div className="space-y-2">
                                     <Label htmlFor="sessions">
                                       Number of Sessions
-                                      {selectedCode?.code === 'M03' && !timerIsRunning && timerTime > 0 && (
-                                        <span className="text-sm text-blue-600 font-normal ml-2">
-                                          (auto-calculated from timer: {Math.floor(timerTime / 60)}:{String(timerTime % 60).padStart(2, '0')})
-                                        </span>
-                                      )}
                                     </Label>
                                     <Input
                                       id="sessions"
@@ -836,13 +793,7 @@ export function TreatmentModal({
                                       value={formData.sessions || ''}
                                       onChange={(e) => updateFormData('sessions', parseInt(e.target.value) || null)}
                                       ref={sessionsRef}
-                                      className={selectedCode?.code === 'M03' && !timerIsRunning && timerTime > 0 ? 'border-blue-300 bg-blue-50' : ''}
                                     />
-                                    {selectedCode?.code === 'M03' && !timerIsRunning && timerTime > 0 && (
-                                      <p className="text-xs text-blue-600">
-                                        ⏱️ Sessions auto-calculated from paused timer. Rounded to nearest 5-minute unit per M03 requirements.
-                                      </p>
-                                    )}
                                   </div>
                                 )}
                               </div>

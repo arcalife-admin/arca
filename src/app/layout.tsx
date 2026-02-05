@@ -9,8 +9,8 @@ import { Toaster } from '@/components/ui/toaster'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Dentiva',
-  description: 'Dental Practice Management System',
+  title: 'Arca Life',
+  description: 'Arca Life Clinic Management System',
 }
 
 export default function RootLayout({

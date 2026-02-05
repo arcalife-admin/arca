@@ -16,7 +16,7 @@ interface Patient {
   email?: string;
   phone?: string;
   address: { display_name: string };
-  bsn: string;
+  cnp: string;
   patientCode: string;
 }
 
@@ -144,7 +144,7 @@ export default function PrintPatientCardPage() {
               <div className="space-y-1">
                 <div><strong>Name: </strong>{patient.firstName} {patient.lastName}</div>
                 <div><strong>Patient code: </strong>{patient.patientCode}</div>
-                <div><strong>BSN: </strong>{patient.bsn}</div>
+                <div><strong>CNP: </strong>{patient.cnp}</div>
                 <div><strong>DOB: </strong>{new Date(patient.dateOfBirth).toLocaleDateString()}</div>
                 <div><strong>Gender: </strong>{patient.gender}</div>
                 {patient.email && <div><strong>Email: </strong>{patient.email}</div>}

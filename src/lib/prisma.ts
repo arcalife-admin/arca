@@ -11,11 +11,30 @@ const createPrismaClient = () => {
     throw new Error('PrismaClient cannot be used in the browser');
   }
 
+  // Validate DATABASE_URL is set
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+
+  // Handle Supabase connection pooler - disable prepared statements
+  let databaseUrl = process.env.DATABASE_URL;
+  
+  // If using Supabase pooler (port 6543), add pgbouncer parameter to disable prepared statements
+  if (databaseUrl.includes(':6543/') && !databaseUrl.includes('pgbouncer=true')) {
+    databaseUrl += (databaseUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  }
+
+  // Log connection info in development (masked)
+  if (process.env.NODE_ENV === 'development') {
+    const maskedUrl = databaseUrl.replace(/:([^:@]+)@/, ':****@');
+    console.log('🔌 Prisma Client initialized with:', maskedUrl);
+  }
+
   const client = new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: databaseUrl,
       },
     },
   });
@@ -46,7 +65,10 @@ const createPrismaClient = () => {
           error?.message?.includes('pool') ||
           error?.message?.includes('prepared statement') ||
           error?.message?.includes('already exists') ||
-          error?.message?.includes('42P05'); // PostgreSQL prepared statement error code
+          error?.message?.includes('42P05') || // PostgreSQL prepared statement error code
+          error?.message?.includes('26000') || // PostgreSQL error: prepared statement does not exist
+          error?.message?.includes('Tenant or user not found') || // Supabase specific error
+          error?.message?.includes('FATAL'); // PostgreSQL fatal errors
 
         if (isConnectionError && attempt < maxRetries) {
           console.warn(`Database operation attempt ${attempt} failed, retrying...`, error.message);

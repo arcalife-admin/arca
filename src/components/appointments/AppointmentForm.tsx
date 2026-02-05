@@ -24,7 +24,7 @@ interface Patient {
   email?: string;
   phone?: string;
   address?: string;
-  bsn?: string;
+  cnp?: string;
   country?: string;
 }
 
@@ -69,7 +69,7 @@ function PatientInfoModal({ patient, onClose }: { patient: any, onClose: () => v
           <div><b>Email:</b> {patient.email || '-'}</div>
           <div><b>Phone:</b> {patient.phone || '-'}</div>
           <div><b>Address:</b> {patient.address || '-'}</div>
-          <div><b>BSN:</b> {patient.bsn || '-'}</div>
+          <div><b>CNP:</b> {patient.cnp || '-'}</div>
           <div><b>Country:</b> {patient.country || '-'}</div>
         </div>
       </div>

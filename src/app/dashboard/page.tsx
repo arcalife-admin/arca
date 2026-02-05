@@ -342,7 +342,7 @@ export default function DashboardPage() {
         >
           <Card className="h-[240px] flex flex-col">
             <CardHeader className="flex flex-row items-center space-y-0 pb-3 flex-shrink-0">
-              <Edit3 className="h-5 w-5 mr-2 text-blue-600" />
+              <Edit3 className="h-5 w-5 mr-2 text-red-500" />
               <CardTitle className="text-lg">Quick Note</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col flex-1 min-h-0">
@@ -362,7 +362,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-500 mt-2 flex-shrink-0 flex items-center">
                     <span>Auto-saves to your personal account. Only visible to you.</span>
                     {updateDashboardMutation.isPending && (
-                      <span className="ml-2 text-blue-500">Saving...</span>
+                      <span className="ml-2 text-red-500">Saving...</span>
                     )}
                   </p>
                 </>
@@ -472,7 +472,7 @@ export default function DashboardPage() {
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center space-x-2 flex-1 text-sm hover:text-blue-600 min-w-0"
+                          className="flex items-center space-x-2 flex-1 text-sm hover:text-red-500 min-w-0"
                         >
                           <ExternalLink className="h-4 w-4 flex-shrink-0" />
                           <span className="truncate">{link.title}</span>

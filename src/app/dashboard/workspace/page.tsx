@@ -1,17 +1,24 @@
 'use client';
 
-import React from 'react';
-import SplitPane from '@/components/layout/SplitPane';
-import TodayAppointments from '@/components/TodayAppointments';
-import DynamicPane from '@/components/layout/DynamicPane';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { setCookie } from '@/lib/cookies';
 
 export default function WorkspacePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Enable workspace view and redirect to dashboard
+    setCookie('workspaceViewEnabled', 'true');
+    router.replace('/dashboard');
+  }, [router]);
+
   return (
-    <SplitPane initialPrimarySize={300} minPrimarySize={250}>
-      {/* Left – today appointments */}
-      <TodayAppointments />
-      {/* Right – empty placeholder */}
-      <DynamicPane />
-    </SplitPane>
+    <div className="flex items-center justify-center h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Redirecting to workspace view...</p>
+      </div>
+    </div>
   );
 } 

@@ -41,7 +41,6 @@ model Organization {
   taskBoards           TaskBoard[]
   users                User[]
   vendors              Vendor[]
-  fluorideFlavors      FluorideFlavor[]
 }
 
 model User {
@@ -68,7 +67,7 @@ model User {
   boardMemberships           BoardMember[]          @relation("BoardMember")
   calendarSettings           CalendarSettings?
   chatRooms                  ChatParticipant[]
-  dentalProcedures           DentalProcedure[]
+  surgicalProcedures         SurgicalProcedure[]
   financialReports           FinancialReport[]      @relation("UserFinancialReport")
   reviewedLeaveRequests      LeaveRequest[]         @relation("LeaveRequestReviewer")
   leaveRequests              LeaveRequest[]         @relation("LeaveRequestUser")
@@ -125,18 +124,15 @@ model Patient {
   email                  String?
   phone                  String?
   address                Json
-  bsn                    String
+  cnp                    String
   country                String
   healthInsurance        Json?
   medicalHistory         Json?
-  dentalHistory          Json?
+  surgicalHistory        Json?
   asaScore               Int?
-  ppsScores              Json?
-  ppsTreatment           String?
   statusPraesens         Json?
-  dentalChart            Json?
-  periodontalCharts      Json[]
-  recallTerm             Int?
+  beforeAfterPhotos      Json?
+  surgicalNotes          Json?
   organizationId         String
   isDisabled             Boolean                 @default(false)
   disabledReason         String?
@@ -150,8 +146,7 @@ model Patient {
   appointments           Appointment[]
   asaHistory             AsaRecord[]
   carePlan               CarePlan?
-  cleaningRecallHistory  CleaningRecallRecord[]
-  dentalProcedures       DentalProcedure[]
+  surgicalProcedures     SurgicalProcedure[]
   files                  File[]
   images                 Image[]
   notes                  Note[]
@@ -159,8 +154,6 @@ model Patient {
   organization           Organization            @relation(fields: [organizationId], references: [id])
   statusHistory          PatientStatusRecord[]
   pendingAppointments    PendingAppointment[]
-  ppsHistory             PpsRecord[]
-  screeningRecallHistory ScreeningRecallRecord[]
   shopPurchases          ShopPurchase[]
   tasks                  Task[]
   treatments             Treatment[]
@@ -172,51 +165,52 @@ model Patient {
   @@index([familyHeadCode])
 }
 
-model DentalCode {
-  id           String            @id @default(cuid())
-  code         String            @unique
+model SurgicalProcedureCode {
+  id           String              @id @default(cuid())
+  code         String              @unique
   description  String
-  points       Int?
-  rate         Float?
+  price        Float?
   category     String
   requirements Json
   section      String
   subSection   String
-  patientType  String
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  procedures   DentalProcedure[]
+  patientType  String?
+  duration     Int?                // Duration in minutes
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  procedures   SurgicalProcedure[]
 }
 
-model DentalProcedure {
-  id              String         @id @default(cuid())
+model SurgicalProcedure {
+  id              String                 @id @default(cuid())
   patientId       String
   codeId          String
   date            DateTime
   notes           String?
-  status          String         @default("PENDING")
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  status          String                 @default("PENDING")
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
   practitionerId  String?
-  toothNumber     Int?
-  quantity        Int            @default(1)
-  invoiceEmail    Boolean        @default(false)
-  invoicePrinted  Boolean        @default(false)
-  isPaid          Boolean        @default(false)
+  quantity        Int                    @default(1)
+  invoiceEmail    Boolean                @default(false)
+  invoicePrinted  Boolean                @default(false)
+  isPaid          Boolean                @default(false)
   paidAt          DateTime?
   paymentAmount   Float?
   paymentMethod   PaymentMethod?
   cost            Float?
-  subSurfaces     String[]
-  fillingMaterial String?
-  code            DentalCode     @relation(fields: [codeId], references: [id])
-  patient         Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  practitioner    User?          @relation(fields: [practitionerId], references: [id])
+  bodyArea        String?                // e.g., "face", "breast", "body"
+  procedureType   String?                // e.g., "rhinoplasty", "liposuction"
+  anesthesiaType  String?                // e.g., "local", "general"
+  code            SurgicalProcedureCode  @relation(fields: [codeId], references: [id])
+  patient         Patient                @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  practitioner    User?                  @relation(fields: [practitionerId], references: [id])
 
   @@index([patientId])
   @@index([codeId])
   @@index([practitionerId])
-  @@unique([patientId, toothNumber, codeId])
+  @@index([bodyArea])
+  @@index([procedureType])
 }
 
 model Appointment {
@@ -268,8 +262,8 @@ model Image {
   id          String       @id @default(cuid())
   url         String
   type        ImageType
-  side        String?
-  toothNumber Int?
+  bodyArea    String?      // e.g., "face", "breast", "abdomen"
+  view        String?      // e.g., "front", "side", "back"
   dateTaken   DateTime
   notes       String?
   patientId   String
@@ -401,46 +395,6 @@ model AsaRecord {
   @@index([patientId])
 }
 
-model PpsRecord {
-  id        String       @id @default(cuid())
-  quadrant1 Int
-  quadrant2 Int
-  quadrant3 Int
-  quadrant4 Int
-  treatment PPSTreatment
-  notes     String?
-  date      DateTime     @default(now())
-  patientId String
-  createdBy String
-  patient   Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  @@index([patientId])
-}
-
-model ScreeningRecallRecord {
-  id              String   @id @default(cuid())
-  screeningMonths Int
-  notes           String?
-  date            DateTime @default(now())
-  patientId       String
-  createdBy       String
-  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  @@index([patientId])
-}
-
-model CleaningRecallRecord {
-  id             String   @id @default(cuid())
-  cleaningMonths Int
-  procedureCode  String
-  notes          String?
-  date           DateTime @default(now())
-  patientId      String
-  createdBy      String
-  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  @@index([patientId])
-}
 
 model CarePlan {
   id          String   @id @default(cuid())
@@ -1443,17 +1397,6 @@ model ManagerPersonalLink {
   @@index([personalNotesId])
 }
 
-model FluorideFlavor {
-  id             String      @id @default(uuid())
-  organizationId String
-  name           String     @db.VarChar(64)
-  color          String     @db.VarChar(8)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, name])
-}
 
 model ProcedureBackup {
   id             String   @id @default(cuid())
@@ -1469,17 +1412,16 @@ model ProcedureBackup {
 enum UserRole {
   ORGANIZATION_OWNER
   MANAGER
-  DENTIST
-  HYGIENIST
+  PLASTIC_SURGEON
+  SURGEON
+  NURSE
   RECEPTIONIST
   ASSISTANT
-  ORTHODONTIST
-  PERIODONTOLOGIST
-  IMPLANTOLOGIST
-  ENDODONTIST
   ANESTHESIOLOGIST
-  DENTAL_TECHNICIAN
-  DENTAL_LAB_TECHNICIAN
+  AESTHETIC_NURSE
+  MEDICAL_ASSISTANT
+  COUNSELOR
+  PHOTOGRAPHER
 }
 
 enum Gender {
@@ -1504,14 +1446,16 @@ enum TreatmentStatus {
 }
 
 enum ImageType {
-  BITEWING
-  OPG
-  SOLO
+  BEFORE_PHOTO
+  AFTER_PHOTO
+  PRE_OPERATIVE
+  POST_OPERATIVE
   XRAY
-  INTRAORAL
-  EXTRAORAL
-  PANORAMIC
-  CBCT
+  CT_SCAN
+  MRI
+  ULTRASOUND
+  DOCUMENTATION
+  OTHER
 }
 
 enum ChatType {
@@ -1532,11 +1476,6 @@ enum FileType {
   OTHER
 }
 
-enum PPSTreatment {
-  NONE
-  PREVENTIVE
-  PERIODONTAL
-}
 
 enum TaskType {
   TASK

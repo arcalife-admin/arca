@@ -8,7 +8,7 @@ const patientSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
+  gender: z.enum(['MALE', 'FEMALE']),
   email: z.string().email('Invalid email address').optional(),
   phone: z.string().optional(),
   address: z.object({
@@ -16,7 +16,7 @@ const patientSchema = z.object({
     lat: z.string(),
     lon: z.string(),
   }),
-  bsn: z.string().min(1, 'BSN is required'),
+  cnp: z.string().min(1, 'CNP is required'),
   country: z.string().default('Netherlands'),
   healthInsurance: z.object({
     provider: z.string().min(1, 'Provider is required'),
@@ -24,18 +24,13 @@ const patientSchema = z.object({
     coverageDetails: z.string().optional(),
     validUntil: z.string().min(1, 'Valid until date is required'),
   }).optional(),
-  dentalHistory: z.object({
-    previousWork: z.string(),
-    currentIssues: z.record(z.string()),
-    oralHygiene: z.record(z.string()),
-  }).optional(),
 })
 
 const patientUpdateSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
+  gender: z.enum(['MALE', 'FEMALE']),
   email: z.string().email('Invalid email address').or(z.literal('')).optional(),
   phone: z.string().or(z.literal('')).optional(),
   address: z.object({
@@ -43,7 +38,7 @@ const patientUpdateSchema = z.object({
     lat: z.string(),
     lon: z.string(),
   }).optional(),
-  bsn: z.string().min(1, 'BSN is required'),
+  cnp: z.string().min(1, 'CNP is required'),
   country: z.string().default('Netherlands'),
   allowEarlySpotContact: z.boolean().optional(),
   isLongTermCareAct: z.boolean().optional(),
@@ -80,15 +75,6 @@ export async function GET(
       },
       include: {
         asaHistory: {
-          orderBy: { date: 'desc' }
-        },
-        ppsHistory: {
-          orderBy: { date: 'desc' }
-        },
-        screeningRecallHistory: {
-          orderBy: { date: 'desc' }
-        },
-        cleaningRecallHistory: {
           orderBy: { date: 'desc' }
         },
         carePlan: true,
@@ -129,44 +115,8 @@ export async function GET(
             return {}
           }
         })() : patient.medicalHistory,
-      dentalHistory: typeof patient.dentalHistory === 'string' ?
-        (() => {
-          try {
-            return JSON.parse(patient.dentalHistory)
-          } catch {
-            return {}
-          }
-        })() : patient.dentalHistory,
-      ppsScores: typeof patient.ppsScores === 'string' ?
-        (() => {
-          try {
-            return JSON.parse(patient.ppsScores)
-          } catch {
-            return null
-          }
-        })() : patient.ppsScores,
-      ppsTreatment: typeof patient.ppsTreatment === 'string' ?
-        (() => {
-          try {
-            return JSON.parse(patient.ppsTreatment)
-          } catch {
-            return null
-          }
-        })() : patient.ppsTreatment,
       // Include the history records
       asaHistory: patient.asaHistory?.map(record => ({
-        ...record,
-        date: record.date.toISOString()
-      })) || [],
-      ppsHistory: patient.ppsHistory?.map(record => ({
-        ...record,
-        date: record.date.toISOString()
-      })) || [],
-      screeningRecallHistory: patient.screeningRecallHistory?.map(record => ({
-        ...record,
-        date: record.date.toISOString()
-      })) || [],
-      cleaningRecallHistory: patient.cleaningRecallHistory?.map(record => ({
         ...record,
         date: record.date.toISOString()
       })) || [],
@@ -220,7 +170,7 @@ export async function PATCH(
       gender: validatedData.gender,
       email: !validatedData.email ? null : validatedData.email,
       phone: !validatedData.phone ? null : validatedData.phone,
-      bsn: validatedData.bsn,
+      cnp: validatedData.cnp,
       country: validatedData.country,
     }
 
@@ -240,9 +190,6 @@ export async function PATCH(
       updateData.isLongTermCareAct = validatedData.isLongTermCareAct
     }
 
-    if (body.dentalHistory) {
-      updateData.dentalHistory = JSON.stringify(body.dentalHistory)
-    }
 
     if (body.statusPraesens !== undefined) {
       updateData.statusPraesens = body.statusPraesens
@@ -257,15 +204,6 @@ export async function PATCH(
       data: updateData,
       include: {
         asaHistory: {
-          orderBy: { date: 'desc' }
-        },
-        ppsHistory: {
-          orderBy: { date: 'desc' }
-        },
-        screeningRecallHistory: {
-          orderBy: { date: 'desc' }
-        },
-        cleaningRecallHistory: {
           orderBy: { date: 'desc' }
         }
       }
@@ -303,28 +241,8 @@ export async function PATCH(
             return undefined
           }
         })() : updatedPatient.medicalHistory,
-      dentalHistory: typeof updatedPatient.dentalHistory === 'string' ?
-        (() => {
-          try {
-            return JSON.parse(updatedPatient.dentalHistory as string)
-          } catch {
-            return undefined
-          }
-        })() : updatedPatient.dentalHistory,
       // Include the history records
       asaHistory: updatedPatient.asaHistory?.map(record => ({
-        ...record,
-        date: record.date.toISOString()
-      })) || [],
-      ppsHistory: updatedPatient.ppsHistory?.map(record => ({
-        ...record,
-        date: record.date.toISOString()
-      })) || [],
-      screeningRecallHistory: updatedPatient.screeningRecallHistory?.map(record => ({
-        ...record,
-        date: record.date.toISOString()
-      })) || [],
-      cleaningRecallHistory: updatedPatient.cleaningRecallHistory?.map(record => ({
         ...record,
         date: record.date.toISOString()
       })) || [],

@@ -5,20 +5,19 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import RadioPlayer from '@/components/RadioPlayer'
-import Timer from '@/components/Timer'
 import CallPlayer from '@/components/CallPlayer'
 import SafeSearchParams from '@/components/layout/SafeSearchParams'
 import { useTaskReminders } from '@/hooks/useTaskReminders'
-import { useRadio } from '@/contexts/RadioContext'
-import { useTimer } from '@/contexts/TimerContext'
 import { useCall } from '@/contexts/CallContext'
+import { getCookie, setCookie } from '@/lib/cookies'
+import SplitPane from '@/components/layout/SplitPane'
+import TodayAppointments from '@/components/TodayAppointments'
+import DynamicPane, { DynamicPaneRef } from '@/components/layout/DynamicPane'
 
 const navigation = [
-  { name: 'Workspace', href: '/dashboard/workspace', icon: '🖥️' },
   { name: 'Patients', href: '/dashboard/patients', icon: '👥' },
   { name: 'Calendar', href: '/dashboard/appointments', icon: '📅' },
-  { name: 'Imaging', href: '/dashboard/imaging', icon: '🦷' },
+  { name: 'Imaging', href: '/dashboard/imaging', icon: '📸' },
   { name: 'Chat', href: '/dashboard/chat', icon: '💬' },
 
   { name: 'Instructions', href: '/dashboard/instructions', icon: '📖' },
@@ -28,8 +27,6 @@ const navigation = [
   { name: 'Orders', href: '/dashboard/orders', icon: '📦' },
   { name: 'Tasks', href: '/dashboard/tasks', icon: '✅' },
   { name: 'Phone Calls', href: '/dashboard/phone-calls', icon: '📞' },
-  { name: 'Radio', href: '/dashboard/radio', icon: '🎧' },
-  { name: 'Timer', href: '/dashboard/timer', icon: '⏰' },
 ]
 
 interface DashboardLayoutProps {
@@ -45,29 +42,10 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false)
   const [avatarColor, setAvatarColor] = useState("#cfdbff") // Default color matches Prisma schema
   const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
+  const [isWorkspaceView, setIsWorkspaceView] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const dynamicPaneRef = useRef<DynamicPaneRef>(null)
 
-  // Get context setters and current state for floating button communication
-  const {
-    setShowFloatingButton: setRadioFloatingButton,
-    showFloatingButton: radioFloatingButton,
-    isPlaying: radioIsPlaying,
-    currentStationIndex: radioCurrentStationIndex,
-    volume: radioVolume,
-    togglePlay: radioTogglePlay,
-    nextStation: radioNextStation,
-    prevStation: radioPrevStation,
-    setVolume: radioSetVolume,
-    setStation: radioSetStation
-  } = useRadio()
-  const {
-    setShowFloatingButton: setTimerFloatingButton,
-    showFloatingButton: timerFloatingButton,
-    time: timerTime,
-    isRunning: timerIsRunning,
-    toggleTimer: timerToggleTimer,
-    resetTimer: timerResetTimer
-  } = useTimer()
   const { startCall } = useCall()
 
   // Check if this page is embedded in DynamicPane
@@ -135,6 +113,19 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
     fetchOrganization();
   }, [session?.user?.id]);
 
+  // Load workspace view preference from cookie
+  useEffect(() => {
+    const workspacePref = getCookie('workspaceViewEnabled');
+    setIsWorkspaceView(workspacePref === 'true');
+  }, []);
+
+  // Handle workspace toggle
+  const handleWorkspaceToggle = () => {
+    const newValue = !isWorkspaceView;
+    setIsWorkspaceView(newValue);
+    setCookie('workspaceViewEnabled', newValue.toString());
+  };
+
   // Listen for messages from embedded iframes and handle state synchronization
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -145,80 +136,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
         iframeWindows.current.add(sourceWindow);
       }
 
-      if (event.data?.type === 'toggleFloatingButton') {
-        const { component, show } = event.data;
-        if (component === 'radio') {
-          setRadioFloatingButton(show);
-        } else if (component === 'timer') {
-          setTimerFloatingButton(show);
-        }
-      } else if (event.data?.type === 'requestFloatingButtonState') {
-        // Respond with current floating button state
-        const { component } = event.data;
-        if (component === 'radio' && sourceWindow) {
-          sourceWindow.postMessage({
-            type: 'floatingButtonState',
-            component: 'radio',
-            show: radioFloatingButton
-          }, '*');
-        } else if (component === 'timer' && sourceWindow) {
-          sourceWindow.postMessage({
-            type: 'floatingButtonState',
-            component: 'timer',
-            show: timerFloatingButton
-          }, '*');
-        }
-      } else if (event.data?.type === 'requestRadioState') {
-        // Respond with current radio state
-        if (sourceWindow) {
-          sourceWindow.postMessage({
-            type: 'radioState',
-            isPlaying: radioIsPlaying,
-            currentStationIndex: radioCurrentStationIndex,
-            volume: radioVolume
-          }, '*');
-        }
-      } else if (event.data?.type === 'requestTimerState') {
-        // Respond with current timer state
-        if (sourceWindow) {
-          sourceWindow.postMessage({
-            type: 'timerState',
-            time: timerTime,
-            isRunning: timerIsRunning
-          }, '*');
-        }
-      } else if (event.data?.type === 'radioAction') {
-        // Handle radio actions from iframe
-        const { action, value } = event.data;
-        switch (action) {
-          case 'togglePlay':
-            radioTogglePlay();
-            break;
-          case 'nextStation':
-            radioNextStation();
-            break;
-          case 'prevStation':
-            radioPrevStation();
-            break;
-          case 'setVolume':
-            radioSetVolume(value);
-            break;
-          case 'setStation':
-            radioSetStation(value);
-            break;
-        }
-      } else if (event.data?.type === 'timerAction') {
-        // Handle timer actions from iframe
-        const { action } = event.data;
-        switch (action) {
-          case 'toggleTimer':
-            timerToggleTimer();
-            break;
-          case 'resetTimer':
-            timerResetTimer();
-            break;
-        }
-      } else if (event.data?.type === 'startCall') {
+      if (event.data?.type === 'startCall') {
         // Handle call requests from iframe
         const { patientData } = event.data;
         if (patientData) {
@@ -229,55 +147,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [
-    setRadioFloatingButton, setTimerFloatingButton,
-    radioFloatingButton, timerFloatingButton,
-    radioIsPlaying, radioCurrentStationIndex, radioVolume,
-    radioTogglePlay, radioNextStation, radioPrevStation, radioSetVolume, radioSetStation,
-    timerTime, timerIsRunning, timerToggleTimer, timerResetTimer,
-    startCall
-  ]);
-
-  // Broadcast radio state changes to all connected iframes
-  useEffect(() => {
-    const broadcastRadioState = () => {
-      iframeWindows.current.forEach(iframe => {
-        try {
-          iframe.postMessage({
-            type: 'radioState',
-            isPlaying: radioIsPlaying,
-            currentStationIndex: radioCurrentStationIndex,
-            volume: radioVolume
-          }, '*');
-        } catch (error) {
-          // Remove iframe if it's no longer accessible
-          iframeWindows.current.delete(iframe);
-        }
-      });
-    };
-
-    broadcastRadioState();
-  }, [radioIsPlaying, radioCurrentStationIndex, radioVolume]);
-
-  // Broadcast timer state changes to all connected iframes
-  useEffect(() => {
-    const broadcastTimerState = () => {
-      iframeWindows.current.forEach(iframe => {
-        try {
-          iframe.postMessage({
-            type: 'timerState',
-            time: timerTime,
-            isRunning: timerIsRunning
-          }, '*');
-        } catch (error) {
-          // Remove iframe if it's no longer accessible
-          iframeWindows.current.delete(iframe);
-        }
-      });
-    };
-
-    broadcastTimerState();
-  }, [timerTime, timerIsRunning]);
+  }, [startCall]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -324,30 +194,51 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <Link href="/dashboard">
-                  {orgLogoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={orgLogoUrl} alt="Organization Logo" className="h-8 w-auto" />
-                  ) : (
-                    <span className="text-lg font-bold">Dentiva</span>
-                  )}
-                </Link>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`${pathname === item.href
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                {isWorkspaceView ? (
+                  <button
+                    onClick={() => {
+                      // Navigate DynamicPane to dashboard using ref
+                      if (dynamicPaneRef.current) {
+                        dynamicPaneRef.current.navigateTo('dashboard');
+                      }
+                    }}
+                    className="cursor-pointer"
                   >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.name}
+                    {orgLogoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={orgLogoUrl} alt="Organization Logo" className="h-8 w-auto" />
+                    ) : (
+                      <span className="text-lg font-bold">Dentiva</span>
+                    )}
+                  </button>
+                ) : (
+                  <Link href="/dashboard">
+                    {orgLogoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={orgLogoUrl} alt="Organization Logo" className="h-8 w-auto" />
+                    ) : (
+                      <span className="text-lg font-bold">Dentiva</span>
+                    )}
                   </Link>
-                ))}
+                )}
               </div>
+              {!isWorkspaceView && (
+                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                  {navigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`${pathname === item.href
+                        ? 'border-blue-500 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               <div className="flex items-center space-x-4">
@@ -377,15 +268,26 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
                         className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
                       >
                         <div className="py-1">
+                          <button
+                            onClick={handleWorkspaceToggle}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                          >
+                            <span>🖥️ Workspace View</span>
+                            <span className={`ml-2 ${isWorkspaceView ? 'text-blue-600' : 'text-gray-400'}`}>
+                              {isWorkspaceView ? '✓' : ''}
+                            </span>
+                          </button>
                           <Link
                             href="/dashboard/profile"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
                           >
                             👤 Your Profile
                           </Link>
                           <Link
                             href="/dashboard/leave-requests"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsUserMenuOpen(false)}
                           >
                             📅 Leave Requests
                           </Link>
@@ -394,6 +296,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
                             <Link
                               href="/dashboard/manager"
                               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() => setIsUserMenuOpen(false)}
                             >
                               🛠️ Manager View
                             </Link>
@@ -413,34 +316,36 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
                 </div>
               </div>
             </div>
-            <div className="-mr-2 flex items-center sm:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-              >
-                <span className="sr-only">Open main menu</span>
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            {!isWorkspaceView && (
+              <div className="-mr-2 flex items-center sm:hidden">
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            </div>
+                  <span className="sr-only">Open main menu</span>
+                  <svg
+                    className="h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Mobile menu */}
         <AnimatePresence>
-          {isMobileMenuOpen && (
+          {isMobileMenuOpen && !isWorkspaceView && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -469,15 +374,26 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
+                  <button
+                    onClick={handleWorkspaceToggle}
+                    className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 flex items-center justify-between"
+                  >
+                    <span>🖥️ Workspace View</span>
+                    <span className={`ml-2 ${isWorkspaceView ? 'text-blue-600' : 'text-gray-400'}`}>
+                      {isWorkspaceView ? '✓' : ''}
+                    </span>
+                  </button>
                   <Link
                     href="/dashboard/profile"
                     className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Your Profile
                   </Link>
                   <Link
                     href="/dashboard/leave-requests"
                     className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     📅 Leave Requests
                   </Link>
@@ -486,6 +402,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
                     <Link
                       href="/dashboard/manager"
                       className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       🛠️ Manager View
                     </Link>
@@ -508,19 +425,26 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
       {/* Main content with SafeSearchParams */}
       <SafeSearchParams {...{
         children: (
-          <main className={pathname === '/dashboard/workspace'
-            ? "max-w-8xl h-[calc(100vh-4rem)] overflow-hidden"
+          <main className={isWorkspaceView
+            ? "h-[calc(100vh-4rem)] overflow-hidden"
             : "max-w-8xl py-6 sm:px-6 lg:px-8"
           }>
-            {children}
+            {isWorkspaceView ? (
+              <SplitPane initialPrimarySize={300} minPrimarySize={250}>
+                {/* Left – today appointments */}
+                <TodayAppointments />
+                {/* Right – dynamic pane */}
+                <DynamicPane ref={dynamicPaneRef} />
+              </SplitPane>
+            ) : (
+              children
+            )}
           </main>
         )
       }}>
       </SafeSearchParams>
 
-      {/* Radio Player & Timer & Call Player - Available on all dashboard pages */}
-      <RadioPlayer />
-      <Timer />
+      {/* Call Player - Available on all dashboard pages */}
       <CallPlayer />
     </div>
   )

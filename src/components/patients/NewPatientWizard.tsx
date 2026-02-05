@@ -17,6 +17,11 @@ export default function NewPatientWizard() {
   const [error, setError] = useState('')
   const [currentStep, setCurrentStep] = useState<Step>('basic')
   const [formData, setFormData] = useState<any>({})
+  const [dentalFormData, setDentalFormData] = useState({
+    previousWork: '',
+    currentIssues: '',
+    oralHygiene: ''
+  })
 
   // Health Assessment Form Data
   const [healthFormData, setHealthFormData] = useState({
@@ -264,6 +269,7 @@ export default function NewPatientWizard() {
       case 'basic':
         return (
           <PatientForm
+            initialData={formData}
             onSubmit={handleStepSubmit}
             isSubmitting={createPatient.isPending}
             buttonText="Next"
@@ -668,6 +674,8 @@ export default function NewPatientWizard() {
                 <Label htmlFor="previousWork">Previous Dental Work</Label>
                 <Textarea
                   id="previousWork"
+                  value={dentalFormData.previousWork}
+                  onChange={(e) => setDentalFormData(prev => ({ ...prev, previousWork: e.target.value }))}
                   placeholder="Describe any previous dental work, procedures, or treatments"
                   rows={4}
                 />
@@ -677,6 +685,8 @@ export default function NewPatientWizard() {
                 <Label htmlFor="currentIssues">Current Dental Issues</Label>
                 <Textarea
                   id="currentIssues"
+                  value={dentalFormData.currentIssues}
+                  onChange={(e) => setDentalFormData(prev => ({ ...prev, currentIssues: e.target.value }))}
                   placeholder="Describe any current dental problems or concerns"
                   rows={4}
                 />
@@ -686,6 +696,8 @@ export default function NewPatientWizard() {
                 <Label htmlFor="oralHygiene">Oral Hygiene Habits</Label>
                 <Textarea
                   id="oralHygiene"
+                  value={dentalFormData.oralHygiene}
+                  onChange={(e) => setDentalFormData(prev => ({ ...prev, oralHygiene: e.target.value }))}
                   placeholder="Describe daily oral hygiene routine, brushing frequency, flossing, etc."
                   rows={4}
                 />
@@ -701,12 +713,7 @@ export default function NewPatientWizard() {
               </Button>
               <Button
                 onClick={() => {
-                  const dentalData = {
-                    previousWork: (document.getElementById('previousWork') as HTMLTextAreaElement)?.value || '',
-                    currentIssues: (document.getElementById('currentIssues') as HTMLTextAreaElement)?.value || '',
-                    oralHygiene: (document.getElementById('oralHygiene') as HTMLTextAreaElement)?.value || ''
-                  }
-                  handleStepSubmit(dentalData)
+                  handleStepSubmit(dentalFormData)
                 }}
                 disabled={createPatient.isPending}
               >

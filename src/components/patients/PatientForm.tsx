@@ -20,16 +20,22 @@ const patientSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
-  email: z.string().email('Invalid email address').optional(),
-  phone: z.string().optional(),
+  gender: z.enum(['MALE', 'FEMALE']),
+  email: z.union([
+    z.string().email('Invalid email address'),
+    z.literal('')
+  ]).transform(val => val === '' ? undefined : val).optional(),
+  phone: z.union([
+    z.string(),
+    z.literal('')
+  ]).transform(val => val === '' ? undefined : val).optional(),
   address: z.object({
     display_name: z.string().min(1, 'Address is required'),
     lat: z.string(),
     lon: z.string(),
     altitude: z.number(),
   }),
-  bsn: z.string().min(1, 'BSN is required'),
+  cnp: z.string().min(1, 'CNP is required'),
   country: z.string().default('Netherlands'),
   healthInsurance: healthInsuranceSchema,
   medicalHistory: z.any().optional(),
@@ -60,6 +66,7 @@ export default function PatientForm({
     formState: { errors, isValid },
     watch,
     setValue,
+    reset,
   } = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -75,7 +82,25 @@ export default function PatientForm({
     },
   })
 
+  // Update form values when initialData changes (e.g., when going back to step 1)
+  React.useEffect(() => {
+    if (initialData) {
+      reset({
+        country: 'Netherlands',
+        address: initialData.address || {
+          display_name: '',
+          lat: '',
+          lon: '',
+          altitude: 0
+        },
+        healthInsurance: undefined,
+        ...initialData,
+      })
+    }
+  }, [initialData, reset])
+
   const showHealthInsurance = watch('healthInsurance')
+  const addressValue = watch('address')
 
   // Ensure healthInsurance is always undefined or a valid object
   React.useEffect(() => {
@@ -206,7 +231,6 @@ export default function PatientForm({
                 <option value="">Select gender</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
               </select>
               {errors.gender && (
                 <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>
@@ -214,17 +238,17 @@ export default function PatientForm({
             </div>
 
             <div>
-              <label htmlFor="bsn" className="block text-sm font-medium text-gray-700">
-                BSN
+              <label htmlFor="cnp" className="block text-sm font-medium text-gray-700">
+                CNP
               </label>
               <input
                 type="text"
-                id="bsn"
-                {...register('bsn')}
+                id="cnp"
+                {...register('cnp')}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
-              {errors.bsn && (
-                <p className="mt-1 text-sm text-red-600">{errors.bsn.message}</p>
+              {errors.cnp && (
+                <p className="mt-1 text-sm text-red-600">{errors.cnp.message}</p>
               )}
             </div>
 
@@ -284,6 +308,7 @@ export default function PatientForm({
                 Address
               </label>
               <AddressAutocomplete
+                value={addressValue?.display_name || ''}
                 onSelect={(result) => {
                   setValue('address', {
                     display_name: result.display_name,

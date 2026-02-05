@@ -152,23 +152,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   // Cross-context communication
   useEffect(() => {
-    function onRadioPriority() {
-      setCallHasPriority(false);
-    }
-    function onTimerPriority() {
-      setCallHasPriority(false);
-    }
     function onCallPriority() {
       // optional: reinforce own priority
     }
 
-    window.addEventListener('radio-priority', onRadioPriority);
-    window.addEventListener('timer-priority', onTimerPriority);
     window.addEventListener('call-priority', onCallPriority);
 
     return () => {
-      window.removeEventListener('radio-priority', onRadioPriority);
-      window.removeEventListener('timer-priority', onTimerPriority);
       window.removeEventListener('call-priority', onCallPriority);
     };
   }, []);

@@ -113,7 +113,7 @@
     --radius: 0.5rem;
 
     /* Organization Theme Variables (can be overridden) */
-    --org-primary: #3b82f6;
+    --org-primary: #ef4444;
     --org-primary-foreground: #ffffff;
     --org-secondary: #f1f5f9;
     --org-secondary-foreground: #0f172a;
@@ -128,7 +128,7 @@
     --org-success: #10b981;
     --org-warning: #f59e0b;
     --org-error: #ef4444;
-    --org-info: #3b82f6;
+    --org-info: #ef4444;
     --org-font-family: 'Inter', sans-serif;
     --org-heading-font-family: 'Inter', sans-serif;
     --org-font-size: 14px;
@@ -250,7 +250,7 @@
   .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    background: #3b82f6;
+    background: #ef4444;
     height: 16px;
     width: 16px;
     border-radius: 50%;
@@ -259,7 +259,7 @@
   }
 
   .slider::-webkit-slider-thumb:hover {
-    background: #2563eb;
+    background: #ef4444;
     transform: scale(1.1);
   }
 
@@ -271,7 +271,7 @@
   }
 
   .slider::-moz-range-thumb {
-    background: #3b82f6;
+    background: #ef4444;
     height: 16px;
     width: 16px;
     border-radius: 50%;
@@ -281,7 +281,7 @@
   }
 
   .slider::-moz-range-thumb:hover {
-    background: #2563eb;
+    background: #ef4444;
     transform: scale(1.1);
   }
 

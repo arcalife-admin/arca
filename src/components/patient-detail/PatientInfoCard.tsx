@@ -134,7 +134,7 @@ export default function PatientInfoCard({
           </div>
           <div className="text-xs">
             <div className="font-semibold text-blue-600">{patient.patientCode}</div>
-            <div>{patient.bsn} ({patient.dateOfBirth.split('T')[0]})</div>
+            <div>{patient.cnp} ({patient.dateOfBirth.split('T')[0]})</div>
             <div>{patient.firstName} {patient.lastName} ({patient.gender.slice(0, 1)})</div>
             {patient.email && (
               <div className="flex items-center gap-1">

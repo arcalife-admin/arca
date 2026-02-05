@@ -19,7 +19,7 @@ interface PatientEditModalProps {
     email: string
     phone: string
     address: string
-    bsn: string
+    cnp: string
     country: string
     allowEarlySpotContact: boolean
     isLongTermCareAct: boolean
@@ -145,11 +145,11 @@ export default function PatientEditModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="bsn">BSN</Label>
+              <Label htmlFor="cnp">CNP</Label>
               <Input
-                id="bsn"
-                value={editFormData.bsn}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, bsn: e.target.value }))}
+                id="cnp"
+                value={editFormData.cnp}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, cnp: e.target.value }))}
                 required
               />
             </div>

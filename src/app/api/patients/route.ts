@@ -9,7 +9,7 @@ const patientSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
+  gender: z.enum(['MALE', 'FEMALE']),
   email: z.string().email('Invalid email address').optional(),
   phone: z.string().optional(),
   address: z.object({
@@ -17,7 +17,7 @@ const patientSchema = z.object({
     lat: z.string(),
     lon: z.string(),
   }),
-  bsn: z.string().min(1, 'BSN is required'),
+  cnp: z.string().min(1, 'CNP is required'),
   country: z.string().default('Netherlands'),
   healthInsurance: z.object({
     provider: z.string().min(1, 'Provider is required'),
@@ -26,7 +26,6 @@ const patientSchema = z.object({
     validUntil: z.string().min(1, 'Valid until date is required'),
   }).optional(),
   medicalHistory: z.any().optional(),
-  dentalHistory: z.any().optional(),
 })
 
 // Function to calculate ASA score based on medical history
@@ -173,14 +172,6 @@ export async function GET() {
             return {}
           }
         })() : patient.medicalHistory,
-      dentalHistory: typeof patient.dentalHistory === 'string' ?
-        (() => {
-          try {
-            return JSON.parse(patient.dentalHistory)
-          } catch {
-            return {}
-          }
-        })() : patient.dentalHistory,
     }))
 
     return NextResponse.json(patients)
@@ -234,15 +225,14 @@ export async function POST(req: Request) {
       return await prisma.$queryRaw`
         INSERT INTO "Patient" (
           id, "patientCode", "firstName", "lastName", "dateOfBirth", gender, email, phone, 
-          address, bsn, country, "healthInsurance", "medicalHistory", "dentalHistory", 
+          address, cnp, country, "healthInsurance", "medicalHistory", 
           "organizationId", "createdAt", "updatedAt"
         ) VALUES (
           ${crypto.randomUUID()}, ${nextPatientCode}, ${validatedData.firstName}, ${validatedData.lastName}, 
           ${new Date(validatedData.dateOfBirth)}, ${validatedData.gender}, ${validatedData.email || null}, 
-          ${validatedData.phone || null}, ${JSON.stringify(validatedData.address)}::jsonb, ${validatedData.bsn}, 
+          ${validatedData.phone || null}, ${JSON.stringify(validatedData.address)}::jsonb, ${validatedData.cnp}, 
           ${validatedData.country}, ${validatedData.healthInsurance ? JSON.stringify(validatedData.healthInsurance) : null}::jsonb, 
           ${validatedData.medicalHistory ? JSON.stringify(validatedData.medicalHistory) : null}::jsonb, 
-          ${validatedData.dentalHistory ? JSON.stringify(validatedData.dentalHistory) : null}::jsonb, 
           ${organizationId}, ${new Date()}, ${new Date()}
         ) RETURNING id
       ` as { id: string }[]

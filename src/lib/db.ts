@@ -53,7 +53,8 @@ export const db = {
           error?.message?.includes('DATABASE_URL') ||
           error?.message?.includes('prepared statement') ||
           error?.message?.includes('already exists') ||
-          error?.message?.includes('42P05'); // PostgreSQL prepared statement error
+          error?.message?.includes('42P05') || // PostgreSQL prepared statement error code
+          error?.message?.includes('26000'); // PostgreSQL error: prepared statement does not exist
 
         if (isConnectionError && attempt < maxRetries) {
           console.warn(`Database operation attempt ${attempt} failed, retrying...`, error.message);

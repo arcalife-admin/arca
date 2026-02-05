@@ -4,8 +4,6 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
 import { useState } from 'react'
-import { RadioProvider } from '@/contexts/RadioContext'
-import { TimerProvider } from '@/contexts/TimerContext'
 import { CallProvider } from '@/contexts/CallContext'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import { FillingOptionsProvider } from '@/contexts/FillingOptionsContext'
@@ -21,23 +19,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <RadioProvider>
-            <TimerProvider>
-              <CallProvider>
-                <NotificationProvider>
-                  <FillingOptionsProvider>
-                    <CrownBridgeOptionsProvider>
-                      <ExtractionOptionsProvider>
-                        <SealingOptionsProvider>
-                          {children}
-                        </SealingOptionsProvider>
-                      </ExtractionOptionsProvider>
-                    </CrownBridgeOptionsProvider>
-                  </FillingOptionsProvider>
-                </NotificationProvider>
-              </CallProvider>
-            </TimerProvider>
-          </RadioProvider>
+          <CallProvider>
+            <NotificationProvider>
+              <FillingOptionsProvider>
+                <CrownBridgeOptionsProvider>
+                  <ExtractionOptionsProvider>
+                    <SealingOptionsProvider>
+                      {children}
+                    </SealingOptionsProvider>
+                  </ExtractionOptionsProvider>
+                </CrownBridgeOptionsProvider>
+              </FillingOptionsProvider>
+            </NotificationProvider>
+          </CallProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </SessionProvider>

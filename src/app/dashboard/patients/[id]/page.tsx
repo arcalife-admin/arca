@@ -8,10 +8,7 @@ import { Button } from '@/components/ui/button'
 import PatientForm from '@/components/patients/PatientForm'
 import HealthAssessment from '@/components/patients/HealthAssessment'
 import { Label } from '@/components/ui/label'
-import PeriodontalChartSettings from '@/components/dental/PeriodontalChartSettings'
-import PeriodontalChartHistoryModal from '@/components/dental/PeriodontalChartHistoryModal'
-import DEFAULT_SETTINGS from '@/components/dental/PeriodontalChartSettings'
-import { useDentalData } from '@/hooks/useDentalData'
+// Periodontal chart removed - not applicable for plastic surgery
 import { toast } from 'sonner'
 import { LocationModal } from '@/components/LocationModal'
 import { MapPin, Edit, History, Plus, Settings, Trash2, X, ChevronUp, ChevronDown, Pin, PlusCircle, Mail, Phone, Contact, Printer, ShoppingCart, Tag, Euro, ClipboardList, Clock, Files, FolderOpen, Download } from 'lucide-react'
@@ -23,11 +20,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
-import { DentalCodeSearch } from '@/components/dental/DentalCodeSearch'
+import { SurgicalCodeSearch } from '@/components/surgical/SurgicalCodeSearch'
 import { TreatmentPlan } from '@/components/patients/TreatmentPlan'
-import { TreatmentModal } from '@/components/dental/TreatmentModal'
-import { PeriodontalChartData, PeriodontalChartType } from '@/types/dental';
-import type { ToothMeasurements, PeriodontalMeasurements } from '@/components/dental/PeriodontalChart';
+// TreatmentModal removed - will use SurgicalProcedureForm instead
 import { EnhancedPatientImagesSection } from '@/components/patients/EnhancedPatientImagesSection'
 import { PatientInfoCard, PatientCenterPanel, PatientEditModal, EmailModal, FilesModal } from '@/components/patient-detail';
 import { ShopModal } from '@/components/patients/ShopModal';
@@ -37,9 +32,8 @@ import { PrintOptionsModal, PrintOptions } from '@/components/print/PrintOptions
 import PatientTaskList from '@/components/tasks/PatientTaskList'
 import PatientWaitingList from '@/components/waiting-list/PatientWaitingList'
 import { logActivityClient, LOG_ACTIONS, ENTITY_TYPES, LOG_SEVERITY } from '@/lib/activity-logger'
-import { DentalChart } from '@/components/dental/DentalChart'
-import FluorideModal, { FluorideFlavor } from '@/components/dental/FluorideModal';
-import FluorideFlavorSettingsModal from '@/components/dental/FluorideFlavorSettingsModal';
+import SurgicalProcedureForm from '@/components/surgical/SurgicalProcedureForm'
+// Dental chart and fluoride modals removed - not applicable for plastic surgery
 
 interface Patient {
   id: string
@@ -56,7 +50,7 @@ interface Patient {
     lon: string
     altitude?: number
   }
-  bsn: string
+  cnp: string
   country: string
   healthInsurance?: {
     provider: string
@@ -65,13 +59,11 @@ interface Patient {
     validUntil: string
   }
   medicalHistory?: any
-  dentalHistory?: any
+  surgicalHistory?: any
   asaScore?: number
-  ppsScores?: any
-  ppsTreatment?: string
   statusPraesens?: any
-  periodontalCharts?: any[]
-  recallTerm?: number
+  beforeAfterPhotos?: any
+  surgicalNotes?: any
   allowEarlySpotContact?: boolean
   isLongTermCareAct?: boolean
   isDisabled?: boolean
@@ -81,32 +73,6 @@ interface Patient {
   asaHistory: Array<{
     id: string
     score: number
-    notes: string
-    date: string
-    createdBy: string
-  }>
-  ppsHistory: Array<{
-    id: string
-    quadrant1: number
-    quadrant2: number
-    quadrant3: number
-    quadrant4: number
-    treatment: 'NONE' | 'PREVENTIVE' | 'PERIODONTAL'
-    notes: string
-    date: string
-    createdBy: string
-  }>
-  screeningRecallHistory: Array<{
-    id: string
-    screeningMonths: number
-    notes: string
-    date: string
-    createdBy: string
-  }>
-  cleaningRecallHistory: Array<{
-    id: string
-    cleaningMonths: number
-    procedureCode: string
     notes: string
     date: string
     createdBy: string
@@ -149,25 +115,7 @@ interface Patient {
   }
 }
 
-const mapAPIToComponentData = (apiData: PeriodontalChartData | null): Record<number, ToothMeasurements> => {
-  if (!apiData?.teeth) return {};
-  return apiData.teeth;
-};
-
-const mapComponentToAPIData = (
-  componentData: Record<number, ToothMeasurements>,
-  patientId: string,
-  chartType: PeriodontalChartType = 'INITIAL_ASSESSMENT',
-  isExplicitlySaved: boolean = false
-): PeriodontalChartData => {
-  return {
-    teeth: componentData,
-    date: new Date().toISOString(),
-    patientId,
-    chartType,
-    isExplicitlySaved
-  };
-};
+// Periodontal chart mapping functions removed - not applicable for plastic surgery
 
 export default function PatientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -181,7 +129,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
   const [deleteDisableModalStep, setDeleteDisableModalStep] = useState<'options' | 'disable' | 'delete' | 'history'>('options')
   const [disableReason, setDisableReason] = useState('')
   const [statusHistory, setStatusHistory] = useState<any[]>([])
-  const [centerPanel, setCenterPanel] = useState<'status' | 'perio'>('status')
+  const [centerPanel, setCenterPanel] = useState<'status'>('status')
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -192,8 +140,8 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
   const [showPrintModal, setShowPrintModal] = useState(false)
   const [printOptions, setPrintOptions] = useState<PrintOptions>({
     includePatientInfo: true,
-    includeDentalChart: true,
-    includePeriodontalChart: true,
+    includeDentalChart: false,
+    includePeriodontalChart: false,
     includeHistoryTreatments: true,
     includeCurrentTreatments: true,
     includePlanTreatments: true,
@@ -203,7 +151,6 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
   const [showPpsModal, setShowPpsModal] = useState(false)
   const [ppsModalStep, setPpsModalStep] = useState<'history' | 'assessment'>('history')
   const [showScreeningRecallModal, setShowScreeningRecallModal] = useState(false)
-  const [showPerioSettingsModal, setShowPerioSettingsModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [showScalingModal, setShowScalingModal] = useState(false)
   const [suggestedTeethTreatments, setSuggestedTeethTreatments] = useState<any[]>([])
@@ -225,7 +172,7 @@ export default function PatientDetailPage({ params }: { params: { id: string } }
     email: '',
     phone: '',
     address: '',
-    bsn: '',
+    cnp: '',
     country: '',
     allowEarlySpotContact: true,
     isLongTermCareAct: false
@@ -658,27 +605,7 @@ Best regards,
 [Doctor Name]
 [Practice Name]`
       },
-      fluoride_prescription: {
-        subject: 'Fluoride Treatment Prescription',
-        content: `Dear [Patient First Name],
-
-Your prescription for fluoride treatment is attached. This high-concentration fluoride will help strengthen your teeth and prevent decay.
-
-Application Instructions:
-- Use a pea-sized amount on your toothbrush
-- Brush gently for 2 minutes before bedtime
-- Spit out excess but do not rinse
-- No eating or drinking for 30 minutes after application
-- Use only at bedtime
-
-This treatment is particularly important due to your increased risk of dental decay. Regular use will help protect your teeth.
-
-Please contact us if you have any questions about the application process.
-
-Best regards,
-[Doctor Name]
-[Practice Name]`
-      },
+      // fluoride_prescription removed - not applicable for plastic surgery
       oral_steroid_prescription: {
         subject: 'Oral Steroid Prescription and Important Information',
         content: `Dear [Patient First Name],
@@ -1243,24 +1170,16 @@ Please contact our office immediately to schedule this important follow-up visit
   })
 
   // Fetch dental procedures
-  const { data: dentalProcedures, refetch: refetchProcedures } = useQuery({
-    queryKey: ['patient-dental-procedures', params.id],
+  const { data: surgicalProcedures, refetch: refetchProcedures } = useQuery({
+    queryKey: ['patient-surgical-procedures', params.id],
     queryFn: async () => {
-      const response = await fetch(`/api/patients/${params.id}/dental-procedures`)
+      const response = await fetch(`/api/patients/${params.id}/surgical-procedures`)
       if (!response.ok) throw new Error('Failed to fetch dental procedures')
       return response.json()
     }
   })
 
-  // Fetch dental codes
-  const { data: dentalCodes } = useQuery({
-    queryKey: ['dental-codes'],
-    queryFn: async () => {
-      const response = await fetch('/api/dental-codes')
-      if (!response.ok) throw new Error('Failed to fetch dental codes')
-      return response.json()
-    }
-  })
+  // Dental codes removed - not applicable for plastic surgery (using surgical procedure codes instead)
 
   // Note mutations
   const createNote = useMutation({
@@ -1600,13 +1519,8 @@ Please contact our office immediately to schedule this important follow-up visit
   })
 
   const handleStatusSave = async (updatedChartData: any) => {
-    try {
-      await updateDentalData({ dentalChart: updatedChartData });
-      toast.success('Dental chart saved successfully');
-    } catch (err) {
-      console.error('Failed to save dental chart:', err);
-      toast.error('Failed to save dental chart');
-    }
+    // Dental chart save removed - not applicable for plastic surgery
+    toast.success('Status saved successfully');
   };
 
   // Helper function to get latest ASA score and date
@@ -1623,77 +1537,17 @@ Please contact our office immediately to schedule this important follow-up visit
     }
   }
 
-  // Helper function to get latest PPS data
+  // Helper functions for PPS, screening recall, and cleaning recall removed - not applicable for plastic surgery
   const getLatestPpsData = () => {
-    if (!patient?.ppsHistory || patient.ppsHistory.length === 0) {
-      return { scores: null, date: null }
-    }
-    const latest = patient.ppsHistory.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0]
-    return {
-      scores: [latest.quadrant1, latest.quadrant2, latest.quadrant3, latest.quadrant4],
-      date: new Date(latest.date).toLocaleDateString()
-    }
+    return { scores: null, date: null }
   }
 
-  // Helper function to get latest screening recall data
   const getLatestScreeningRecallData = () => {
-    if (!patient?.screeningRecallHistory || patient.screeningRecallHistory.length === 0) {
-      return { screeningMonths: null, date: null, customText: null }
-    }
-    const latest = patient.screeningRecallHistory.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0]
-
-    // Check if notes contain custom text data
-    let customText = null
-    if (latest.notes) {
-      try {
-        const notesData = JSON.parse(latest.notes)
-        if (notesData.useCustomText && notesData.customText) {
-          customText = notesData.customText
-        }
-      } catch (e) {
-        // If parsing fails, it's regular notes
-      }
-    }
-
-    return {
-      screeningMonths: latest.screeningMonths,
-      date: new Date(latest.date).toLocaleDateString(),
-      customText
-    }
+    return { screeningMonths: null, date: null, customText: null }
   }
 
-  // Helper function to get latest cleaning recall data
   const getLatestCleaningRecallData = () => {
-    if (!patient?.cleaningRecallHistory || patient.cleaningRecallHistory.length === 0) {
-      return { cleaningMonths: null, procedureCode: null, date: null, customText: null }
-    }
-    const latest = patient.cleaningRecallHistory.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0]
-
-    // Check if notes contain custom text data
-    let customText = null
-    if (latest.notes) {
-      try {
-        const notesData = JSON.parse(latest.notes)
-        if (notesData.useCustomText && notesData.customText) {
-          customText = notesData.customText
-        }
-      } catch (e) {
-        // If parsing fails, it's regular notes
-      }
-    }
-
-    return {
-      cleaningMonths: latest.cleaningMonths,
-      procedureCode: latest.procedureCode,
-      date: new Date(latest.date).toLocaleDateString(),
-      customText
-    }
+    return { cleaningMonths: null, procedureCode: null, date: null, customText: null }
   }
 
   // Helper function to format PPS scores for display
@@ -1904,19 +1758,8 @@ Please contact our office immediately to schedule this important follow-up visit
     }
   }
 
-  const {
-    dentalChart,
-    periodontalChart,
-    procedures,
-    isLoading: isDentalLoading,
-    error: dentalError,
-    updateDentalData,
-  } = useDentalData({
-    patientId: params.id,
-    onError: (error) => {
-      toast.error('Failed to load dental data: ' + error.message);
-    },
-  });
+  // Dental data hook removed - using surgical procedures directly
+  // dentalChart and periodontalChart removed - not applicable for plastic surgery
 
   // Dental chart tool toggle logic
   const handleToolClick = (toolId: string) => {
@@ -1941,34 +1784,18 @@ Please contact our office immediately to schedule this important follow-up visit
     loadStatusHistory()
   }
 
-  const [periodontalSettings, setPeriodontalSettings] = useState({
-    keybinds: {
-      bleeding: 'b',
-      suppuration: 'n',
-      extended: ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-    },
-    order: [
-      { field: 'recession', quadrant: 'Q1', side: 'buccal', direction: 'd->m' },
-      { field: 'pocketDepth', quadrant: 'Q1', side: 'buccal', direction: 'd->m' },
-      { field: 'recession', quadrant: 'Q2', side: 'lingual', direction: 'd->m' },
-      { field: 'pocketDepth', quadrant: 'Q2', side: 'lingual', direction: 'd->m' },
-      { field: 'recession', quadrant: 'Q3', side: 'lingual', direction: 'd->m' },
-      { field: 'pocketDepth', quadrant: 'Q3', side: 'lingual', direction: 'd->m' },
-      { field: 'recession', quadrant: 'Q4', side: 'buccal', direction: 'd->m' },
-      { field: 'pocketDepth', quadrant: 'Q4', side: 'buccal', direction: 'd->m' },
-    ]
-  })
 
   const handlePeriodontalSave = async (data: any) => {
     try {
-      await updateDentalData({
-        periodontalChart: mapComponentToAPIData(
-          data.teeth,
-          params.id,
-          data.chartType,
-          data.isExplicitlySaved
-        )
-      })
+      // Periodontal chart save removed - not applicable for plastic surgery
+      // await updateDentalData({
+      //   periodontalChart: mapComponentToAPIData(
+      //     data.teeth,
+      //     params.id,
+      //     data.chartType,
+      //     data.isExplicitlySaved
+      //   )
+      // })
 
       // Only analyze and show scaling treatments for explicit saves, not auto-saves
       if (data.isExplicitlySaved) {
@@ -1989,7 +1816,8 @@ Please contact our office immediately to schedule this important follow-up visit
   }
 
   // Function to analyze periodontal data and suggest scaling treatments for individual teeth
-  const analyzePeriodontalDataForScaling = (teeth: Record<number, ToothMeasurements>) => {
+  // Removed - not applicable for plastic surgery
+  const analyzePeriodontalDataForScaling = (teeth: Record<number, any>) => {
     const treatments: any[] = []
 
     // Analyze each tooth individually
@@ -2256,7 +2084,7 @@ Please contact our office immediately to schedule this important follow-up visit
     if (treatmentContainerRef.current) {
       treatmentContainerRef.current.scrollTop = treatmentContainerRef.current.scrollHeight;
     }
-  }, [dentalProcedures]);
+  }, [surgicalProcedures]);
 
 
 
@@ -2275,7 +2103,7 @@ Please contact our office immediately to schedule this important follow-up visit
   // Handle quick-add treatment save
   const handleQuickAddSave = async (treatmentData: any) => {
     try {
-      const response = await fetch(`/api/patients/${params.id}/dental-procedures`, {
+      const response = await fetch(`/api/patients/${params.id}/surgical-procedures`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2343,35 +2171,12 @@ Please contact our office immediately to schedule this important follow-up visit
   // Handle U35 quantity modal confirmation
   const handleU35Confirm = async (quantity: number) => {
     try {
-      // Find the U35 code from available dental codes
-      const u35Code = dentalCodes?.find(code => code.code === 'U35');
-      if (!u35Code) {
-        toast.error('U35 code not found in system');
-        return;
-      }
-
-      const response = await fetch(`/api/patients/${params.id}/dental-procedures`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: params.id,
-          codeId: u35Code.id,
-          quantity: quantity,
-          cost: quantity * 19.93, // €19.93 per 5-minute unit
-          notes: `Time units for ${pendingTreatmentData?.code || 'treatment'} - ${quantity} units (${quantity * 5} minutes)`,
-          status: statusByTab[treatmentTab],
-          date: new Date().toISOString().split('T')[0]
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to save U35 treatment');
-
-      refetchProcedures();
-      toast.success(`Added U35 - ${quantity} time units (${quantity * 5} minutes)`);
-
-      // Reset modal state
+      // U35 code removed - not applicable for plastic surgery
+      // For plastic surgery, time tracking should be handled through surgical procedure codes
+      toast.error('U35 time tracking is not applicable for plastic surgery. Use surgical procedure codes instead.');
       setShowU35Modal(false);
       setPendingTreatmentData(null);
+      return;
     } catch (error) {
       console.error('Error saving U35 treatment:', error);
       toast.error('Failed to save U35 treatment');
@@ -2711,7 +2516,7 @@ Please contact our office immediately to schedule this important follow-up visit
           setUndoStack(prev => prev.slice(0, -1));
           Promise.all(
             last.map(p =>
-              fetch('/api/dental-procedures/undo', {
+              fetch('/api/surgical-procedures/undo', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -2749,7 +2554,7 @@ Please contact our office immediately to schedule this important follow-up visit
       // CTRL+Y handler for redo
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        fetch('/api/dental-procedures/redo', {
+        fetch('/api/surgical-procedures/redo', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -2808,65 +2613,6 @@ Please contact our office immediately to schedule this important follow-up visit
     return map;
   }, [users]);
 
-  const [showFluorideModal, setShowFluorideModal] = useState(false);
-  const [showFlavorSettings, setShowFlavorSettings] = useState(false);
-  const [fluorideFlavors, setFluorideFlavors] = useState<FluorideFlavor[]>([]);
-  const [fluorideLoading, setFluorideLoading] = useState(false);
-
-  const fetchFluorideFlavors = async () => {
-    setFluorideLoading(true);
-    try {
-      const res = await fetch(`/api/fluoride-flavors?organizationId=${organization?.id}`);
-      const data = await res.json();
-      setFluorideFlavors(data);
-    } finally {
-      setFluorideLoading(false);
-    }
-  };
-
-  const handleFluorideQuickButton = () => {
-    fetchFluorideFlavors();
-    setShowFluorideModal(true);
-  };
-
-  const handleFluorideSave = async ({ jaws, flavor }: { jaws: string[]; flavor: FluorideFlavor }) => {
-    setFluorideLoading(true);
-    try {
-      const notes = `${flavor.name} for ${jaws.length === 2 ? 'upper & lower' : jaws[0]} jaw`;
-      const res = await fetch('/api/dental-codes?search=M40');
-      const codes = await res.json();
-      const m40 = codes.find((c: any) => c.code === 'M40');
-      if (m40) {
-        const response = await fetch(`/api/patients/${params.id}/dental-procedures`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            patientId: params.id,
-            codeId: m40.id,
-            toothNumber: null,
-            notes,
-            status: 'IN_PROGRESS',
-            date: new Date().toISOString().split('T')[0],
-            quantity: jaws.length,
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result && result.procedure && result.procedure.id) {
-            setUndoStack(prev => [...prev, [result.procedure]]);
-          }
-        }
-      }
-      toast.success('Fluoride added');
-      setShowFluorideModal(false);
-      refetchProcedures && refetchProcedures();
-    } catch {
-      toast.error('Failed to add fluoride');
-    } finally {
-      setFluorideLoading(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -2979,7 +2725,7 @@ Please contact our office immediately to schedule this important follow-up visit
               email: patient.email || '',
               phone: patient.phone || '',
               address: patient.address.display_name || '',
-              bsn: patient.bsn,
+              cnp: patient.cnp,
               country: patient.country,
               allowEarlySpotContact: patient.allowEarlySpotContact ?? true,
               isLongTermCareAct: patient.isLongTermCareAct ?? false
@@ -3018,51 +2764,29 @@ Please contact our office immediately to schedule this important follow-up visit
           setCenterPanel={setCenterPanel}
           activeTool={activeTool}
           handleToolClick={handleToolClick}
-          setShowPerioSettingsModal={setShowPerioSettingsModal}
           setShowHistoryModal={setShowHistoryModal}
           patient={patient}
-          perioSettings={periodontalSettings}
-          mapAPIToComponentData={mapAPIToComponentData}
-          mapComponentToAPIData={mapComponentToAPIData}
-          handlePeriodontalSave={handlePeriodontalSave}
           onProcedureCreated={handleProcedureCreated}
           onProcedureDeleted={async () => {
             await refetchProcedures(); // Refresh procedures
-            queryClient.invalidateQueries({ queryKey: ['dental', params.id] }); // Refresh dental chart
-            // Force a complete refresh of dental chart data by refetching
-            queryClient.refetchQueries({ queryKey: ['dental', params.id] });
+            queryClient.invalidateQueries({ queryKey: ['patient-surgical-procedures', params.id] });
+            queryClient.refetchQueries({ queryKey: ['patient-surgical-procedures', params.id] });
           }}
           handleStatusSave={handleStatusSave}
-          activeProcedures={dentalProcedures?.filter(p => p.status === statusByTab[treatmentTab]) || []}
+          activeProcedures={surgicalProcedures?.filter(p => p.status === statusByTab[treatmentTab]) || []}
           patientId={params.id}
-          procedures={dentalProcedures || []}
-          toothTypes={dentalChart?.toothTypes || {}}
+          procedures={surgicalProcedures || []}
           currentStatus={statusByTab[treatmentTab] as 'COMPLETED' | 'IN_PROGRESS' | 'PENDING'}
-          dentalChart={dentalChart}
           onForceRefresh={async () => {
             // Force refresh all patient data from database
             await refetch()
-            queryClient.invalidateQueries({ queryKey: ['dental', params.id] })
-            queryClient.refetchQueries({ queryKey: ['dental', params.id] })
+            queryClient.invalidateQueries({ queryKey: ['patient-surgical-procedures', params.id] })
+            queryClient.refetchQueries({ queryKey: ['patient-surgical-procedures', params.id] })
             console.log('🔄 Forced refresh of all patient data from database')
           }}
         />
 
-        {/* <DentalChart
-          procedures={dentalProcedures || []}
-          toothTypes={dentalChart?.toothTypes || {}}
-          readOnly={false}
-          activeTool={activeTool}
-          onToolChange={handleToolClick}
-          patientId={params.id}
-          onProcedureDeleted={async () => {
-            await refetchProcedures();
-            queryClient.invalidateQueries({ queryKey: ['dental', params.id] });
-          }}
-          onProcedureCreated={handleProcedureCreated}
-          currentStatus={statusByTab[treatmentTab] as 'COMPLETED' | 'IN_PROGRESS' | 'PENDING'}
-          activeProcedures={dentalProcedures?.filter(p => p.status === statusByTab[treatmentTab]) || []}
-        /> */}
+        {/* Dental chart removed - not applicable for plastic surgery */}
 
         {/* Bottom left: Important notes */}
         <div className="flex flex-col border-2 border-blue-400 bg-white p-2 rounded-xl h-[38vh]">
@@ -3187,10 +2911,10 @@ Please contact our office immediately to schedule this important follow-up visit
           <div className="sticky top-0 bg-white z-30 border-b rounded-xl">
             <div className="flex items-center gap-4 p-2 h-10">
               {organization?.id ? (
-                <DentalCodeSearch
+                <SurgicalCodeSearch
                   onSelect={async (code) => {
                     try {
-                      const response = await fetch(`/api/patients/${params.id}/dental-procedures`, {
+                      const response = await fetch(`/api/patients/${params.id}/surgical-procedures`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3242,13 +2966,14 @@ Please contact our office immediately to schedule this important follow-up visit
                   size="sm"
                   className="h-8 px-2 text-xs"
                   onClick={async () => {
+                    // Fluoride quick button removed - not applicable for plastic surgery
                     if (quickCode === 'm40') {
-                      handleFluorideQuickButton();
                       return;
                     }
                     try {
-                      // Find the dental code by searching the API
-                      const res = await fetch(`/api/dental-codes?search=${quickCode}`);
+                      // Dental codes removed - use surgical procedure codes instead
+                      // For plastic surgery, search surgical procedure codes
+                      const res = await fetch(`/api/surgical-procedure-codes?search=${quickCode}`);
                       if (!res.ok) throw new Error('Code search failed');
                       const codes = await res.json();
                       const codeMatch = codes.find((c: any) => c.code.toLowerCase() === quickCode.toLowerCase());
@@ -3273,7 +2998,7 @@ Please contact our office immediately to schedule this important follow-up visit
           <div className="flex-1 overflow-hidden">
             <TreatmentPlan
               patientId={params.id}
-              procedures={dentalProcedures || []}
+              procedures={surgicalProcedures || []}
               onProcedureAdded={refetchProcedures}
               onProcedureUpdated={refetchProcedures}
               onProcedureDeleted={async () => {
@@ -3371,7 +3096,7 @@ Please contact our office immediately to schedule this important follow-up visit
                   gender: editFormData.gender,
                   email: editFormData.email,
                   phone: editFormData.phone,
-                  bsn: editFormData.bsn,
+                  cnp: editFormData.cnp,
                   country: editFormData.country,
                   allowEarlySpotContact: editFormData.allowEarlySpotContact
                 }
@@ -3495,11 +3220,11 @@ Please contact our office immediately to schedule this important follow-up visit
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="bsn">BSN</Label>
+                  <Label htmlFor="cnp">CNP</Label>
                   <Input
-                    id="bsn"
-                    value={editFormData.bsn}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, bsn: e.target.value }))}
+                    id="cnp"
+                    value={editFormData.cnp}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, cnp: e.target.value }))}
                     required
                   />
                 </div>
@@ -4420,8 +4145,8 @@ Please contact our office immediately to schedule this important follow-up visit
                         quadrant2: latestPps.scores[1],
                         quadrant3: latestPps.scores[2],
                         quadrant4: latestPps.scores[3],
-                        treatment: patient?.ppsHistory?.[0]?.treatment || 'NONE',
-                        notes: patient?.ppsHistory?.[0]?.notes || ''
+                        treatment: 'NONE', // PPS history removed - not applicable for plastic surgery
+                        notes: ''
                       })
                     }
                     setPpsModalStep('assessment')
@@ -4432,10 +4157,11 @@ Please contact our office immediately to schedule this important follow-up visit
                 </div>
 
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                  {patient?.ppsHistory && patient.ppsHistory.length > 0 ? (
-                    patient.ppsHistory
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((record) => (
+                  {/* PPS history removed - not applicable for plastic surgery */}
+                  {[]?.length > 0 ? (
+                    []
+                      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((record: any) => (
                         <Card key={record.id} className="p-4">
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
@@ -4750,13 +4476,13 @@ Please contact our office immediately to schedule this important follow-up visit
                         customText = latestScreeningRecall.customText
                         // Try to get original notes from JSON
                         try {
-                          const notesData = JSON.parse(patient?.screeningRecallHistory?.[0]?.notes || '{}')
-                          notes = notesData.originalNotes || ''
+                          // Screening recall history removed - not applicable for plastic surgery
+                          notes = ''
                         } catch (e) {
                           notes = ''
                         }
                       } else {
-                        notes = patient?.screeningRecallHistory?.[0]?.notes || ''
+                        notes = ''
                       }
 
                       setScreeningRecallFormData({
@@ -4782,10 +4508,11 @@ Please contact our office immediately to schedule this important follow-up visit
                 </div>
 
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                  {patient?.screeningRecallHistory && patient.screeningRecallHistory.length > 0 ? (
-                    patient.screeningRecallHistory
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((record) => {
+                  {/* Screening recall history removed - not applicable for plastic surgery */}
+                  {[]?.length > 0 ? (
+                    []
+                      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((record: any) => {
                         // Check if this record has custom text
                         let customText = null
                         let originalNotes = record.notes
@@ -5008,13 +4735,13 @@ Please contact our office immediately to schedule this important follow-up visit
                         customText = latestCleaningRecall.customText
                         // Try to get original notes from JSON
                         try {
-                          const notesData = JSON.parse(patient?.cleaningRecallHistory?.[0]?.notes || '{}')
-                          notes = notesData.originalNotes || ''
+                          // Cleaning recall history removed - not applicable for plastic surgery
+                          notes = ''
                         } catch (e) {
                           notes = ''
                         }
                       } else {
-                        notes = patient?.cleaningRecallHistory?.[0]?.notes || ''
+                        notes = ''
                       }
 
                       setCleaningRecallFormData({
@@ -5042,10 +4769,11 @@ Please contact our office immediately to schedule this important follow-up visit
                 </div>
 
                 <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                  {patient?.cleaningRecallHistory && patient.cleaningRecallHistory.length > 0 ? (
-                    patient.cleaningRecallHistory
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((record) => {
+                  {/* Cleaning recall history removed - not applicable for plastic surgery */}
+                  {[]?.length > 0 ? (
+                    []
+                      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((record: any) => {
                         // Check if this record has custom text
                         let customText = null
                         let originalNotes = record.notes
@@ -5616,7 +5344,7 @@ Please contact our office immediately to schedule this important follow-up visit
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No folder</SelectItem>
-                    {noteFolders?.map((folder) => (
+                    {noteFolders?.filter(folder => folder.id && folder.id.trim() !== '').map((folder) => (
                       <SelectItem key={folder.id} value={folder.id}>
                         {folder.name}
                       </SelectItem>
@@ -6211,24 +5939,22 @@ Please contact our office immediately to schedule this important follow-up visit
           </DialogContent>
         </Dialog>
 
-        {/* Quick-Add Treatment Modal */}
-        <TreatmentModal
-          isOpen={showQuickAddModal}
-          onClose={() => {
-            setShowQuickAddModal(false);
-            setQuickAddCode(null);
-          }}
-          onSave={handleQuickAddSave}
-          quickCode={quickAddCode}
-          patientAge={patient?.dateOfBirth ?
-            Math.floor((new Date().getTime() - new Date(patient.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
-            : 18
-          }
-          availableCodes={dentalCodes || []}
-          isWLZPatient={patient?.isLongTermCareAct ?? false}
-          patient={patient}
-          onRefresh={refetch}
-        />
+        {/* Quick-Add Treatment Modal - Replaced with SurgicalProcedureForm */}
+        <Dialog open={showQuickAddModal} onOpenChange={setShowQuickAddModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Surgical Procedure</DialogTitle>
+            </DialogHeader>
+            <SurgicalProcedureForm
+              patientId={params.id}
+              onSuccess={() => {
+                setShowQuickAddModal(false);
+                setQuickAddCode(null);
+                refetchProcedures();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
 
 
@@ -6288,7 +6014,7 @@ Please contact our office immediately to schedule this important follow-up visit
                 gender: editFormData.gender,
                 email: editFormData.email,
                 phone: editFormData.phone,
-                bsn: editFormData.bsn,
+                cnp: editFormData.cnp,
                 country: editFormData.country,
                 allowEarlySpotContact: editFormData.allowEarlySpotContact
               }
@@ -6334,8 +6060,8 @@ Please contact our office immediately to schedule this important follow-up visit
           setSelectedAddress={setSelectedAddress}
         />
 
-        {/* Periodontal Chart History Modal */}
-        <PeriodontalChartHistoryModal
+        {/* Periodontal Chart History Modal - Removed for plastic surgery */}
+        {/* <PeriodontalChartHistoryModal
           isOpen={showHistoryModal}
           onOpenChange={setShowHistoryModal}
           periodontalCharts={patient?.periodontalCharts || null}
@@ -6369,18 +6095,6 @@ Please contact our office immediately to schedule this important follow-up visit
           }}
         />
 
-        {/* Periodontal Settings Modal */}
-        <Dialog open={showPerioSettingsModal} onOpenChange={setShowPerioSettingsModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Periodontal Chart Settings</DialogTitle>
-            </DialogHeader>
-            <PeriodontalChartSettings
-              settings={periodontalSettings}
-              onSettingsChange={setPeriodontalSettings}
-            />
-          </DialogContent>
-        </Dialog>
 
         {/* Scaling Treatment Shopping Cart Modal */}
         <Dialog open={showScalingModal} onOpenChange={setShowScalingModal}>
@@ -6567,8 +6281,9 @@ Please contact our office immediately to schedule this important follow-up visit
                   try {
                     // Add selected treatments to treatment plan
                     for (const treatment of selectedTreatments) {
-                      // Find the dental code in the database
-                      const response = await fetch(`/api/dental-codes?search=${treatment.code}`)
+                      // Dental codes removed - use surgical procedure codes instead
+                      // For plastic surgery, search surgical procedure codes
+                      const response = await fetch(`/api/surgical-procedure-codes?search=${treatment.code}`)
                       if (!response.ok) continue
 
                       const codes = await response.json()
@@ -6977,12 +6692,12 @@ Please contact our office immediately to schedule this important follow-up visit
           onOpenChange={setShowPrintModal}
           options={printOptions}
           setOptions={setPrintOptions}
-          hasPeriodontalChart={!!periodontalChart}
+          hasPeriodontalChart={false}
           onPrint={() => {
-            const sectionMap: Record<string, string> = {
+            const sectionMap: Record<string, string | boolean> = {
               includePatientInfo: 'patientInfo',
-              includeDentalChart: 'dentalChart',
-              includePeriodontalChart: 'periodontalChart',
+              includeDentalChart: false, // Removed for plastic surgery
+              includePeriodontalChart: false, // Removed for plastic surgery
               includeHistoryTreatments: 'historyTreatments',
               includeCurrentTreatments: 'currentTreatments',
               includePlanTreatments: 'planTreatments',
@@ -7062,22 +6777,6 @@ Please contact our office immediately to schedule this important follow-up visit
           onClose={() => setShowFilesModal(false)}
           patientId={params.id}
           patientName={`${patient?.firstName} ${patient?.lastName}`}
-        />
-        <FluorideModal
-          isOpen={showFluorideModal}
-          onClose={() => setShowFluorideModal(false)}
-          onSave={handleFluorideSave}
-          flavors={fluorideFlavors}
-          onOpenSettings={() => setShowFlavorSettings(true)}
-        />
-        <FluorideFlavorSettingsModal
-          isOpen={showFlavorSettings}
-          onClose={() => {
-            setShowFlavorSettings(false);
-            // Refresh flavors after closing settings
-            if (showFluorideModal) fetchFluorideFlavors();
-          }}
-          organizationId={organization?.id || ''}
         />
       </div>
     </div>

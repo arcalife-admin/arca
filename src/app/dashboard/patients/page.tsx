@@ -39,7 +39,7 @@ interface Patient {
   email?: string
   phone: string
   address?: string
-  bsn?: string
+  cnp?: string
   country: string
   healthInsurance?: HealthInsurance
   asaScore?: number

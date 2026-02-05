@@ -28,16 +28,17 @@ const registerSchema = z.object({
   address: z.string().min(1, 'Address is required'),
   role: z.enum([
     'ORGANIZATION_OWNER',
-    'PRACTITIONER',
-    'DENTIST',
-    'HYGIENIST',
+    'MANAGER',
+    'PLASTIC_SURGEON',
+    'SURGEON',
+    'NURSE',
     'RECEPTIONIST',
     'ASSISTANT',
-    'MANAGER',
-    'ORTHODONTIST',
-    'PERIODONTOLOGIST',
-    'CLERK',
-    'ADMIN',
+    'ANESTHESIOLOGIST',
+    'AESTHETIC_NURSE',
+    'MEDICAL_ASSISTANT',
+    'COUNSELOR',
+    'PHOTOGRAPHER',
   ]),
   organization: z
     .object({
@@ -213,15 +214,25 @@ export async function POST(req: Request) {
     )
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors)
+      // Format validation errors for better user feedback
+      const errorMessages = error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message,
+      }))
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { 
+          message: 'Validation error', 
+          errors: errorMessages,
+          details: error.errors 
+        },
         { status: 400 }
       )
     }
 
     console.error('Registration error:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

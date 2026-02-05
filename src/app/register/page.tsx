@@ -24,17 +24,16 @@ interface AddressResult {
 const USER_ROLES = [
   { value: 'ORGANIZATION_OWNER', label: 'Organization Owner' },
   { value: 'MANAGER', label: 'Manager' },
-  { value: 'DENTIST', label: 'Dentist' },
-  { value: 'HYGIENIST', label: 'Hygienist' },
+  { value: 'PLASTIC_SURGEON', label: 'Plastic Surgeon' },
+  { value: 'SURGEON', label: 'Surgeon' },
+  { value: 'NURSE', label: 'Nurse' },
   { value: 'RECEPTIONIST', label: 'Receptionist' },
   { value: 'ASSISTANT', label: 'Assistant' },
-  { value: 'ORTHODONTIST', label: 'Orthodontist' },
-  { value: 'PERIODONTOLOGIST', label: 'Periodontologist' },
-  { value: 'IMPLANTOLOGIST', label: 'Implantologist' },
-  { value: 'ENDODONTIST', label: 'Endodontist' },
   { value: 'ANESTHESIOLOGIST', label: 'Anesthesiologist' },
-  { value: 'DENTAL_TECHNICIAN', label: 'Dental Technician' },
-  { value: 'DENTAL_LAB_TECHNICIAN', label: 'Dental Lab Technician' },
+  { value: 'AESTHETIC_NURSE', label: 'Aesthetic Nurse' },
+  { value: 'MEDICAL_ASSISTANT', label: 'Medical Assistant' },
+  { value: 'COUNSELOR', label: 'Counselor' },
+  { value: 'PHOTOGRAPHER', label: 'Photographer' },
 ]
 
 export default function RegisterPage() {
@@ -153,6 +152,11 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Handle validation errors with detailed messages
+        if (data.errors && Array.isArray(data.errors)) {
+          const errorMessages = data.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ')
+          throw new Error(errorMessages || data.message || 'Registration failed')
+        }
         throw new Error(data.message || 'Registration failed')
       }
 
@@ -178,7 +182,7 @@ export default function RegisterPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/login" className="font-medium text-red-500 hover:text-red-600">
               sign in to your account
             </Link>
           </p>
@@ -197,7 +201,7 @@ export default function RegisterPage() {
                   required
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="First Name"
                 />
               </div>
@@ -212,7 +216,7 @@ export default function RegisterPage() {
                   required
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="Last Name"
                 />
               </div>
@@ -228,7 +232,7 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="Email address"
                 />
               </div>
@@ -243,7 +247,7 @@ export default function RegisterPage() {
                   required
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="Phone Number"
                 />
               </div>
@@ -255,7 +259,7 @@ export default function RegisterPage() {
                   onSelect={(result) => {
                     setFormData(prev => ({ ...prev, address: result.display_name }))
                   }}
-                  className="appearance-none rounded-none relative block w-full focus:border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full focus:border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="Address"
                 />
               </div>
@@ -272,7 +276,7 @@ export default function RegisterPage() {
                     setSelectedOrgId('')
                   }}
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                 >
                   {USER_ROLES.map(r => (
                     <option key={r.value} value={r.value}>{r.label}</option>
@@ -291,7 +295,7 @@ export default function RegisterPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="Password"
                 />
               </div>
@@ -307,7 +311,7 @@ export default function RegisterPage() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   placeholder="Confirm Password"
                 />
               </div>
@@ -327,7 +331,7 @@ export default function RegisterPage() {
                       required
                       value={formData.organizationName}
                       onChange={handleInputChange}
-                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                       placeholder="Organization Name"
                     />
                   </div>
@@ -342,7 +346,7 @@ export default function RegisterPage() {
                       required
                       value={formData.organizationEmail}
                       onChange={handleInputChange}
-                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                       placeholder="Organization Email"
                     />
                   </div>
@@ -357,7 +361,7 @@ export default function RegisterPage() {
                       required
                       value={formData.organizationPhone}
                       onChange={handleInputChange}
-                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                       placeholder="Organization Phone"
                     />
                   </div>
@@ -369,7 +373,7 @@ export default function RegisterPage() {
                       onSelect={(result) => {
                         setFormData(prev => ({ ...prev, organizationAddress: result.display_name }))
                       }}
-                      className="appearance-none rounded-none relative block w-full focus:border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-none relative block w-full focus:border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
 
                       placeholder="Organization Address"
                     />
@@ -384,7 +388,7 @@ export default function RegisterPage() {
                       type="file"
                       accept="image/*"
                       onChange={handleFileChange}
-                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                     />
                   </div>
                 </>
@@ -399,7 +403,7 @@ export default function RegisterPage() {
                     value={selectedOrgId}
                     onChange={e => setSelectedOrgId(e.target.value)}
                     required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                   >
                     <option value="">Select an organization</option>
                     {organizations.map(org => (
@@ -427,7 +431,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -435,7 +439,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Creating account...' : 'Create account'}
               </button>
