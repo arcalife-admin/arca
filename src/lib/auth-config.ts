@@ -9,12 +9,12 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: "E-mail", type: "email" },
+        password: { label: "Parolă", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Invalid credentials')
+          throw new Error('Date de autentificare invalide')
         }
 
         try {
@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user) {
-            throw new Error('User not found')
+            throw new Error('Utilizator negăsit')
           }
 
           const isPasswordValid = await bcrypt.compare(
@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
           )
 
           if (!isPasswordValid) {
-            throw new Error('Invalid password')
+            throw new Error('Parolă incorectă')
           }
 
           // Update last login timestamp
@@ -60,7 +60,7 @@ export const authOptions: NextAuthOptions = {
             if (error.message.includes('prepared statement') ||
               error.message.includes('already exists') ||
               error.message.includes('42P05')) {
-              throw new Error('Database connection issue. Please try again.');
+              throw new Error('Problemă de conexiune la baza de date. Încercați din nou.');
             }
           }
 

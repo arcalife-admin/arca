@@ -194,7 +194,7 @@ CREATE TYPE "OrderPriority" AS ENUM (
 );
 
 CREATE TYPE "EquipmentCategory" AS ENUM (
-  'DENTAL_CHAIR',
+  'SURGICAL_TABLE',
   'XRAY_MACHINE',
   'AUTOCLAVE',
   'COMPRESSOR',
@@ -610,22 +610,6 @@ CREATE TABLE "AsaRecord" (
 );
 
 CREATE INDEX "AsaRecord_patientId_idx" ON "AsaRecord"("patientId");
-
--- CarePlan
-CREATE TABLE "CarePlan" (
-  "id" TEXT NOT NULL,
-  "careRequest" TEXT NOT NULL,
-  "careGoal" TEXT NOT NULL,
-  "policy" TEXT NOT NULL,
-  "riskProfile" JSONB NOT NULL,
-  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "createdBy" TEXT NOT NULL,
-  "patientId" TEXT NOT NULL,
-
-  CONSTRAINT "CarePlan_pkey" PRIMARY KEY ("id")
-);
-
-CREATE UNIQUE INDEX "CarePlan_patientId_key" ON "CarePlan"("patientId");
 
 -- NoteFolder
 CREATE TABLE "NoteFolder" (
@@ -1707,9 +1691,6 @@ ALTER TABLE "File" ADD CONSTRAINT "File_patientId_fkey" FOREIGN KEY ("patientId"
 
 -- AsaRecord
 ALTER TABLE "AsaRecord" ADD CONSTRAINT "AsaRecord_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- CarePlan
-ALTER TABLE "CarePlan" ADD CONSTRAINT "CarePlan_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- NoteFolder
 ALTER TABLE "NoteFolder" ADD CONSTRAINT "NoteFolder_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;

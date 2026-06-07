@@ -63,7 +63,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, [session?.user?.id]);
 
   // Calculate what will be displayed in the UI
-  const displayName = session?.user?.firstName || 'User'
+  const displayName = session?.user?.firstName || 'Utilizator'
   const getInitials = () => {
     // First try firstName and lastName
     if (session?.user?.firstName && session?.user?.lastName) {
@@ -86,11 +86,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const initials = getInitials();
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Patients', href: '/dashboard/patients' },
-    { name: 'Families', href: '/dashboard/families' },
-    { name: 'Appointments', href: '/dashboard/appointments' },
-    { name: 'Settings', href: '/dashboard/settings' },
+    { name: 'Panou principal', href: '/dashboard' },
+    { name: 'Pacienți', href: '/dashboard/patients' },
+    { name: 'Familii', href: '/dashboard/families' },
+    { name: 'Programări', href: '/dashboard/appointments' },
+    { name: 'Setări', href: '/dashboard/settings' },
   ]
 
   return (
@@ -125,7 +125,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
                 >
-                  <span className="mr-2">Hello, {displayName}</span>
+                  <span className="mr-2">Bună, {displayName}</span>
                   <div
                     className="h-8 w-8 rounded-full flex items-center justify-center text-white"
                     style={{ backgroundColor: avatarColor }}
@@ -139,13 +139,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       href="/dashboard/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Your Profile
+                      Profilul meu
                     </Link>
                     <button
                       onClick={() => signOut()}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Sign out
+                      Deconectare
                     </button>
                   </div>
                 )}
@@ -175,7 +175,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
 function DashboardMainContent({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<div className="p-4">Loading content...</div>}>
+    <Suspense fallback={<div className="p-4">Se încarcă conținutul...</div>}>
       <LayoutWithSearchParams {...{
         children: (
           <main className="max-w-8xl py-6 sm:px-6 lg:px-8">

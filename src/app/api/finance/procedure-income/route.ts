@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
         startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
     }
 
-    // Fetch completed and in-progress dental procedures by the logged-in practitioner
-    const completedProcedures = await prisma.dentalProcedure.findMany({
+    const completedProcedures = await prisma.surgicalProcedure.findMany({
       where: {
         practitionerId: session.user.id,
         date: {
@@ -64,14 +63,14 @@ export async function GET(request: NextRequest) {
 
     // Transform procedures into income entries
     const procedureIncome = completedProcedures.map(procedure => {
-      const quantity = (procedure as any).quantity || 1
-      const amount = (procedure.code.rate || 0) * quantity
+      const quantity = procedure.quantity || 1
+      const amount = procedure.cost ?? (procedure.code.price || 0) * quantity
 
       return {
         id: `procedure_${procedure.id}`,
         amount: amount,
         description: `${procedure.code.code} - ${procedure.code.description}`,
-        source: 'Dental Procedure',
+        source: 'Surgical Procedure',
         type: 'TREATMENT',
         date: procedure.date.toISOString(),
         procedureId: procedure.id,
@@ -79,8 +78,8 @@ export async function GET(request: NextRequest) {
         patientCode: procedure.patient.patientCode,
         codeId: procedure.code.id,
         quantity: quantity,
-        unitRate: procedure.code.rate || 0,
-        toothNumber: procedure.toothNumber,
+        unitRate: procedure.code.price || 0,
+        bodyArea: procedure.bodyArea,
         notes: procedure.notes
       }
     })
@@ -131,6 +130,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching procedure income:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

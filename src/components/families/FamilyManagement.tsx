@@ -45,7 +45,7 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
   const fetchFamilyData = async () => {
     try {
       const response = await fetch('/api/families');
-      if (!response.ok) throw new Error('Failed to fetch families');
+      if (!response.ok) throw new Error('Încărcarea familiilor a eșuat');
 
       const data: ApiResponse = await response.json();
       setFamilyGroups(data.familyGroups);
@@ -53,8 +53,8 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
     } catch (error) {
       console.error('Error fetching families:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load family data',
+        title: 'Eroare',
+        description: 'Încărcarea datelor despre familii a eșuat',
         variant: 'destructive',
       });
     } finally {
@@ -65,8 +65,8 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
   const createFamily = async () => {
     if (selectedPatients.length < 2) {
       toast({
-        title: 'Error',
-        description: 'Please select at least 2 patients to create a family',
+        title: 'Eroare',
+        description: 'Selectați cel puțin 2 pacienți pentru a crea o familie',
         variant: 'destructive',
       });
       return;
@@ -86,13 +86,13 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create family');
+        throw new Error(error.error || 'Crearea familiei a eșuat');
       }
 
       const result = await response.json();
       toast({
-        title: 'Success',
-        description: `Family created with ${result.membersCount} members under code ${result.familyHeadCode}`,
+        title: 'Succes',
+        description: `Familie creată cu ${result.membersCount} membri sub codul ${result.familyHeadCode}`,
       });
 
       setSelectedPatients([]);
@@ -100,8 +100,8 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
     } catch (error: any) {
       console.error('Error creating family:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to create family',
+        title: 'Eroare',
+        description: error.message || 'Crearea familiei a eșuat',
         variant: 'destructive',
       });
     } finally {
@@ -120,20 +120,20 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to remove patient');
+        throw new Error(error.error || 'Eliminarea pacientului a eșuat');
       }
 
       toast({
-        title: 'Success',
-        description: 'Patient removed from family',
+        title: 'Succes',
+        description: 'Pacient eliminat din familie',
       });
 
       await fetchFamilyData();
     } catch (error: any) {
       console.error('Error removing patient:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to remove patient',
+        title: 'Eroare',
+        description: error.message || 'Eliminarea pacientului a eșuat',
         variant: 'destructive',
       });
     }
@@ -147,21 +147,21 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to delete family');
+        throw new Error(error.error || 'Ștergerea familiei a eșuat');
       }
 
       const result = await response.json();
       toast({
-        title: 'Success',
-        description: `Family deleted. ${result.membersReverted} patients reverted to individual status.`,
+        title: 'Succes',
+        description: `Familie ștearsă. ${result.membersReverted} pacienți au revenit la statut individual.`,
       });
 
       await fetchFamilyData();
     } catch (error: any) {
       console.error('Error deleting family:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete family',
+        title: 'Eroare',
+        description: error.message || 'Ștergerea familiei a eșuat',
         variant: 'destructive',
       });
     }
@@ -202,9 +202,9 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Family Management</h1>
+          <h1 className="text-2xl font-bold">Gestionare familii</h1>
           <p className="text-gray-600">
-            {familyGroups.length} families • {individualPatients.length} individual patients
+            {familyGroups.length} familii • {individualPatients.length} pacienți individuali
           </p>
         </div>
       </div>
@@ -212,12 +212,12 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
       {/* Search */}
       <div className="flex gap-4">
         <div className="flex-1">
-          <Label htmlFor="search">Search patients or families</Label>
+          <Label htmlFor="search">Căutați pacienți sau familii</Label>
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="search"
-              placeholder="Search by name, code, or email..."
+              placeholder="Căutați după nume, cod sau e-mail..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -232,14 +232,14 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Home className="h-5 w-5" />
-              Create New Family
+              Creează familie nouă
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600 mb-2">
-                  Selected patients ({selectedPatients.length}):
+                  Pacienți selectați ({selectedPatients.length}):
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {selectedPatients.map(code => {
@@ -259,13 +259,13 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
                   className="flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  {isCreatingFamily ? 'Creating...' : 'Create Family'}
+                  {isCreatingFamily ? 'Se creează...' : 'Creează familie'}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setSelectedPatients([])}
                 >
-                  Clear Selection
+                  Șterge selecția
                 </Button>
               </div>
             </div>
@@ -278,7 +278,7 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Home className="h-5 w-5" />
-            Family Groups ({filteredFamilyGroups.length})
+            Grupuri familiale ({filteredFamilyGroups.length})
           </h2>
           {filteredFamilyGroups.map((family) => (
             <Card key={family.familyHeadCode} className="border-green-200">
@@ -286,9 +286,9 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
                 <div className="flex justify-between items-center">
                   <CardTitle className="flex items-center gap-2">
                     <Home className="h-5 w-5 text-green-600" />
-                    Family {family.familyHeadCode}
+                    Familie {family.familyHeadCode}
                     <Badge variant="secondary">
-                      {family.patients.length} members
+                      {family.patients.length} membri
                     </Badge>
                   </CardTitle>
                   <Button
@@ -336,7 +336,7 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <User className="h-5 w-5" />
-            Individual Patients ({filteredIndividualPatients.length})
+            Pacienți individuali ({filteredIndividualPatients.length})
           </h2>
           <div className="grid gap-3">
             {filteredIndividualPatients.map((patient) => (
@@ -371,9 +371,9 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
         <Card>
           <CardContent className="pt-6 text-center">
             <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No results found</h3>
+            <h3 className="text-lg font-medium mb-2">Niciun rezultat găsit</h3>
             <p className="text-gray-600">
-              Try adjusting your search terms or check spelling.
+              Încercați alți termeni de căutare sau verificați ortografia.
             </p>
           </CardContent>
         </Card>
@@ -383,13 +383,13 @@ export default function FamilyManagement({ organizationId }: FamilyManagementPro
         <Card>
           <CardContent className="pt-6 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No patients found</h3>
+            <h3 className="text-lg font-medium mb-2">Niciun pacient găsit</h3>
             <p className="text-gray-600">
-              Add patients to your organization to start managing families.
+              Adăugați pacienți în organizație pentru a începe gestionarea familiilor.
             </p>
           </CardContent>
         </Card>
       )}
     </div>
   );
-} 
+}

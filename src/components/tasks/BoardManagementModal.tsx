@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 const boardSchema = z.object({
-  name: z.string().min(1, 'Board name is required'),
+  name: z.string().min(1, 'Numele tablei este obligatoriu'),
   description: z.string().optional(),
   color: z.string().optional(),
   isPublic: z.boolean().default(false),
@@ -122,11 +122,11 @@ export default function BoardManagementModal({
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to create board');
+      if (!response.ok) throw new Error('Crearea board');
 
       toast({
-        title: 'Success',
-        description: 'Board created successfully',
+        title: 'Succes',
+        description: 'Tabla a fost creată cu succes',
       });
 
       reset();
@@ -137,8 +137,8 @@ export default function BoardManagementModal({
     } catch (error) {
       console.error('Error creating board:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to create board',
+        title: 'Eroare',
+        description: 'Crearea tablei a eșuat',
         variant: 'destructive',
       });
     } finally {
@@ -157,13 +157,13 @@ export default function BoardManagementModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Board Management</DialogTitle>
+          <DialogTitle>Gestionare table</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="create" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="create">Create Board</TabsTrigger>
-            <TabsTrigger value="boards">My Boards</TabsTrigger>
+            <TabsTrigger value="create">Creează tablă</TabsTrigger>
+            <TabsTrigger value="boards">Tablele mele</TabsTrigger>
           </TabsList>
 
           <TabsContent value="create" className="space-y-4">
@@ -171,10 +171,10 @@ export default function BoardManagementModal({
               {/* Basic Information */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Board Name *</Label>
+                  <Label htmlFor="name">Nume tablă *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Christmas Preparations"
+                    placeholder="ex., Pregătiri Crăciun"
                     {...register('name')}
                   />
                   {errors.name && (
@@ -183,11 +183,11 @@ export default function BoardManagementModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Descriere</Label>
                   <Textarea
                     id="description"
                     {...register('description')}
-                    placeholder="What is this board for?"
+                    placeholder="Pentru ce este această tablă?"
                     rows={3}
                   />
                 </div>
@@ -196,7 +196,7 @@ export default function BoardManagementModal({
                 <div>
                   <Label className="flex items-center space-x-2">
                     <Palette className="w-4 h-4" />
-                    <span>Board Color</span>
+                    <span>Culoare tablă</span>
                   </Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {BOARD_COLORS.map((color) => (
@@ -218,11 +218,11 @@ export default function BoardManagementModal({
                     checked={watchedIsPublic}
                     onCheckedChange={(checked) => setValue('isPublic', checked)}
                   />
-                  <Label>Make this board public</Label>
+                  <Label>Faceți această tablă publică</Label>
                 </div>
                 {watchedIsPublic && (
                   <p className="text-sm text-muted-foreground">
-                    Public boards are visible to everyone in your organization
+                    Tablele publice sunt vizibile tuturor din organizația dvs.
                   </p>
                 )}
               </div>
@@ -231,7 +231,7 @@ export default function BoardManagementModal({
               <div>
                 <Label className="flex items-center space-x-2">
                   <Users className="w-4 h-4" />
-                  <span>Board Members</span>
+                  <span>Membri tablă</span>
                 </Label>
                 <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
                   {users.map((user) => (
@@ -260,10 +260,10 @@ export default function BoardManagementModal({
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
+                  Anulează
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Board'}
+                  {loading ? 'Se creează...' : 'Creează tablă'}
                 </Button>
               </DialogFooter>
             </form>
@@ -286,7 +286,7 @@ export default function BoardManagementModal({
                         />
                         <span>{board.name}</span>
                         {board.isPublic && (
-                          <Badge variant="outline" className="text-xs">Public</Badge>
+                          <Badge variant="outline" className="text-xs">Publică</Badge>
                         )}
                       </div>
                     </CardTitle>
@@ -298,11 +298,11 @@ export default function BoardManagementModal({
                       </p>
                     )}
                     <div className="flex items-center justify-between text-sm">
-                      <span>{board.tasks?.length || 0} tasks</span>
-                      <span>{board.members?.length || 0} members</span>
+                      <span>{board.tasks?.length || 0} sarcini</span>
+                      <span>{board.members?.length || 0} membri</span>
                     </div>
                     <div className="mt-2 text-xs text-blue-600 font-medium">
-                      Click to view tasks →
+                      Click pentru a vedea sarcinile →
                     </div>
                   </CardContent>
                 </Card>
@@ -310,7 +310,7 @@ export default function BoardManagementModal({
 
               {boards.length === 0 && (
                 <div className="col-span-2 text-center py-8">
-                  <p className="text-muted-foreground">No boards created yet. Create your first board!</p>
+                  <p className="text-muted-foreground">Nu există table create încă. Creați prima tablă!</p>
                 </div>
               )}
             </div>

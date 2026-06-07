@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: 'Neautorizat' }, { status: 401 })
     }
 
     // Get personal theme settings for the user
@@ -38,7 +38,7 @@ export async function GET() {
   } catch (error) {
     console.error('Failed to get personal theme settings:', error)
     return NextResponse.json(
-      { message: 'Failed to get personal theme settings' },
+      { message: 'Obținerea setărilor temei personale a eșuat' },
       { status: 500 }
     )
   }
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ message: 'Neautorizat' }, { status: 401 })
     }
 
     const updates = await request.json()
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Failed to update personal theme settings:', error)
     return NextResponse.json(
-      { message: 'Failed to update personal theme settings' },
+      { message: 'Actualizarea setărilor temei personale a eșuat' },
       { status: 500 }
     )
   }

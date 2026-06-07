@@ -15,15 +15,15 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
 
   const examples = [
     {
-      title: 'Single Appointment',
-      description: 'Find a slot for a dental cleaning',
+      title: 'Programare simplă',
+      description: 'Găsiți un interval pentru o curățare dentară',
       icon: <User className="h-6 w-6" />,
       details: [
-        'Patient: John Smith',
-        'Treatment: Dental cleaning',
-        'Duration: 30 minutes',
-        'Practitioner: Dr. Johnson',
-        'Search: Next 7 days'
+        'Pacient: John Smith',
+        'Tratament: Curățare dentară',
+        'Durată: 30 minute',
+        'Practician: Dr. Johnson',
+        'Căutare: Următoarele 7 zile'
       ],
       mode: 'single' as const,
       preset: {
@@ -34,15 +34,15 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
       }
     },
     {
-      title: 'Combination Appointment',
-      description: 'Schedule cleaning + check-up with different practitioners',
+      title: 'Programare combinată',
+      description: 'Programați curățare + control cu practicieni diferiți',
       icon: <Users className="h-6 w-6" />,
       details: [
-        'Patient: Sarah Wilson',
-        'Appointment 1: Dental cleaning (30min) with Dr. Smith',
-        'Appointment 2: Check-up (15min) with Dr. Johnson',
-        'Search: Next 14 days',
-        'Sequential scheduling'
+        'Pacient: Sarah Wilson',
+        'Programare 1: Curățare dentară (30 min) cu Dr. Smith',
+        'Programare 2: Control (15 min) cu Dr. Johnson',
+        'Căutare: Următoarele 14 zile',
+        'Programare secvențială'
       ],
       mode: 'combi' as const,
       preset: {
@@ -64,15 +64,15 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
       }
     },
     {
-      title: 'Emergency Slot',
-      description: 'Find immediate availability for urgent treatment',
+      title: 'Interval de urgență',
+      description: 'Găsiți disponibilitate imediată pentru tratament urgent',
       icon: <Clock className="h-6 w-6" />,
       details: [
-        'Patient: Mike Davis',
-        'Treatment: Emergency treatment',
-        'Duration: 45 minutes',
-        'Search: Today only',
-        'Any available practitioner'
+        'Pacient: Mike Davis',
+        'Tratament: Tratament de urgență',
+        'Durată: 45 minute',
+        'Căutare: Doar astăzi',
+        'Orice practician disponibil'
       ],
       mode: 'single' as const,
       preset: {
@@ -88,23 +88,23 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
 
   const features = [
     {
-      title: 'Smart Search',
-      description: 'Intelligent algorithm finds optimal time slots',
+      title: 'Căutare inteligentă',
+      description: 'Algoritmul găsește automat intervalele orare optime',
       icon: <Search className="h-5 w-5" />
     },
     {
-      title: 'Leave Integration',
-      description: 'Respects practitioner leave and blocked times',
+      title: 'Integrare concedii',
+      description: 'Respectă concediile și intervalele blocate ale practicienilor',
       icon: <Calendar className="h-5 w-5" />
     },
     {
-      title: 'Multi-Practitioner',
-      description: 'Schedule with different practitioners in sequence',
+      title: 'Mai mulți practicieni',
+      description: 'Programați secvențial cu practicieni diferiți',
       icon: <Users className="h-5 w-5" />
     },
     {
-      title: 'Flexible Duration',
-      description: 'Customize appointment lengths as needed',
+      title: 'Durată flexibilă',
+      description: 'Personalizați durata programărilor după necesități',
       icon: <Clock className="h-5 w-5" />
     }
   ];
@@ -114,7 +114,7 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Search className="h-6 w-6 text-blue-600" />
-          Quick Find Empty Spot - Demo & Examples
+          Găsire rapidă interval liber — Demo și exemple
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -125,21 +125,21 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
             size="sm"
             onClick={() => setActiveTab('examples')}
           >
-            Example Scenarios
+            Scenarii exemplu
           </Button>
           <Button
             variant={activeTab === 'features' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setActiveTab('features')}
           >
-            Key Features
+            Funcționalități cheie
           </Button>
         </div>
 
         {activeTab === 'examples' && (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 mb-4">
-              Click on any example below to see how the Quick Find feature works with different scenarios:
+              Faceți clic pe orice exemplu de mai jos pentru a vedea cum funcționează Găsirea rapidă în diferite scenarii:
             </p>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -170,7 +170,7 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
                       className="w-full"
                       onClick={() => onOpenQuickFind(example.mode, example.preset)}
                     >
-                      Try This Example
+                      Încercați acest exemplu
                       <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
                   </CardContent>
@@ -183,7 +183,7 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
         {activeTab === 'features' && (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 mb-4">
-              The Quick Find feature provides powerful scheduling capabilities:
+              Funcția Găsire rapidă oferă capabilități avansate de programare:
             </p>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -205,27 +205,27 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
             </div>
 
             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-sm mb-2">How It Works</h4>
+              <h4 className="font-semibold text-sm mb-2">Cum funcționează</h4>
               <div className="space-y-2 text-xs text-gray-700">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">1</Badge>
-                  <span>Select patient and appointment details</span>
+                  <span>Selectați pacientul și detaliile programării</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">2</Badge>
-                  <span>Configure search criteria (date range, time window)</span>
+                  <span>Configurați criteriile de căutare (interval de date, fereastră orară)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">3</Badge>
-                  <span>System searches through available time slots</span>
+                  <span>Sistemul caută intervalele orare disponibile</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">4</Badge>
-                  <span>Review results and select optimal time</span>
+                  <span>Examinați rezultatele și selectați intervalul optim</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">5</Badge>
-                  <span>Appointments are automatically scheduled</span>
+                  <span>Programările sunt create automat</span>
                 </div>
               </div>
             </div>
@@ -234,4 +234,4 @@ export default function QuickFindDemo({ onOpenQuickFind }: QuickFindDemoProps) {
       </CardContent>
     </Card>
   );
-} 
+}

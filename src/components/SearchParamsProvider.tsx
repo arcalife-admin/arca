@@ -25,7 +25,7 @@ function SearchParamsContent({ children }: { children: ReactNode }) {
 
 export function SearchParamsProvider({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Se încarcă...</div>}>
       <SearchParamsContent>{children}</SearchParamsContent>
     </Suspense>
   );

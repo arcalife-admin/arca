@@ -27,7 +27,7 @@ export async function DELETE(
 
       if (!video) {
         return NextResponse.json(
-          { error: 'Video not found' },
+          { error: 'Videoclipul nu a fost găsit' },
           { status: 404 }
         );
       }
@@ -35,7 +35,7 @@ export async function DELETE(
       // Only allow deletion of custom videos
       if (!video.isCustom) {
         return NextResponse.json(
-          { error: 'Cannot delete predefined videos' },
+          { error: 'Nu se pot șterge videoclipurile predefinite' },
           { status: 403 }
         );
       }
@@ -44,7 +44,7 @@ export async function DELETE(
         where: { id },
       });
 
-      return NextResponse.json({ message: 'Video deleted successfully' });
+      return NextResponse.json({ message: 'Videoclipul a fost șters cu succes' });
     } else if (type === 'image') {
       // Delete image
       const image = await prisma.instructionImage.findUnique({
@@ -53,7 +53,7 @@ export async function DELETE(
 
       if (!image) {
         return NextResponse.json(
-          { error: 'Image not found' },
+          { error: 'Imaginea nu a fost găsită' },
           { status: 404 }
         );
       }
@@ -61,7 +61,7 @@ export async function DELETE(
       // Only allow deletion of custom images
       if (!image.isCustom) {
         return NextResponse.json(
-          { error: 'Cannot delete predefined images' },
+          { error: 'Nu se pot șterge imaginile predefinite' },
           { status: 403 }
         );
       }
@@ -86,17 +86,17 @@ export async function DELETE(
         where: { id },
       });
 
-      return NextResponse.json({ message: 'Image deleted successfully' });
+      return NextResponse.json({ message: 'Imaginea a fost ștearsă cu succes' });
     } else {
       return NextResponse.json(
-        { error: 'Type parameter is required (video or image)' },
+        { error: 'Parametrul type este obligatoriu (video sau image)' },
         { status: 400 }
       );
     }
   } catch (error) {
     console.error('Error deleting instruction:', error);
     return NextResponse.json(
-      { error: 'Failed to delete instruction' },
+      { error: 'Ștergerea instrucțiunii a eșuat' },
       { status: 500 }
     );
   }

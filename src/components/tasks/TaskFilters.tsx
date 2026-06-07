@@ -29,6 +29,20 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
+const statusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.PENDING]: 'În așteptare',
+  [TaskStatus.IN_PROGRESS]: 'În desfășurare',
+  [TaskStatus.COMPLETED]: 'Finalizat',
+  [TaskStatus.CANCELLED]: 'Anulat',
+};
+
+const priorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.LOW]: 'Scăzută',
+  [TaskPriority.MEDIUM]: 'Medie',
+  [TaskPriority.HIGH]: 'Ridicată',
+  [TaskPriority.URGENT]: 'Urgentă',
+};
+
 interface TaskFiltersProps {
   filters: TaskFilters;
   sortOptions: TaskSortOptions;
@@ -102,7 +116,7 @@ export default function TaskFilters({
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm">
                   <Filter className="w-4 h-4 mr-2" />
-                  Filters
+                  Filtre
                   {activeFiltersCount > 0 && (
                     <Badge variant="secondary" className="ml-2">
                       {activeFiltersCount}
@@ -118,7 +132,7 @@ export default function TaskFilters({
                   className="text-muted-foreground"
                 >
                   <X className="w-4 h-4 mr-1" />
-                  Clear
+                  Șterge
                 </Button>
               )}
             </div>
@@ -132,12 +146,12 @@ export default function TaskFilters({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="createdAt">Created Date</SelectItem>
-                  <SelectItem value="updatedAt">Updated Date</SelectItem>
-                  <SelectItem value="deadline">Deadline</SelectItem>
-                  <SelectItem value="priority">Priority</SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
-                  <SelectItem value="title">Title</SelectItem>
+                  <SelectItem value="createdAt">Data creării</SelectItem>
+                  <SelectItem value="updatedAt">Data actualizării</SelectItem>
+                  <SelectItem value="deadline">Termen limită</SelectItem>
+                  <SelectItem value="priority">Prioritate</SelectItem>
+                  <SelectItem value="status">Stare</SelectItem>
+                  <SelectItem value="title">Titlu</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -163,12 +177,12 @@ export default function TaskFilters({
           <CardContent className="space-y-6">
             {/* Search */}
             <div>
-              <Label htmlFor="search">Search</Label>
+              <Label htmlFor="search">Căutare</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Search tasks..."
+                  placeholder="Căutați sarcini..."
                   value={filters.search || ''}
                   onChange={(e) => onFiltersChange({ ...filters, search: e.target.value || undefined })}
                   className="pl-10"
@@ -179,7 +193,7 @@ export default function TaskFilters({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Status Filter */}
               <div>
-                <Label className="text-sm font-medium">Status</Label>
+                <Label className="text-sm font-medium">Stare</Label>
                 <div className="space-y-2 mt-2">
                   {Object.values(TaskStatus).map((status) => (
                     <div key={status} className="flex items-center space-x-2">
@@ -189,7 +203,7 @@ export default function TaskFilters({
                         onCheckedChange={(checked) => handleStatusChange(status, checked as boolean)}
                       />
                       <Label htmlFor={`status-${status}`} className="text-sm">
-                        {status.replace('_', ' ')}
+                        {statusLabels[status]}
                       </Label>
                     </div>
                   ))}
@@ -198,7 +212,7 @@ export default function TaskFilters({
 
               {/* Priority Filter */}
               <div>
-                <Label className="text-sm font-medium">Priority</Label>
+                <Label className="text-sm font-medium">Prioritate</Label>
                 <div className="space-y-2 mt-2">
                   {Object.values(TaskPriority).map((priority) => (
                     <div key={priority} className="flex items-center space-x-2">
@@ -208,7 +222,7 @@ export default function TaskFilters({
                         onCheckedChange={(checked) => handlePriorityChange(priority, checked as boolean)}
                       />
                       <Label htmlFor={`priority-${priority}`} className="text-sm">
-                        {priority}
+                        {priorityLabels[priority]}
                       </Label>
                     </div>
                   ))}
@@ -217,7 +231,7 @@ export default function TaskFilters({
 
               {/* Assignment Filter */}
               <div>
-                <Label className="text-sm font-medium">Assignment</Label>
+                <Label className="text-sm font-medium">Atribuire</Label>
                 <div className="space-y-2 mt-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -229,7 +243,7 @@ export default function TaskFilters({
                       })}
                     />
                     <Label htmlFor="assigned-to-me" className="text-sm">
-                      Assigned to me
+                      Atribuite mie
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -242,7 +256,7 @@ export default function TaskFilters({
                       })}
                     />
                     <Label htmlFor="created-by-me" className="text-sm">
-                      Created by me
+                      Creat de mine
                     </Label>
                   </div>
                 </div>
@@ -252,7 +266,7 @@ export default function TaskFilters({
             {/* Patient Filter */}
             {patients.length > 0 && (
               <div>
-                <Label htmlFor="patient">Patient</Label>
+                <Label htmlFor="patient">Pacient</Label>
                 <Select
                   value={filters.patientId || 'all'}
                   onValueChange={(value) => onFiltersChange({
@@ -261,10 +275,10 @@ export default function TaskFilters({
                   })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="All patients" />
+                    <SelectValue placeholder="Toți pacienții" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All patients</SelectItem>
+                    <SelectItem value="all">Toți pacienții</SelectItem>
                     {patients.map((patient) => (
                       <SelectItem key={patient.id} value={patient.id}>
                         {patient.firstName} {patient.lastName}
@@ -280,11 +294,11 @@ export default function TaskFilters({
               <div>
                 <Label className="text-sm font-medium flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
-                  Deadline
+                  Termen limită
                 </Label>
                 <div className="space-y-2 mt-2">
                   <div>
-                    <Label htmlFor="deadline-from" className="text-xs">From</Label>
+                    <Label htmlFor="deadline-from" className="text-xs">De la</Label>
                     <Input
                       id="deadline-from"
                       type="date"
@@ -293,7 +307,7 @@ export default function TaskFilters({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="deadline-to" className="text-xs">To</Label>
+                    <Label htmlFor="deadline-to" className="text-xs">Până la</Label>
                     <Input
                       id="deadline-to"
                       type="date"
@@ -307,11 +321,11 @@ export default function TaskFilters({
               <div>
                 <Label className="text-sm font-medium flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
-                  Created Date
+                  Data creării
                 </Label>
                 <div className="space-y-2 mt-2">
                   <div>
-                    <Label htmlFor="created-from" className="text-xs">From</Label>
+                    <Label htmlFor="created-from" className="text-xs">De la</Label>
                     <Input
                       id="created-from"
                       type="date"
@@ -320,7 +334,7 @@ export default function TaskFilters({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="created-to" className="text-xs">To</Label>
+                    <Label htmlFor="created-to" className="text-xs">Până la</Label>
                     <Input
                       id="created-to"
                       type="date"

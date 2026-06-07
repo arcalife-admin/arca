@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Package, Clock, AlertTriangle } from 'lucide-react';
+import { appAlert } from '@/lib/app-alert';
 
 interface OrderRequest {
   id: string;
@@ -139,11 +140,11 @@ export default function OrderCreationModal({
         });
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to create order'}`);
+        appAlert(error.error || 'Crearea comenzii a eșuat', { title: 'Eroare' });
       }
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('Failed to create order');
+      appAlert('Crearea comenzii a eșuat', { title: 'Eroare' });
     } finally {
       setLoading(false);
     }
@@ -160,10 +161,10 @@ export default function OrderCreationModal({
   };
 
   const priorityOptions = [
-    { value: 'LOW', label: 'Low Priority', icon: '🟢' },
-    { value: 'NORMAL', label: 'Normal Priority', icon: '🔵' },
-    { value: 'HIGH', label: 'High Priority', icon: '🟠' },
-    { value: 'URGENT', label: 'Urgent', icon: '🔴' },
+    { value: 'LOW', label: 'Prioritate scăzută', icon: '🟢' },
+    { value: 'NORMAL', label: 'Prioritate normală', icon: '🔵' },
+    { value: 'HIGH', label: 'Prioritate ridicată', icon: '🟠' },
+    { value: 'URGENT', label: 'Urgentă', icon: '🔴' },
   ];
 
   return (
@@ -172,18 +173,18 @@ export default function OrderCreationModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Create Order from Requests
+            Creează comandă din cereri
           </DialogTitle>
           <DialogDescription>
-            Create an order for {selectedRequests.length} approved request{selectedRequests.length !== 1 ? 's' : ''}.
-            Set delivery expectations and vendor details.
+            Creați o comandă pentru {selectedRequests.length} {selectedRequests.length === 1 ? 'cerere aprobată' : 'cereri aprobate'}.
+            Setați așteptările de livrare și detaliile furnizorului.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Selected Requests Summary */}
           <div>
-            <Label className="text-sm font-medium">Selected Requests ({selectedRequests.length})</Label>
+            <Label className="text-sm font-medium">Cereri selectate ({selectedRequests.length})</Label>
             <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
               {selectedRequests.map((request) => (
                 <Card key={request.id} className="p-3">
@@ -197,7 +198,7 @@ export default function OrderCreationModal({
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">
-                          Qty: {request.quantity} • Requested by {request.requestedBy.firstName} {request.requestedBy.lastName}
+                          Cant.: {request.quantity} • Solicitat de {request.requestedBy.firstName} {request.requestedBy.lastName}
                         </p>
                         {request.description && (
                           <p className="text-sm text-gray-500 mt-1">{request.description}</p>
@@ -212,13 +213,13 @@ export default function OrderCreationModal({
 
           {/* Vendor Selection */}
           <div>
-            <Label htmlFor="vendor">Vendor *</Label>
+            <Label htmlFor="vendor">Furnizor *</Label>
             <Select
               value={formData.vendorId}
               onValueChange={(value) => setFormData({ ...formData, vendorId: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a vendor" />
+                <SelectValue placeholder="Selectați un furnizor" />
               </SelectTrigger>
               <SelectContent>
                 {vendors.map((vendor) => (
@@ -233,7 +234,7 @@ export default function OrderCreationModal({
 
           {/* Priority Selection */}
           <div>
-            <Label htmlFor="priority">Order Priority</Label>
+            <Label htmlFor="priority">Prioritate comandă</Label>
             <Select
               value={formData.priority}
               onValueChange={(value: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT') =>
@@ -258,7 +259,7 @@ export default function OrderCreationModal({
 
           {/* Delivery Date */}
           <div>
-            <Label className="text-sm font-medium">Expected Delivery</Label>
+            <Label className="text-sm font-medium">Livrare estimată</Label>
             <div className="mt-2 space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -269,7 +270,7 @@ export default function OrderCreationModal({
                   }
                 />
                 <Label htmlFor="deliveryUnknown" className="text-sm">
-                  I don't know the delivery date yet
+                  Nu cunosc încă data livrării
                 </Label>
               </div>
 
@@ -282,7 +283,7 @@ export default function OrderCreationModal({
                     min={new Date().toISOString().split('T')[0]}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    You can adjust this later in the Orders tab
+                    Puteți ajusta ulterior în fila Comenzi
                   </p>
                 </div>
               )}
@@ -291,12 +292,12 @@ export default function OrderCreationModal({
 
           {/* Notes */}
           <div>
-            <Label htmlFor="notes">Order Notes (Optional)</Label>
+            <Label htmlFor="notes">Note comandă (opțional)</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Any special instructions or notes for this order..."
+              placeholder="Instrucțiuni speciale sau note pentru această comandă..."
               rows={3}
             />
           </div>
@@ -306,9 +307,9 @@ export default function OrderCreationModal({
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-yellow-800">Pricing Information</p>
+                <p className="text-sm font-medium text-yellow-800">Informații despre prețuri</p>
                 <p className="text-xs text-yellow-700 mt-1">
-                  Unit prices are set to €0 for now. You can update pricing details in the Orders tab once you receive the actual quotes.
+                  Prețurile unitare sunt setate provizoriu la 0 €. Puteți actualiza detaliile de preț în fila Comenzi după primirea ofertelor.
                 </p>
               </div>
             </div>
@@ -316,18 +317,18 @@ export default function OrderCreationModal({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Anulare
             </Button>
             <Button
               type="submit"
               disabled={loading || !formData.vendorId}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {loading ? 'Creating Order...' : 'Create Order'}
+              {loading ? 'Se creează comanda...' : 'Creează comandă'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-} 
+}

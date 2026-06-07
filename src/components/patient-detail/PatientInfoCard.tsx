@@ -11,16 +11,8 @@ interface PatientInfoCardProps {
   onSettingsClick: () => void
   onLocationClick: () => void
   onAsaClick: () => void
-  onPpsClick: () => void
-  onScreeningRecallClick: () => void
-  onCleaningRecallClick: () => void
-  onCarePlanClick: () => void
   onEmailClick: () => void
   getLatestAsaData: () => any
-  getLatestPpsData: () => any
-  getLatestScreeningRecallData: () => any
-  getLatestCleaningRecallData: () => any
-  formatPpsScores: (scores: number[]) => string
   isDisabled?: boolean
 }
 
@@ -30,16 +22,8 @@ export default function PatientInfoCard({
   onSettingsClick,
   onLocationClick,
   onAsaClick,
-  onPpsClick,
-  onScreeningRecallClick,
-  onCleaningRecallClick,
-  onCarePlanClick,
   onEmailClick,
   getLatestAsaData,
-  getLatestPpsData,
-  getLatestScreeningRecallData,
-  getLatestCleaningRecallData,
-  formatPpsScores,
   isDisabled = false
 }: PatientInfoCardProps) {
   const { startCall } = useCall()
@@ -68,7 +52,7 @@ export default function PatientInfoCard({
 
   return (
     <TooltipProvider>
-      <div className="row-span-1 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <Card className="p-3 border-2 border-blue-400 w-full">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -77,7 +61,7 @@ export default function PatientInfoCard({
               </h2>
               {patient.isDisabled && (
                 <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
-                  Disabled
+                  Dezactivat
                 </span>
               )}
             </div>
@@ -89,21 +73,21 @@ export default function PatientInfoCard({
                       onClick={isDisabled ? undefined : onEditClick}
                       disabled={isDisabled}
                       className={`flex-shrink-0 p-1 rounded transition-colors ${isDisabled ? 'cursor-not-allowed opacity-40' : 'hover:bg-gray-100'}`}
-                      title="Edit patient information"
+                      title="Editează informațiile pacientului"
                     >
                       <Edit className={`w-3 h-3 ${isDisabled ? 'text-gray-400' : 'text-blue-600'}`} />
                     </button>
                   </TooltipTrigger>
                   {isDisabled && (
                     <TooltipContent>
-                      <p className="text-xs">Re-enable patient to edit</p>
+                      <p className="text-xs">Reactivați pacientul pentru a edita</p>
                     </TooltipContent>
                   )}
                 </Tooltip>
                 <button
                   onClick={onSettingsClick}
                   className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
-                  title="Patient settings and management"
+                  title="Setări și administrare pacient"
                 >
                   <Settings className="w-3 h-3 text-gray-600" />
                 </button>
@@ -124,8 +108,8 @@ export default function PatientInfoCard({
                 <TooltipContent side="bottom" className="bg-blue-500/80 border-blue-500 ml-70 ">
                   <p className="text-xs">
                     {allowEarlySpotContact
-                      ? "Patient is okay with being contacted for early appointment slots"
-                      : "Patient prefers not to be contacted for early appointment slots"
+                      ? "Pacientul acceptă să fie contactat pentru programări anticipate"
+                      : "Pacientul preferă să nu fie contactat pentru programări anticipate"
                     }
                   </p>
                 </TooltipContent>
@@ -140,7 +124,7 @@ export default function PatientInfoCard({
               <div className="flex items-center gap-1">
                 <span
                   onClick={onEmailClick}
-                  title="Send email to patient"
+                  title="Trimite e-mail pacientului"
                   className="cursor-pointer"
                 >
                   <Mail className="w-3 h-3 text-blue-600 hover:text-blue-800" />
@@ -157,7 +141,7 @@ export default function PatientInfoCard({
                     phone: patient.phone,
                     initials: `${patient.firstName?.[0] || ''}${patient.lastName?.[0] || ''}`
                   })}
-                  title="Call patient"
+                  title="Sună pacientul"
                   className="cursor-pointer"
                 >
                   <Phone className="w-3 h-3 text-blue-600 hover:text-blue-800" />
@@ -171,7 +155,7 @@ export default function PatientInfoCard({
               <button
                 onClick={onLocationClick}
                 className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors"
-                title="View address and travel times"
+                title="Vezi adresa și timpii de deplasare"
               >
                 <MapPin className="w-3 h-3 text-blue-600" />
               </button>
@@ -185,57 +169,9 @@ export default function PatientInfoCard({
                 onClick={onAsaClick}
                 className="h-6 px-2 text-xs"
               >
-                {getLatestAsaData().score ? `ASA ${getLatestAsaData().score} (${getLatestAsaData().date})` : 'ASA: n/a'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onPpsClick}
-                className="h-6 px-2 text-xs"
-              >
-                {getLatestPpsData().scores ? `PPS ${formatPpsScores(getLatestPpsData().scores)} (${getLatestPpsData().date})` : 'PPS: n/a'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onScreeningRecallClick}
-                className="h-6 px-2 text-xs"
-              >
-                {getLatestScreeningRecallData().screeningMonths ?
-                  (getLatestScreeningRecallData().customText ?
-                    `C002 Recall: ${getLatestScreeningRecallData().customText} (${getLatestScreeningRecallData().date})` :
-                    `C002 Recall ${getLatestScreeningRecallData().screeningMonths} mnd (${getLatestScreeningRecallData().date})`
-                  ) : 'C002: n/a'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onCleaningRecallClick}
-                className="h-6 px-2 text-xs"
-              >
-                {getLatestCleaningRecallData().cleaningMonths ?
-                  (getLatestCleaningRecallData().customText ?
-                    `${getLatestCleaningRecallData().procedureCode} Recall: ${getLatestCleaningRecallData().customText} (${getLatestCleaningRecallData().date})` :
-                    `${getLatestCleaningRecallData().procedureCode} Recall ${getLatestCleaningRecallData().cleaningMonths} mnd (${getLatestCleaningRecallData().date})`
-                  ) : `${getLatestCleaningRecallData().procedureCode || 'MHG'}: n/a`}
+                {getLatestAsaData().score ? `ASA ${getLatestAsaData().score} (${getLatestAsaData().date})` : 'ASA: indisponibil'}
               </Button>
             </div>
-          </div>
-        </Card>
-        <Card className="p-3 border-2 border-blue-400 flex-1 w-full">
-          <div className="font-bold text-blue-700 mb-2">Care Plan:</div>
-          <div className="text-xs space-y-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onCarePlanClick}
-              className="h-6 px-2 text-xs"
-            >
-              {patient?.carePlan ?
-                `Care Plan (${new Date(patient.carePlan.updatedAt).toLocaleDateString()})` :
-                'No Care Plan'
-              }
-            </Button>
           </div>
         </Card>
       </div>

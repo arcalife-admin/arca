@@ -59,6 +59,26 @@ interface DayOfWeekOverrideModalProps {
   onOverrideCreated: () => void
 }
 
+const WEEKDAY_LABELS: Record<string, string> = {
+  Monday: 'luni',
+  Tuesday: 'marți',
+  Wednesday: 'miercuri',
+  Thursday: 'joi',
+  Friday: 'vineri',
+  Saturday: 'sâmbătă',
+  Sunday: 'duminică',
+}
+
+const WEEKDAY_LABELS_CAP: Record<string, string> = {
+  Monday: 'Luni',
+  Tuesday: 'Marți',
+  Wednesday: 'Miercuri',
+  Thursday: 'Joi',
+  Friday: 'Vineri',
+  Saturday: 'Sâmbătă',
+  Sunday: 'Duminică',
+}
+
 export default function DayOfWeekOverrideModal({
   isOpen,
   onClose,
@@ -74,6 +94,9 @@ export default function DayOfWeekOverrideModal({
 }: DayOfWeekOverrideModalProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+
+  const dayLabel = WEEKDAY_LABELS[selectedDayOfWeek] ?? selectedDayOfWeek
+  const dayLabelCap = WEEKDAY_LABELS_CAP[selectedDayOfWeek] ?? selectedDayOfWeek
 
   // Form state
   const [isUnavailable, setIsUnavailable] = useState(false)
@@ -109,8 +132,8 @@ export default function DayOfWeekOverrideModal({
   const handleSubmit = async () => {
     if (!scheduleId || !selectedDayOfWeek) {
       toast({
-        title: 'Error',
-        description: 'Missing schedule or day information',
+        title: 'Eroare',
+        description: 'Lipsesc informațiile despre program sau zi',
         variant: 'destructive',
       })
       return
@@ -118,8 +141,8 @@ export default function DayOfWeekOverrideModal({
 
     if (!selectedPractitioner && !selectedRoom) {
       toast({
-        title: 'Error',
-        description: 'Please select either a practitioner or room',
+        title: 'Eroare',
+        description: 'Selectați un practician sau un cabinet',
         variant: 'destructive',
       })
       return
@@ -127,8 +150,8 @@ export default function DayOfWeekOverrideModal({
 
     if (!isUnavailable && (!startTime || !endTime)) {
       toast({
-        title: 'Error',
-        description: 'Please provide start and end times',
+        title: 'Eroare',
+        description: 'Introduceți ora de început și ora de sfârșit',
         variant: 'destructive',
       })
       return
@@ -136,8 +159,8 @@ export default function DayOfWeekOverrideModal({
 
     if (!isUnavailable && startTime >= endTime) {
       toast({
-        title: 'Error',
-        description: 'End time must be after start time',
+        title: 'Eroare',
+        description: 'Ora de sfârșit trebuie să fie după ora de început',
         variant: 'destructive',
       })
       return
@@ -167,10 +190,10 @@ export default function DayOfWeekOverrideModal({
 
       if (response.ok) {
         toast({
-          title: 'Success',
+          title: 'Succes',
           description: isUnavailable
-            ? `${selectedDayOfWeek} marked as unavailable`
-            : `${selectedDayOfWeek} hours updated successfully`,
+            ? `${dayLabelCap} a fost marcată ca indisponibilă`
+            : `Programul pentru ${dayLabel} a fost actualizat cu succes`,
         })
         onOverrideCreated()
         onClose()
@@ -181,8 +204,8 @@ export default function DayOfWeekOverrideModal({
     } catch (error) {
       console.error('Error saving recurring override:', error)
       toast({
-        title: 'Error',
-        description: `Failed to save ${selectedDayOfWeek} override: ${error.message}`,
+        title: 'Eroare',
+        description: `Salvarea excepției pentru ${dayLabel} a eșuat: ${error.message}`,
         variant: 'destructive',
       })
     } finally {
@@ -202,7 +225,7 @@ export default function DayOfWeekOverrideModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Repeat className="h-5 w-5" />
-            Weekly Schedule Override
+            Excepție program săptămânal
           </DialogTitle>
         </DialogHeader>
 
@@ -211,15 +234,15 @@ export default function DayOfWeekOverrideModal({
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
             <div className="flex items-center gap-2 text-purple-700">
               <Calendar className="h-4 w-4" />
-              <span className="font-medium">Every {selectedDayOfWeek}</span>
+              <span className="font-medium">În fiecare {dayLabel}</span>
             </div>
             <div className="text-purple-600 text-sm mt-1">
-              This will apply to all {selectedDayOfWeek}s in the schedule period
+              Se va aplica tuturor zilelor de {dayLabel} din perioada programului
             </div>
             {selectedRoomNumber && (
               <div className="flex items-center gap-2 text-purple-600 mt-1">
                 <Home className="h-4 w-4" />
-                <span className="text-sm">Room {selectedRoomNumber}</span>
+                <span className="text-sm">Cabinet {selectedRoomNumber}</span>
               </div>
             )}
             {getSelectedPractitionerName() && (
@@ -232,13 +255,13 @@ export default function DayOfWeekOverrideModal({
 
           {/* Practitioner Selection (optional, prefilled if provided) */}
           <div>
-            <Label htmlFor="practitioner">Practitioner (Optional)</Label>
+            <Label htmlFor="practitioner">Practician (opțional)</Label>
             <Select value={selectedPractitioner} onValueChange={(val) => setSelectedPractitioner(val === 'none' ? '' : val)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select practitioner (optional)" />
+                <SelectValue placeholder="Selectați practicianul (opțional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None (apply to all rooms)</SelectItem>
+                <SelectItem value="none">Niciunul (se aplică tuturor cabinetelor)</SelectItem>
                 {practitioners.map((practitioner) => (
                   <SelectItem key={practitioner.id} value={practitioner.id}>
                     {practitioner.firstName} {practitioner.lastName}
@@ -251,16 +274,16 @@ export default function DayOfWeekOverrideModal({
           {/* Room Selection (if not pre-selected) */}
           {!selectedRoomNumber && !selectedPractitioner && (
             <div>
-              <Label htmlFor="room">Room (Optional)</Label>
+              <Label htmlFor="room">Cabinet (opțional)</Label>
               <Select value={selectedRoom} onValueChange={(val) => setSelectedRoom(val === 'none' ? '' : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select room (optional)" />
+                  <SelectValue placeholder="Selectați cabinetul (opțional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">All rooms</SelectItem>
+                  <SelectItem value="none">Toate cabinetele</SelectItem>
                   {Array.from({ length: roomCount }, (_, i) => (
                     <SelectItem key={i + 1} value={(i + 1).toString()}>
-                      Room {i + 1}
+                      Cabinet {i + 1}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -272,7 +295,7 @@ export default function DayOfWeekOverrideModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UserX className="h-4 w-4 text-red-500" />
-              <Label htmlFor="unavailable">Mark all {selectedDayOfWeek}s as Unavailable</Label>
+              <Label htmlFor="unavailable">Marchează toate zilele de {dayLabel} ca indisponibile</Label>
             </div>
             <Switch
               id="unavailable"
@@ -286,12 +309,12 @@ export default function DayOfWeekOverrideModal({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-600">
                 <Clock className="h-4 w-4" />
-                <span className="font-medium">{selectedDayOfWeek} Working Hours</span>
+                <span className="font-medium">Program de lucru — {dayLabelCap}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start-time">Start Time</Label>
+                  <Label htmlFor="start-time">Ora de început</Label>
                   <Input
                     id="start-time"
                     type="time"
@@ -300,7 +323,7 @@ export default function DayOfWeekOverrideModal({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end-time">End Time</Label>
+                  <Label htmlFor="end-time">Ora de sfârșit</Label>
                   <Input
                     id="end-time"
                     type="time"
@@ -315,7 +338,7 @@ export default function DayOfWeekOverrideModal({
           {/* Reason */}
           <div>
             <Label htmlFor="reason">
-              Reason {isUnavailable ? '(Required for unavailability)' : '(Optional)'}
+              Motiv {isUnavailable ? '(obligatoriu pentru indisponibilitate)' : '(opțional)'}
             </Label>
             <Textarea
               id="reason"
@@ -323,8 +346,8 @@ export default function DayOfWeekOverrideModal({
               onChange={(e) => setReason(e.target.value)}
               placeholder={
                 isUnavailable
-                  ? `Why are all ${selectedDayOfWeek}s unavailable? (e.g., weekly meeting, maintenance day)`
-                  : `Why do ${selectedDayOfWeek}s need different hours? (e.g., half day, extended hours)`
+                  ? `De ce sunt toate zilele de ${dayLabel} indisponibile? (ex.: ședință săptămânală, zi de mentenanță)`
+                  : `De ce au zilele de ${dayLabel} un program diferit? (ex.: jumătate de zi, program prelungit)`
               }
               className="resize-none"
               rows={3}
@@ -334,7 +357,7 @@ export default function DayOfWeekOverrideModal({
           {/* Buttons */}
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              Anulare
             </Button>
             <Button
               onClick={handleSubmit}
@@ -342,11 +365,11 @@ export default function DayOfWeekOverrideModal({
               className="flex-1"
             >
               {loading ? (
-                'Saving...'
+                'Se salvează...'
               ) : isUnavailable ? (
-                `Mark ${selectedDayOfWeek}s Unavailable`
+                `Marchează ${dayLabelCap} indisponibile`
               ) : (
-                `Set ${selectedDayOfWeek} Hours`
+                `Setează programul pentru ${dayLabelCap}`
               )}
             </Button>
           </div>
@@ -354,4 +377,4 @@ export default function DayOfWeekOverrideModal({
       </DialogContent>
     </Dialog>
   )
-} 
+}

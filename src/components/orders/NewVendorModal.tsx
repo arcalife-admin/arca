@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Users, Star } from 'lucide-react';
+import { appAlert } from '@/lib/app-alert';
 
 interface NewVendorModalProps {
   isOpen: boolean;
@@ -80,11 +81,11 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
         });
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to create vendor'}`);
+        appAlert(error.error || 'Crearea furnizorului a eșuat', { title: 'Eroare' });
       }
     } catch (error) {
       console.error('Error creating vendor:', error);
-      alert('Failed to create vendor');
+      appAlert('Crearea furnizorului a eșuat', { title: 'Eroare' });
     } finally {
       setLoading(false);
     }
@@ -96,45 +97,45 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-blue-600" />
-            Add New Vendor
+            Adaugă furnizor nou
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Basic Information</h3>
+            <h3 className="font-medium text-gray-900">Informații de bază</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Vendor Name *</Label>
+                <Label htmlFor="name">Denumire furnizor *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Patterson Dental"
+                  placeholder="ex.: Farmacia Unirea, MedSupply SRL"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="category">Category (Optional)</Label>
+                <Label htmlFor="category">Categorie (opțional)</Label>
                 <Input
                   id="category"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g., Dental Supplies"
+                  placeholder="ex.: Medicamente, Materiale chirurgicale"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">Descriere (opțional)</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description of the vendor..."
+                placeholder="Scurtă descriere a furnizorului..."
                 rows={2}
               />
             </div>
@@ -142,51 +143,51 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
 
           {/* Contact Information */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Contact Information (Optional)</h3>
+            <h3 className="font-medium text-gray-900">Date de contact (opțional)</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="contactEmail">Email</Label>
+                <Label htmlFor="contactEmail">E-mail</Label>
                 <Input
                   id="contactEmail"
                   type="email"
                   value={formData.contactEmail}
                   onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                  placeholder="orders@vendor.com"
+                  placeholder="comenzi@furnizor.ro"
                 />
               </div>
 
               <div>
-                <Label htmlFor="contactPhone">Phone</Label>
+                <Label htmlFor="contactPhone">Telefon</Label>
                 <Input
                   id="contactPhone"
                   value={formData.contactPhone}
                   onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                  placeholder="+1-800-123-4567"
+                  placeholder="+40-800-123-456"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="website">Website (Optional)</Label>
+                <Label htmlFor="website">Site web (opțional)</Label>
                 <Input
                   id="website"
                   type="url"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  placeholder="https://www.vendor.com"
+                  placeholder="https://www.furnizor.ro"
                 />
               </div>
 
               <div>
-                <Label htmlFor="orderingUrl">Ordering Page URL (Optional)</Label>
+                <Label htmlFor="orderingUrl">URL pagină comenzi (opțional)</Label>
                 <Input
                   id="orderingUrl"
                   type="url"
                   value={formData.orderingUrl}
                   onChange={(e) => setFormData({ ...formData, orderingUrl: e.target.value })}
-                  placeholder="https://www.vendor.com/orders"
+                  placeholder="https://www.furnizor.ro/comenzi"
                 />
               </div>
             </div>
@@ -194,45 +195,45 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
 
           {/* Business Details */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Business Details (Optional)</h3>
+            <h3 className="font-medium text-gray-900">Detalii comerciale (opțional)</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="accountNumber">Account Number</Label>
+                <Label htmlFor="accountNumber">Număr cont</Label>
                 <Input
                   id="accountNumber"
                   value={formData.accountNumber}
                   onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                  placeholder="Your account number with vendor"
+                  placeholder="Numărul contului dvs. la furnizor"
                 />
               </div>
 
               <div>
-                <Label htmlFor="paymentTerms">Payment Terms</Label>
+                <Label htmlFor="paymentTerms">Termeni de plată</Label>
                 <Input
                   id="paymentTerms"
                   value={formData.paymentTerms}
                   onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                  placeholder="e.g., Net 30, COD"
+                  placeholder="ex.: Net 30, la livrare"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="deliveryTime">Delivery Time (days)</Label>
+                <Label htmlFor="deliveryTime">Termen livrare (zile)</Label>
                 <Input
                   id="deliveryTime"
                   type="number"
                   min={1}
                   value={formData.deliveryTime}
                   onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
-                  placeholder="e.g., 3"
+                  placeholder="ex.: 3"
                 />
               </div>
 
               <div>
-                <Label htmlFor="minimumOrder">Minimum Order (€)</Label>
+                <Label htmlFor="minimumOrder">Comandă minimă (€)</Label>
                 <Input
                   id="minimumOrder"
                   type="number"
@@ -240,7 +241,7 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
                   step={0.01}
                   value={formData.minimumOrder}
                   onChange={(e) => setFormData({ ...formData, minimumOrder: e.target.value })}
-                  placeholder="e.g., 100.00"
+                  placeholder="ex.: 100.00"
                 />
               </div>
             </div>
@@ -248,12 +249,12 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
 
           {/* Settings */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Settings</h3>
+            <h3 className="font-medium text-gray-900">Setări</h3>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="isActive">Active Vendor</Label>
-                <p className="text-sm text-gray-500">Vendor is active and available for orders</p>
+                <Label htmlFor="isActive">Furnizor activ</Label>
+                <p className="text-sm text-gray-500">Furnizorul este activ și disponibil pentru comenzi</p>
               </div>
               <Switch
                 id="isActive"
@@ -266,9 +267,9 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
               <div className="space-y-0.5">
                 <Label htmlFor="isPreferred" className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-yellow-500" />
-                  Preferred Vendor
+                  Furnizor preferat
                 </Label>
-                <p className="text-sm text-gray-500">Mark as a preferred vendor for priority display</p>
+                <p className="text-sm text-gray-500">Marcați ca furnizor preferat pentru afișare prioritară</p>
               </div>
               <Switch
                 id="isPreferred"
@@ -280,14 +281,14 @@ export default function NewVendorModal({ isOpen, onClose, onSuccess }: NewVendor
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Anulare
             </Button>
             <Button type="submit" disabled={loading || !formData.name.trim()}>
-              {loading ? 'Creating...' : 'Create Vendor'}
+              {loading ? 'Se creează...' : 'Creează furnizor'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-} 
+}

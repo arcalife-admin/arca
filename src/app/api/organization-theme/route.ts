@@ -67,7 +67,7 @@ export async function GET() {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -98,7 +98,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching theme settings:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -110,7 +110,7 @@ export async function PUT(request: Request) {
 
     if (!session?.user?.organizationId || session.user.role !== 'ORGANIZATION_OWNER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners can update theme settings' },
+        { message: 'Neautorizat — doar proprietarii organizației pot actualiza tema' },
         { status: 403 }
       )
     }
@@ -140,14 +140,14 @@ export async function PUT(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error updating theme settings:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

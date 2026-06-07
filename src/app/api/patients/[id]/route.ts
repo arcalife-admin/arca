@@ -5,14 +5,14 @@ import { z } from 'zod'
 import { authOptions } from '@/lib/auth-config'
 
 const patientSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string().min(1, 'Prenumele este obligatoriu'),
+  lastName: z.string().min(1, 'Numele este obligatoriu'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   gender: z.enum(['MALE', 'FEMALE']),
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string().email('Adresă de e-mail invalidă').optional(),
   phone: z.string().optional(),
   address: z.object({
-    display_name: z.string().min(1, 'Address is required'),
+    display_name: z.string().min(1, 'Adresa este obligatorie'),
     lat: z.string(),
     lon: z.string(),
   }),
@@ -27,14 +27,14 @@ const patientSchema = z.object({
 })
 
 const patientUpdateSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string().min(1, 'Prenumele este obligatoriu'),
+  lastName: z.string().min(1, 'Numele este obligatoriu'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   gender: z.enum(['MALE', 'FEMALE']),
-  email: z.string().email('Invalid email address').or(z.literal('')).optional(),
+  email: z.string().email('Adresă de e-mail invalidă').or(z.literal('')).optional(),
   phone: z.string().or(z.literal('')).optional(),
   address: z.object({
-    display_name: z.string().min(1, 'Address is required'),
+    display_name: z.string().min(1, 'Adresa este obligatorie'),
     lat: z.string(),
     lon: z.string(),
   }).optional(),
@@ -43,6 +43,7 @@ const patientUpdateSchema = z.object({
   allowEarlySpotContact: z.boolean().optional(),
   isLongTermCareAct: z.boolean().optional(),
   statusPraesens: z.any().optional(),
+  surgicalHistory: z.any().optional(),
 })
 
 export async function GET(
@@ -77,7 +78,6 @@ export async function GET(
         asaHistory: {
           orderBy: { date: 'desc' }
         },
-        carePlan: true,
       }
     })
 
@@ -115,12 +115,19 @@ export async function GET(
             return {}
           }
         })() : patient.medicalHistory,
+      surgicalHistory: typeof patient.surgicalHistory === 'string' ?
+        (() => {
+          try {
+            return JSON.parse(patient.surgicalHistory)
+          } catch {
+            return {}
+          }
+        })() : patient.surgicalHistory ?? {},
       // Include the history records
       asaHistory: patient.asaHistory?.map(record => ({
         ...record,
         date: record.date.toISOString()
       })) || [],
-      carePlan: patient.carePlan,
     }
 
     return NextResponse.json(transformedPatient)
@@ -195,6 +202,10 @@ export async function PATCH(
       updateData.statusPraesens = body.statusPraesens
     }
 
+    if (body.surgicalHistory !== undefined) {
+      updateData.surgicalHistory = body.surgicalHistory
+    }
+
     console.log('Final updateData for database:', updateData)
 
     const updatedPatient = await prisma.patient.update({
@@ -241,6 +252,14 @@ export async function PATCH(
             return undefined
           }
         })() : updatedPatient.medicalHistory,
+      surgicalHistory: typeof updatedPatient.surgicalHistory === 'string' ?
+        (() => {
+          try {
+            return JSON.parse(updatedPatient.surgicalHistory as string)
+          } catch {
+            return {}
+          }
+        })() : updatedPatient.surgicalHistory ?? {},
       // Include the history records
       asaHistory: updatedPatient.asaHistory?.map(record => ({
         ...record,
@@ -268,7 +287,7 @@ export async function DELETE(
 
     if (!session) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -283,7 +302,7 @@ export async function DELETE(
 
     if (!patient) {
       return NextResponse.json(
-        { message: 'Patient not found' },
+        { message: 'Pacientul nu a fost găsit' },
         { status: 404 }
       )
     }
@@ -297,7 +316,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting patient:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

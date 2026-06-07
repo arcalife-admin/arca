@@ -14,7 +14,8 @@ import { toast } from 'sonner';
 import { format, addMinutes, isSameDay, startOfDay, endOfDay, isWithinInterval, addDays, isAfter, isBefore } from 'date-fns';
 import { Calendar, Clock, User, Users, Plus, X, Search, CheckCircle, AlertCircle } from 'lucide-react';
 import { Appointment, AppointmentType } from '@/types/appointment';
-import { treatmentTypes } from '@/data/treatmentTypes';
+import { useAppointmentProcedureTypes } from '@/hooks/useAppointmentProcedureTypes';
+import { resolveAppointmentType } from '@/lib/appointment-procedure-types';
 
 interface QuickFindEmptySpotModalProps {
   isOpen: boolean;
@@ -45,6 +46,36 @@ interface FoundSpot {
   order?: number;
 }
 
+function createDefaultCombiAppointments(procedureTypes: AppointmentType[]): CombiAppointment[] {
+  const first = procedureTypes[0];
+  const second = procedureTypes[1] ?? first;
+
+  if (!first) {
+    return [];
+  }
+
+  return [
+    {
+      id: '1',
+      type: first,
+      practitionerId: '',
+      duration: first.duration,
+      order: 1,
+    },
+    {
+      id: '2',
+      type: second,
+      practitionerId: '',
+      duration: second.duration,
+      order: 2,
+    },
+  ];
+}
+
+function getProcedureLabel(type: AppointmentType): string {
+  return type.description || type.name;
+}
+
 export default function QuickFindEmptySpotModal({
   isOpen,
   onClose,
@@ -55,6 +86,7 @@ export default function QuickFindEmptySpotModal({
   existingAppointments,
   leaveBlocks
 }: QuickFindEmptySpotModalProps) {
+  const { procedureTypes, loading: loadingProcedureTypes } = useAppointmentProcedureTypes();
   const [searchMode, setSearchMode] = useState<'single' | 'combi'>('single');
   const [selectedPatient, setSelectedPatient] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -66,22 +98,7 @@ export default function QuickFindEmptySpotModal({
   const [searchEndTime, setSearchEndTime] = useState<string>('17:00');
 
   // Combi appointment state
-  const [combiAppointments, setCombiAppointments] = useState<CombiAppointment[]>([
-    {
-      id: '1',
-      type: treatmentTypes.find(t => t.name === 'Dental cleaning') || treatmentTypes[0],
-      practitionerId: '',
-      duration: 30,
-      order: 1
-    },
-    {
-      id: '2',
-      type: treatmentTypes.find(t => t.name === 'Check-up') || treatmentTypes[1],
-      practitionerId: '',
-      duration: 15,
-      order: 2
-    }
-  ]);
+  const [combiAppointments, setCombiAppointments] = useState<CombiAppointment[]>([]);
 
   const [foundSpots, setFoundSpots] = useState<FoundSpot[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -89,12 +106,12 @@ export default function QuickFindEmptySpotModal({
 
   // Initialize with pending appointment data if provided
   useEffect(() => {
-    if (pendingAppointment && isOpen) {
+    if (pendingAppointment && isOpen && procedureTypes.length > 0) {
       setSelectedPatient(pendingAppointment.patientId || '');
       if (pendingAppointment.type) {
         const type = typeof pendingAppointment.type === 'object'
           ? pendingAppointment.type
-          : treatmentTypes.find(t => t.name === pendingAppointment.type);
+          : resolveAppointmentType(pendingAppointment.type, procedureTypes);
         if (type) {
           setCombiAppointments([{
             id: '1',
@@ -106,11 +123,11 @@ export default function QuickFindEmptySpotModal({
         }
       }
     }
-  }, [pendingAppointment, isOpen]);
+  }, [pendingAppointment, isOpen, procedureTypes]);
 
   // Reset form when modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && procedureTypes.length > 0 && !pendingAppointment) {
       setSearchMode('single');
       setSelectedPatient('');
       setSelectedDate('');
@@ -121,36 +138,22 @@ export default function QuickFindEmptySpotModal({
       setSearchStartTime('08:00');
       setSearchEndTime('17:00');
       setFoundSpots([]);
-
-      // Reset combiAppointments to default state - use a more neutral default
-      setCombiAppointments([
-        {
-          id: '1',
-          type: treatmentTypes.find(t => t.name === 'Check-up') || treatmentTypes[0],
-          practitionerId: '',
-          duration: 15,
-          order: 1
-        },
-        {
-          id: '2',
-          type: treatmentTypes.find(t => t.name === 'Dental cleaning') || treatmentTypes[1],
-          practitionerId: '',
-          duration: 30,
-          order: 2
-        }
-      ]);
+      setCombiAppointments(createDefaultCombiAppointments(procedureTypes));
     }
-  }, [isOpen]);
+  }, [isOpen, procedureTypes, pendingAppointment]);
 
   const addCombiAppointment = () => {
     const newOrder = combiAppointments.length + 1;
+    const defaultType = procedureTypes[0];
+    if (!defaultType) return;
+
     setCombiAppointments([
       ...combiAppointments,
       {
         id: Date.now().toString(),
-        type: treatmentTypes[0],
+        type: defaultType,
         practitionerId: '',
-        duration: 30,
+        duration: defaultType.duration,
         order: newOrder
       }
     ]);
@@ -236,7 +239,7 @@ export default function QuickFindEmptySpotModal({
         // If no specific practitioner is selected, search across all available practitioners
         if (!practitionerId) {
           if (availablePractitioners.length === 0) {
-            toast.error('No practitioners found for the selected type');
+            toast.error('Nu s-au găsit practicieni pentru tipul selectat');
             return;
           }
 
@@ -282,7 +285,7 @@ export default function QuickFindEmptySpotModal({
         } else {
           // Specific practitioner selected
           if (!availablePractitioners.find(p => p.id === practitionerId)) {
-            toast.error('Selected practitioner is not available for the specified type');
+            toast.error('Practicianul selectat nu este disponibil pentru tipul specificat');
             return;
           }
 
@@ -328,7 +331,7 @@ export default function QuickFindEmptySpotModal({
         const validAppointments = combiAppointments.filter(app => app.practitionerId);
 
         if (validAppointments.length < 2) {
-          toast.error('Please select at least 2 practitioners for combination appointments');
+          toast.error('Selectați cel puțin 2 practicieni pentru programările combinate');
           return;
         }
 
@@ -397,9 +400,9 @@ export default function QuickFindEmptySpotModal({
       setFoundSpots(spots);
 
       if (spots.length === 0) {
-        toast.info('No available spots found for the specified criteria');
+        toast.info('Nu s-au găsit intervale disponibile pentru criteriile specificate');
       } else {
-        toast.success(`Found ${spots.length} available spot${spots.length > 1 ? 's' : ''}`);
+        toast.success(`S-au găsit ${spots.length} ${spots.length > 1 ? 'intervale disponibile' : 'interval disponibil'}`);
 
         // Auto-scroll to results after a short delay
         setTimeout(() => {
@@ -413,7 +416,7 @@ export default function QuickFindEmptySpotModal({
       }
     } catch (error) {
       console.error('Error finding spots:', error);
-      toast.error('Error searching for available spots');
+      toast.error('Eroare la căutarea intervalelor disponibile');
     } finally {
       setIsSearching(false);
     }
@@ -475,17 +478,17 @@ export default function QuickFindEmptySpotModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
-            Quick Find Empty Spot
+            Găsire rapidă interval liber
           </DialogTitle>
           <DialogDescription>
-            Find available time slots for appointments. Support both single appointments and combination appointments with multiple practitioners.
+            Găsiți intervale orare disponibile pentru programări. Suportă atât programări simple, cât și programări combinate cu mai mulți practicieni.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Search Mode Selection */}
           <div className="space-y-4">
-            <Label className="text-lg font-semibold">Search Mode</Label>
+            <Label className="text-lg font-semibold">Mod căutare</Label>
             <div className="grid grid-cols-2 gap-4">
               <Card
                 className={`p-4 cursor-pointer border-2 transition-colors ${searchMode === 'single' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
@@ -494,8 +497,8 @@ export default function QuickFindEmptySpotModal({
               >
                 <div className="flex flex-col items-center space-y-2">
                   <User className="h-8 w-8" />
-                  <span className="font-medium">Single Appointment</span>
-                  <span className="text-sm text-gray-500 text-center">One appointment with one practitioner</span>
+                  <span className="font-medium">Programare simplă</span>
+                  <span className="text-sm text-gray-500 text-center">O programare cu un practician</span>
                 </div>
               </Card>
 
@@ -506,8 +509,8 @@ export default function QuickFindEmptySpotModal({
               >
                 <div className="flex flex-col items-center space-y-2">
                   <Users className="h-8 w-8" />
-                  <span className="font-medium">Combination Appointment</span>
-                  <span className="text-sm text-gray-500 text-center">Multiple appointments with different practitioners</span>
+                  <span className="font-medium">Programare combinată</span>
+                  <span className="text-sm text-gray-500 text-center">Mai multe programări cu practicieni diferiți</span>
                 </div>
               </Card>
             </div>
@@ -515,10 +518,10 @@ export default function QuickFindEmptySpotModal({
 
           {/* Patient Selection */}
           <div className="space-y-2">
-            <Label htmlFor="patient">Patient *</Label>
+            <Label htmlFor="patient">Pacient *</Label>
             <Select value={selectedPatient} onValueChange={setSelectedPatient}>
               <SelectTrigger>
-                <SelectValue placeholder="Select patient" />
+                <SelectValue placeholder="Selectați pacientul" />
               </SelectTrigger>
               <SelectContent>
                 {patients.map((patient) => (
@@ -531,7 +534,7 @@ export default function QuickFindEmptySpotModal({
             {selectedPatientName && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                Selected: {selectedPatientName.firstName} {selectedPatientName.lastName}
+                Selectat: {selectedPatientName.firstName} {selectedPatientName.lastName}
               </div>
             )}
           </div>
@@ -539,7 +542,7 @@ export default function QuickFindEmptySpotModal({
           {/* Search Criteria */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Specific Date (Optional)</Label>
+              <Label htmlFor="date">Dată specifică (opțional)</Label>
               <Input
                 type="date"
                 value={selectedDate}
@@ -548,7 +551,7 @@ export default function QuickFindEmptySpotModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="time">Specific Time (Optional)</Label>
+              <Label htmlFor="time">Oră specifică (opțional)</Label>
               <Input
                 type="time"
                 value={selectedTime}
@@ -560,23 +563,23 @@ export default function QuickFindEmptySpotModal({
           {/* Search Range */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="searchDays">Search Days</Label>
+              <Label htmlFor="searchDays">Zile de căutare</Label>
               <Select value={searchDays.toString()} onValueChange={(value) => setSearchDays(Number(value))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1 day</SelectItem>
-                  <SelectItem value="3">3 days</SelectItem>
-                  <SelectItem value="7">1 week</SelectItem>
-                  <SelectItem value="14">2 weeks</SelectItem>
-                  <SelectItem value="30">1 month</SelectItem>
+                  <SelectItem value="1">1 zi</SelectItem>
+                  <SelectItem value="3">3 zile</SelectItem>
+                  <SelectItem value="7">1 săptămână</SelectItem>
+                  <SelectItem value="14">2 săptămâni</SelectItem>
+                  <SelectItem value="30">1 lună</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time</Label>
+              <Label htmlFor="startTime">Ora de început</Label>
               <Input
                 type="time"
                 value={searchStartTime}
@@ -585,7 +588,7 @@ export default function QuickFindEmptySpotModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">Ora de sfârșit</Label>
               <Input
                 type="time"
                 value={searchEndTime}
@@ -600,38 +603,37 @@ export default function QuickFindEmptySpotModal({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Single Appointment
+                  Programare simplă
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Treatment Type</Label>
+                    <Label>Procedură</Label>
                     <Select
                       value={combiAppointments[0]?.type?.id || ''}
                       onValueChange={(value) => {
-                        const type = treatmentTypes.find(t => t.id === value);
-                        console.log('Treatment type selected:', value, 'Found type:', type);
+                        const type = procedureTypes.find(t => t.id === value);
                         if (type) {
-                          // Force immediate update
                           setCombiAppointments(prev => prev.map(app =>
                             app.id === '1' ? { ...app, type, duration: type.duration } : app
                           ));
                         }
                       }}
+                      disabled={loadingProcedureTypes}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select treatment" />
+                        <SelectValue placeholder={loadingProcedureTypes ? 'Se încarcă procedurile...' : 'Selectați procedura'} />
                       </SelectTrigger>
                       <SelectContent>
-                        {treatmentTypes.map((type) => (
+                        {procedureTypes.map((type) => (
                           <SelectItem key={type.id} value={type.id}>
                             <div className="flex items-center gap-2">
                               <div
                                 className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: type.color }}
                               />
-                              {type.name} ({type.duration}min)
+                              {getProcedureLabel(type)} ({type.duration}min)
                             </div>
                           </SelectItem>
                         ))}
@@ -640,7 +642,7 @@ export default function QuickFindEmptySpotModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Duration (minutes)</Label>
+                    <Label>Durată (minute)</Label>
                     <Input
                       type="number"
                       value={combiAppointments[0]?.duration || 30}
@@ -651,33 +653,32 @@ export default function QuickFindEmptySpotModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Practitioner Type (Optional)</Label>
+                    <Label>Tip practician (opțional)</Label>
                     <Select
                       value={selectedPractitionerType}
                       onValueChange={setSelectedPractitionerType}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Any practitioner type" />
+                        <SelectValue placeholder="Orice tip de practician" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">Any practitioner type</SelectItem>
-                        <SelectItem value="DENTIST">Dentist</SelectItem>
-                        <SelectItem value="HYGIENIST">Dental Hygienist</SelectItem>
-                        <SelectItem value="ORTHODONTIST">Orthodontist</SelectItem>
-                        <SelectItem value="PERIODONTOLOGIST">Periodontologist</SelectItem>
-                        <SelectItem value="IMPLANTOLOGIST">Implantologist</SelectItem>
-                        <SelectItem value="ENDODONTIST">Endodontist</SelectItem>
-                        <SelectItem value="ANESTHESIOLOGIST">Anesthesiologist</SelectItem>
-                        <SelectItem value="DENTAL_TECHNICIAN">Dental Technician</SelectItem>
-                        <SelectItem value="DENTAL_LAB_TECHNICIAN">Dental Lab Technician</SelectItem>
-                        <SelectItem value="ASSISTANT">Assistant</SelectItem>
-                        <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+                        <SelectItem value="ALL">Orice tip de practician</SelectItem>
+                        <SelectItem value="PLASTIC_SURGEON">Chirurg plastician</SelectItem>
+                        <SelectItem value="SURGEON">Chirurg</SelectItem>
+                        <SelectItem value="NURSE">Asistent medical</SelectItem>
+                        <SelectItem value="ANESTHESIOLOGIST">Anestezist</SelectItem>
+                        <SelectItem value="AESTHETIC_NURSE">Asistent estetic</SelectItem>
+                        <SelectItem value="MEDICAL_ASSISTANT">Asistent medical</SelectItem>
+                        <SelectItem value="COUNSELOR">Consilier</SelectItem>
+                        <SelectItem value="PHOTOGRAPHER">Fotograf</SelectItem>
+                        <SelectItem value="ASSISTANT">Asistent</SelectItem>
+                        <SelectItem value="RECEPTIONIST">Recepționer</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Practitioner</Label>
+                    <Label>Practician</Label>
                     <Select
                       value={selectedPractitioner || combiAppointments[0]?.practitionerId || ''}
                       onValueChange={(value) => {
@@ -686,7 +687,7 @@ export default function QuickFindEmptySpotModal({
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select practitioner" />
+                        <SelectValue placeholder="Selectați practicianul" />
                       </SelectTrigger>
                       <SelectContent>
                         {practitioners
@@ -717,13 +718,13 @@ export default function QuickFindEmptySpotModal({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Combination Appointment
+                  Programare combinată
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 pb-6">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">
-                    Configure multiple appointments that will be scheduled sequentially
+                    Configurați mai multe programări care vor fi planificate secvențial
                   </span>
                   <Button
                     type="button"
@@ -732,7 +733,7 @@ export default function QuickFindEmptySpotModal({
                     onClick={addCombiAppointment}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Appointment
+                    Adăugare programare
                   </Button>
                 </div>
 
@@ -741,7 +742,7 @@ export default function QuickFindEmptySpotModal({
                     <Card key={appointment.id} className="p-4 bg-muted border border-gray-200 rounded-lg shadow-sm">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline">Step {appointment.order}</Badge>
+                          <Badge variant="outline">Pasul {appointment.order}</Badge>
                           {combiAppointments.length > 1 && (
                             <Button
                               type="button"
@@ -757,7 +758,7 @@ export default function QuickFindEmptySpotModal({
 
                       <div className="grid grid-cols-4 gap-4 items-center">
                         <div className="space-y-1">
-                          <Label className="text-xs">Order</Label>
+                          <Label className="text-xs">Ordine</Label>
                           <Select
                             value={appointment.order.toString()}
                             onValueChange={(value) => reorderCombiAppointments(appointment.id, Number(value))}
@@ -775,30 +776,31 @@ export default function QuickFindEmptySpotModal({
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Treatment</Label>
+                          <Label className="text-xs">Procedură</Label>
                           <Select
                             value={appointment.type?.id || ''}
                             onValueChange={(value) => {
-                              const type = treatmentTypes.find(t => t.id === value);
+                              const type = procedureTypes.find(t => t.id === value);
                               if (type) {
                                 setCombiAppointments(prev => prev.map(app =>
                                   app.id === appointment.id ? { ...app, type, duration: type.duration } : app
                                 ));
                               }
                             }}
+                            disabled={loadingProcedureTypes}
                           >
                             <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select treatment" />
+                              <SelectValue placeholder={loadingProcedureTypes ? 'Se încarcă...' : 'Selectați procedura'} />
                             </SelectTrigger>
                             <SelectContent>
-                              {treatmentTypes.map((type) => (
+                              {procedureTypes.map((type) => (
                                 <SelectItem key={type.id} value={type.id}>
                                   <div className="flex items-center gap-2">
                                     <div
                                       className="w-3 h-3 rounded-full"
                                       style={{ backgroundColor: type.color }}
                                     />
-                                    {type.name} ({type.duration}min)
+                                    {getProcedureLabel(type)} ({type.duration}min)
                                   </div>
                                 </SelectItem>
                               ))}
@@ -806,7 +808,7 @@ export default function QuickFindEmptySpotModal({
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Duration</Label>
+                          <Label className="text-xs">Durată</Label>
                           <Input
                             type="number"
                             value={appointment.duration || 30}
@@ -819,7 +821,7 @@ export default function QuickFindEmptySpotModal({
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Practitioner</Label>
+                          <Label className="text-xs">Practician</Label>
                           <Select
                             value={appointment.practitionerId || ''}
                             onValueChange={(value) => setCombiAppointments(prev => prev.map(app =>
@@ -827,7 +829,7 @@ export default function QuickFindEmptySpotModal({
                             ))}
                           >
                             <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select practitioner" />
+                              <SelectValue placeholder="Selectați practicianul" />
                             </SelectTrigger>
                             <SelectContent>
                               {practitioners.map((practitioner) => (
@@ -855,18 +857,18 @@ export default function QuickFindEmptySpotModal({
           <div className="flex justify-center">
             <Button
               onClick={findAvailableSpots}
-              disabled={isSearching || !selectedPatient}
+              disabled={isSearching || !selectedPatient || combiAppointments.length === 0 || loadingProcedureTypes}
               className="px-8"
             >
               {isSearching ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Searching...
+                  Se caută...
                 </>
               ) : (
                 <>
                   <Search className="h-4 w-4 mr-2" />
-                  Find Available Spots
+                  Găsire intervale disponibile
                 </>
               )}
             </Button>
@@ -876,7 +878,7 @@ export default function QuickFindEmptySpotModal({
           {searchMode === 'combi' && foundSpots.length > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
               <div className="font-semibold text-green-700 mb-2">
-                ✓ Found {foundSpots.length} Available Spots
+                ✓ S-au găsit {foundSpots.length} intervale disponibile
               </div>
               {/* Group spots by combination (sequential steps) */}
               {(() => {
@@ -902,7 +904,7 @@ export default function QuickFindEmptySpotModal({
                 });
                 // Only show complete combinations (all steps)
                 const completeGroups = Object.values(groups).filter(g => g.length === combiAppointments.length);
-                if (completeGroups.length === 0) return <div className="text-gray-500">No complete combinations found.</div>;
+                if (completeGroups.length === 0) return <div className="text-gray-500">Nu s-au găsit combinații complete.</div>;
                 return (
                   <div className="space-y-4">
                     {completeGroups.map((group, idx) => (
@@ -911,7 +913,7 @@ export default function QuickFindEmptySpotModal({
                           {group.map((step, i) => (
                             <div key={i} className="flex items-center gap-2">
                               <span className="text-xs font-bold text-gray-500">{step.order}.</span>
-                              <span className="font-medium">{step.type.name} ({step.duration}min)</span>
+                              <span className="font-medium">{getProcedureLabel(step.type)} ({step.duration}min)</span>
                               <span className="text-xs text-gray-400">{format(step.startTime, 'HH:mm')} - {format(step.endTime, 'HH:mm')}</span>
                               <span className="text-xs text-gray-600">{practitioners.find(p => p.id === step.practitionerId)?.firstName}</span>
                               {i < group.length - 1 && <span className="mx-2 text-gray-300">→</span>}
@@ -919,7 +921,7 @@ export default function QuickFindEmptySpotModal({
                           ))}
                         </div>
                         <Button size="sm" onClick={() => handleSpotSelected(group)}>
-                          Select This Time
+                          Selectare interval
                         </Button>
                       </div>
                     ))}
@@ -932,7 +934,7 @@ export default function QuickFindEmptySpotModal({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Anulare
           </Button>
         </DialogFooter>
       </DialogContent>

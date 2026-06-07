@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Organization {
@@ -21,8 +22,10 @@ model Organization {
   updatedAt            DateTime                   @updatedAt
   roomCount            Int                        @default(1)
   openingDays          String[]                   @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+  eurToRonRate         Float                      @default(5.26)
   activityLogs         ActivityLog[]              @relation("ActivityLogOrganization")
   chatRooms            ChatRoom[]
+  clinicMedications    ClinicMedication[]
   clinicSchedules      ClinicSchedule[]
   contactPersons       ContactPerson[]
   equipment            Equipment[]
@@ -41,6 +44,7 @@ model Organization {
   taskBoards           TaskBoard[]
   users                User[]
   vendors              Vendor[]
+  timeClockEvents      TimeClockEvent[]
 }
 
 model User {
@@ -101,15 +105,37 @@ model User {
   dashboardData              UserDashboard?
   expenses                   UserExpense[]          @relation("UserExpense")
   financeSettings            UserFinanceSettings?
+  procedurePrices            UserProcedurePrice[]
   income                     UserIncome[]           @relation("UserIncome")
   waitingAppointmentsCreated WaitingAppointment[]
   waitingListAsCreator       WaitingListEntry[]     @relation("WaitingListCreator")
   waitingListAsPractitioner  WaitingListEntry[]     @relation("WaitingListPractitioner")
+  timeClockEvents            TimeClockEvent[]
 
   @@index([organizationId])
   @@index([isActive])
   @@index([isDisabled])
   @@index([role])
+}
+
+enum TimeClockEventType {
+  CLOCK_IN
+  CLOCK_OUT
+}
+
+model TimeClockEvent {
+  id             String             @id @default(cuid())
+  organizationId String
+  userId         String
+  eventType      TimeClockEventType
+  occurredAt     DateTime           @default(now())
+  source         String             @default("manual")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, occurredAt])
+  @@index([userId, occurredAt])
 }
 
 model Patient {
@@ -145,7 +171,6 @@ model Patient {
   activityLogs           ActivityLog[]           @relation("ActivityLogPatient")
   appointments           Appointment[]
   asaHistory             AsaRecord[]
-  carePlan               CarePlan?
   surgicalProcedures     SurgicalProcedure[]
   files                  File[]
   images                 Image[]
@@ -170,6 +195,7 @@ model SurgicalProcedureCode {
   code         String              @unique
   description  String
   price        Float?
+  currency     String              @default("EUR")
   category     String
   requirements Json
   section      String
@@ -179,6 +205,22 @@ model SurgicalProcedureCode {
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   procedures   SurgicalProcedure[]
+  userPrices   UserProcedurePrice[]
+}
+
+model UserProcedurePrice {
+  id        String                @id @default(cuid())
+  userId    String
+  codeId    String
+  price     Float
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      SurgicalProcedureCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeId])
+  @@index([userId])
+  @@index([codeId])
 }
 
 model SurgicalProcedure {
@@ -393,19 +435,6 @@ model AsaRecord {
   patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([patientId])
-}
-
-
-model CarePlan {
-  id          String   @id @default(cuid())
-  careRequest String
-  careGoal    String
-  policy      String
-  riskProfile Json
-  updatedAt   DateTime @default(now())
-  createdBy   String
-  patientId   String   @unique
-  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model NoteFolder {
@@ -1409,6 +1438,32 @@ model ProcedureBackup {
   @@unique([id]) // Only one row in the table at any time
 }
 
+model ClinicMedication {
+  id                   String       @id @default(cuid())
+  organizationId       String
+  sortOrder            Int
+  name                 String
+  aliases              String[]     @default([])
+  requiresFridge       Boolean      @default(false)
+  form                 String?
+  stockFarmacia        Int          @default(0)
+  stockEtaj1           Int          @default(0)
+  stockEtaj2           Int          @default(0)
+  stockEtaj3           Int          @default(0)
+  usageInstructions    String?      @db.Text
+  prescriptionTemplate String?      @db.Text
+  documentationUrl     String?
+  activeIngredient     String?
+  notes                String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([name])
+}
+
 enum UserRole {
   ORGANIZATION_OWNER
   MANAGER
@@ -1591,7 +1646,7 @@ enum OrderPriority {
 }
 
 enum EquipmentCategory {
-  DENTAL_CHAIR
+  SURGICAL_TABLE
   XRAY_MACHINE
   AUTOCLAVE
   COMPRESSOR

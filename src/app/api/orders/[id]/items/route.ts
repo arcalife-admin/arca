@@ -10,13 +10,13 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const orderId = params.id;
     const body = await request.json();
     const { updates } = body;
     if (!Array.isArray(updates)) {
-      return NextResponse.json({ error: 'Invalid updates' }, { status: 400 });
+      return NextResponse.json({ error: 'Actualizări invalide' }, { status: 400 });
     }
     for (const update of updates) {
       const { itemId, isReceived, quantityReceived, notes } = update;
@@ -51,6 +51,6 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating order items:', error);
-    return NextResponse.json({ error: 'Failed to update order items' }, { status: 500 });
+    return NextResponse.json({ error: 'Actualizarea articolelor comenzii a eșuat' }, { status: 500 });
   }
 } 

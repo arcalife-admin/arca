@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Get all patients with family information
@@ -66,7 +66,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching families:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch families' },
+      { error: 'Încărcarea familiilor a eșuat' },
       { status: 500 }
     );
   }
@@ -77,14 +77,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { patientCodes } = await request.json();
 
     if (!patientCodes || !Array.isArray(patientCodes) || patientCodes.length < 2) {
       return NextResponse.json(
-        { error: 'At least 2 patient codes are required to create a family' },
+        { error: 'Sunt necesare cel puțin 2 coduri de pacient pentru a crea o familie' },
         { status: 400 }
       );
     }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     if (patients.length !== patientCodes.length) {
       return NextResponse.json(
-        { error: 'One or more patient codes not found' },
+        { error: 'Unul sau mai multe coduri de pacient nu au fost găsite' },
         { status: 404 }
       );
     }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const patientsInFamilies = patients.filter(p => p.familyHeadCode);
     if (patientsInFamilies.length > 0) {
       return NextResponse.json(
-        { error: 'Some patients are already in families' },
+        { error: 'Unii pacienți sunt deja în familii' },
         { status: 400 }
       );
     }
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      message: 'Family created successfully',
+      message: 'Familia a fost creată cu succes',
       familyHeadCode,
       membersCount: sortedPatients.length
     });
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating family:', error);
     return NextResponse.json(
-      { error: 'Failed to create family' },
+      { error: 'Crearea familiei a eșuat' },
       { status: 500 }
     );
   }

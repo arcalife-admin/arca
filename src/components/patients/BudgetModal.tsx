@@ -8,17 +8,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { CalendarDays, FileText, Download, Mail, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { BudgetGenerator } from '@/utils/budgetGenerator';
+import { printPdfBlob } from '@/lib/print-html';
 
-interface DentalCode {
+interface SurgicalProcedureCode {
   id: string;
   code: string;
   description: string;
-  points: number | null;
-  rate: number | null;
+  price: number | null;
   category: string;
 }
 
-interface DentalProcedure {
+interface SurgicalProcedure {
   id: string;
   patientId: string;
   codeId: string;
@@ -27,14 +27,15 @@ interface DentalProcedure {
   status: string;
   createdAt: string;
   updatedAt: string;
-  code: DentalCode;
+  code: SurgicalProcedureCode;
   practitioner?: {
     id: string;
     firstName: string;
     lastName: string;
   };
-  toothNumber?: number;
+  bodyArea?: string | null;
   quantity?: number;
+  cost?: number | null;
 }
 
 interface Patient {
@@ -61,7 +62,7 @@ interface Organization {
 interface BudgetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  procedures: DentalProcedure[];
+  procedures: SurgicalProcedure[];
   patient: Patient;
   organization?: Organization;
   onEmailBudget?: (pdfBlob: Blob, filename: string) => void;
@@ -77,7 +78,7 @@ export function BudgetModal({
 }: BudgetModalProps) {
   const [options, setOptions] = useState({
     includeNotes: true,
-    includeToothNumbers: true,
+    includeBodyAreas: true,
     vatRate: 21,
     validityDays: 30,
     additionalNotes: ''
@@ -95,7 +96,7 @@ export function BudgetModal({
   const calculateTotalCost = () => {
     const subtotal = procedures.reduce((sum, proc) => {
       const quantity = proc.quantity || 1;
-      const rate = proc.code.rate || 0;
+      const rate = proc.cost ?? (proc.code.price || 0);
       return sum + (quantity * rate);
     }, 0);
 
@@ -109,7 +110,7 @@ export function BudgetModal({
 
   const validateProcedures = () => {
     if (procedures.length === 0) {
-      toast.error('No procedures selected for budget');
+      toast.error('Nu au fost selectate proceduri pentru deviz');
       return false;
     }
     return true;
@@ -126,7 +127,7 @@ export function BudgetModal({
         const validUntil = calculateValidUntil();
         const budgetOptions = {
           includeNotes: options.includeNotes,
-          includeToothNumbers: options.includeToothNumbers,
+          includeBodyAreas: options.includeBodyAreas,
           vatRate: options.vatRate / 100,
           validUntil,
           additionalNotes: options.additionalNotes.trim() || undefined
@@ -150,10 +151,10 @@ export function BudgetModal({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success('Budget downloaded successfully');
+      toast.success('Devizul a fost descărcat cu succes');
     } catch (error) {
       console.error('Error downloading budget:', error);
-      toast.error('Failed to download budget');
+      toast.error('Descărcarea devizului a eșuat');
     } finally {
       setIsGenerating(false);
     }
@@ -170,7 +171,7 @@ export function BudgetModal({
         const validUntil = calculateValidUntil();
         const budgetOptions = {
           includeNotes: options.includeNotes,
-          includeToothNumbers: options.includeToothNumbers,
+          includeBodyAreas: options.includeBodyAreas,
           vatRate: options.vatRate / 100,
           validUntil,
           additionalNotes: options.additionalNotes.trim() || undefined
@@ -189,13 +190,13 @@ export function BudgetModal({
         const filename = `budget-${patient.patientCode}-${new Date().toISOString().split('T')[0]}.pdf`;
         onEmailBudget(pdfBlob, filename);
         onClose(); // Close the modal after preparing email
-        toast.success('Budget prepared for email');
+        toast.success('Devizul a fost pregătit pentru e-mail');
       } else {
-        toast.error('Email functionality not available');
+        toast.error('Funcționalitatea de e-mail nu este disponibilă');
       }
     } catch (error) {
       console.error('Error preparing budget for email:', error);
-      toast.error('Failed to prepare budget for email');
+      toast.error('Pregătirea devizului pentru e-mail a eșuat');
     } finally {
       setIsGenerating(false);
     }
@@ -212,7 +213,7 @@ export function BudgetModal({
         const validUntil = calculateValidUntil();
         const budgetOptions = {
           includeNotes: options.includeNotes,
-          includeToothNumbers: options.includeToothNumbers,
+          includeBodyAreas: options.includeBodyAreas,
           vatRate: options.vatRate / 100,
           validUntil,
           additionalNotes: options.additionalNotes.trim() || undefined
@@ -227,22 +228,12 @@ export function BudgetModal({
         setGeneratedPdf(pdfBlob);
       }
 
-      const url = URL.createObjectURL(pdfBlob);
-      const printWindow = window.open(url, '_blank');
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-          URL.revokeObjectURL(url);
-        };
-      } else {
-        URL.revokeObjectURL(url);
-        toast.error('Unable to open print dialog. Please check your popup blocker.');
-      }
+      printPdfBlob(pdfBlob);
 
-      toast.success('Budget opened for printing');
+      toast.success('Devizul a fost deschis pentru tipărire');
     } catch (error) {
       console.error('Error printing budget:', error);
-      toast.error('Failed to print budget');
+      toast.error('Tipărirea devizului a eșuat');
     } finally {
       setIsGenerating(false);
     }
@@ -256,10 +247,10 @@ export function BudgetModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Generate Treatment Budget
+            Generare deviz de tratament
           </DialogTitle>
           <DialogDescription>
-            Create a professional budget document for {procedures.length} selected procedure{procedures.length !== 1 ? 's' : ''}
+            Creați un document profesional de deviz pentru {procedures.length} procedur{procedures.length !== 1 ? 'i' : 'ă'} selectat{procedures.length !== 1 ? 'e' : 'ă'}
           </DialogDescription>
         </DialogHeader>
 
@@ -267,22 +258,22 @@ export function BudgetModal({
           {/* Patient & Cost Summary */}
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
-              <h4 className="font-medium text-sm text-gray-700">Patient</h4>
+              <h4 className="font-medium text-sm text-gray-700">Pacient</h4>
               <p className="text-sm">{patient.firstName} {patient.lastName}</p>
               <p className="text-xs text-gray-500">{patient.patientCode}</p>
             </div>
             <div>
-              <h4 className="font-medium text-sm text-gray-700">Estimated Cost</h4>
+              <h4 className="font-medium text-sm text-gray-700">Cost estimat</h4>
               <p className="text-lg font-bold text-green-600">€{totals.total.toFixed(2)}</p>
               <p className="text-xs text-gray-500">
-                Subtotal: €{totals.subtotal.toFixed(2)} + VAT ({options.vatRate}%): €{totals.vatAmount.toFixed(2)}
+                Sumă parțială: €{totals.subtotal.toFixed(2)} + TVA ({options.vatRate}%): €{totals.vatAmount.toFixed(2)}
               </p>
             </div>
           </div>
 
           {/* Budget Options */}
           <div className="space-y-4">
-            <h4 className="font-medium">Budget Options</h4>
+            <h4 className="font-medium">Opțiuni deviz</h4>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-3">
@@ -294,24 +285,24 @@ export function BudgetModal({
                       setOptions(prev => ({ ...prev, includeNotes: checked as boolean }))
                     }
                   />
-                  <Label htmlFor="includeNotes" className="text-sm">Include procedure notes</Label>
+                  <Label htmlFor="includeNotes" className="text-sm">Includeți notele procedurii</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox
-                    id="includeToothNumbers"
-                    checked={options.includeToothNumbers}
+                    id="includeBodyAreas"
+                    checked={options.includeBodyAreas}
                     onCheckedChange={(checked) =>
-                      setOptions(prev => ({ ...prev, includeToothNumbers: checked as boolean }))
+                      setOptions(prev => ({ ...prev, includeBodyAreas: checked as boolean }))
                     }
                   />
-                  <Label htmlFor="includeToothNumbers" className="text-sm">Include tooth numbers</Label>
+                  <Label htmlFor="includeBodyAreas" className="text-sm">Includeți zonele corporale</Label>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="vatRate" className="text-sm">VAT Rate (%)</Label>
+                  <Label htmlFor="vatRate" className="text-sm">Cotă TVA (%)</Label>
                   <Input
                     id="vatRate"
                     type="number"
@@ -328,7 +319,7 @@ export function BudgetModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="validityDays" className="text-sm">Valid for (days)</Label>
+                  <Label htmlFor="validityDays" className="text-sm">Valabil (zile)</Label>
                   <Input
                     id="validityDays"
                     type="number"
@@ -346,10 +337,10 @@ export function BudgetModal({
             </div>
 
             <div>
-              <Label htmlFor="additionalNotes" className="text-sm">Additional Notes (optional)</Label>
+              <Label htmlFor="additionalNotes" className="text-sm">Notițe suplimentare (opțional)</Label>
               <Textarea
                 id="additionalNotes"
-                placeholder="Add any additional notes or terms..."
+                placeholder="Adăugați note sau termeni suplimentari..."
                 value={options.additionalNotes}
                 onChange={(e) => setOptions(prev => ({
                   ...prev,
@@ -363,13 +354,13 @@ export function BudgetModal({
           {/* Valid Until Info */}
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <CalendarDays className="h-4 w-4" />
-            <span>Budget will be valid until: {calculateValidUntil().toLocaleDateString()}</span>
+            <span>Devizul va fi valabil până la: {calculateValidUntil().toLocaleDateString()}</span>
           </div>
         </div>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Anulare
           </Button>
 
           <div className="flex gap-2">
@@ -379,7 +370,7 @@ export function BudgetModal({
               disabled={isGenerating}
             >
               <Printer className="h-4 w-4 mr-2" />
-              Print
+              Tipărire
             </Button>
 
             <Button
@@ -388,7 +379,7 @@ export function BudgetModal({
               disabled={isGenerating}
             >
               <Mail className="h-4 w-4 mr-2" />
-              Email
+              E-mail
             </Button>
 
             <Button
@@ -397,7 +388,7 @@ export function BudgetModal({
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Download className="h-4 w-4 mr-2" />
-              {isGenerating ? 'Generating...' : 'Download PDF'}
+              {isGenerating ? 'Se generează...' : 'Descărcare PDF'}
             </Button>
           </div>
         </DialogFooter>

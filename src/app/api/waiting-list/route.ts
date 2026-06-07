@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching waiting list:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch waiting list' },
+      { error: 'Încărcarea listei de așteptare a eșuat' },
       { status: 500 }
     );
   }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const data = await request.json();
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating waiting list entry:', error);
     return NextResponse.json(
-      { error: 'Failed to create waiting list entry' },
+      { error: 'Crearea intrării în lista de așteptare a eșuat' },
       { status: 500 }
     );
   }
@@ -145,7 +145,7 @@ export async function PUT(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const data = await request.json();
@@ -205,7 +205,7 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error('Error updating waiting list entry:', error);
     return NextResponse.json(
-      { error: 'Failed to update waiting list entry' },
+      { error: 'Actualizarea intrării din lista de așteptare a eșuat' },
       { status: 500 }
     );
   }
@@ -215,7 +215,7 @@ export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -223,7 +223,7 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Waiting list entry ID is required' },
+        { error: 'ID-ul intrării din lista de așteptare este obligatoriu' },
         { status: 400 }
       );
     }
@@ -250,7 +250,7 @@ export async function DELETE(request: Request) {
   } catch (error) {
     console.error('Error deleting waiting list entry:', error);
     return NextResponse.json(
-      { error: 'Failed to delete waiting list entry' },
+      { error: 'Ștergerea intrării din lista de așteptare a eșuat' },
       { status: 500 }
     );
   }

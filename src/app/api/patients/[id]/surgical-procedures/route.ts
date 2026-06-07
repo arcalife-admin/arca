@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
 import { logActivity, LOG_ACTIONS, ENTITY_TYPES } from '@/lib/activity-logger';
+import { resolveProcedurePrice, calculateProcedureCost } from '@/lib/procedure-pricing';
 
 // GET - Fetch all surgical procedures for a patient
 export async function GET(
@@ -33,7 +34,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching surgical procedures:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch surgical procedures' },
+      { error: 'Încărcarea procedurilor chirurgicale a eșuat' },
       { status: 500 }
     );
   }
@@ -61,7 +62,7 @@ export async function POST(
     // Validate required fields
     if (!codeId || !date) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Câmpuri obligatorii lipsă' },
         { status: 400 }
       );
     }
@@ -73,7 +74,7 @@ export async function POST(
 
     if (!surgicalCode) {
       return NextResponse.json(
-        { error: 'Surgical procedure code not found' },
+        { error: 'Codul procedurii chirurgicale nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -85,24 +86,25 @@ export async function POST(
 
     if (!patient) {
       return NextResponse.json(
-        { error: 'Patient not found' },
+        { error: 'Pacientul nu a fost găsit' },
         { status: 404 }
       );
     }
 
     // Calculate cost
+    const session = await getServerSession(authOptions);
     let finalCost: number | null = null;
 
     if (typeof cost === 'number') {
-      // Explicit cost sent from client
       finalCost = cost;
-    } else if (surgicalCode.price) {
-      // Use price from code definition
-      finalCost = surgicalCode.price * quantity;
+    } else {
+      const unitPrice = await resolveProcedurePrice(
+        session?.user?.id,
+        codeId,
+        surgicalCode.price
+      );
+      finalCost = calculateProcedureCost(unitPrice, quantity);
     }
-
-    // Get current user session to set practitionerId
-    const session = await getServerSession(authOptions);
 
     // Create the surgical procedure
     const procedure = await prisma.surgicalProcedure.create({
@@ -152,7 +154,7 @@ export async function POST(
   } catch (error) {
     console.error('Error creating surgical procedure:', error);
     return NextResponse.json(
-      { error: 'Failed to create surgical procedure' },
+      { error: 'Crearea procedurii chirurgicale a eșuat' },
       { status: 500 }
     );
   }

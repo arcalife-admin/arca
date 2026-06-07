@@ -8,18 +8,18 @@ export const dynamic = 'force-dynamic'
 
 // Validation schemas
 const userUpdateSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().min(1, 'Phone is required'),
-  address: z.string().min(1, 'Address is required'),
+  firstName: z.string().min(1, 'Prenumele este obligatoriu'),
+  lastName: z.string().min(1, 'Numele este obligatoriu'),
+  email: z.string().email('Adresă de e-mail invalidă'),
+  phone: z.string().min(1, 'Telefonul este obligatoriu'),
+  address: z.string().min(1, 'Adresa este obligatorie'),
 })
 
 const organizationUpdateSchema = z.object({
-  name: z.string().min(1, 'Organization name is required'),
-  address: z.string().min(1, 'Address is required'),
-  phone: z.string().min(1, 'Phone is required'),
-  email: z.string().email('Invalid email address'),
+  name: z.string().min(1, 'Numele organizației este obligatoriu'),
+  address: z.string().min(1, 'Adresa este obligatorie'),
+  phone: z.string().min(1, 'Telefonul este obligatoriu'),
+  email: z.string().email('Adresă de e-mail invalidă'),
 })
 
 export async function GET() {
@@ -28,7 +28,7 @@ export async function GET() {
 
     if (!session?.user?.email) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -44,7 +44,7 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json(
-        { message: 'User not found' },
+        { message: 'Utilizatorul nu a fost găsit' },
         { status: 404 }
       )
     }
@@ -58,7 +58,7 @@ export async function GET() {
   } catch (error) {
     console.error('Profile fetch error:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -70,7 +70,7 @@ export async function PUT(request: Request) {
 
     if (!session?.user?.email) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -90,7 +90,7 @@ export async function PUT(request: Request) {
 
         if (existingUser) {
           return NextResponse.json(
-            { message: 'Email already exists' },
+            { message: 'E-mailul există deja' },
             { status: 400 }
           )
         }
@@ -127,21 +127,21 @@ export async function PUT(request: Request) {
 
       if (!user) {
         return NextResponse.json(
-          { message: 'User not found' },
+          { message: 'Utilizatorul nu a fost găsit' },
           { status: 404 }
         )
       }
 
       if (user.role !== 'ORGANIZATION_OWNER') {
         return NextResponse.json(
-          { message: 'Unauthorized - Only organization owners can update organization information' },
+          { message: 'Neautorizat — doar proprietarii organizației pot actualiza informațiile' },
           { status: 403 }
         )
       }
 
       if (!user.organizationId) {
         return NextResponse.json(
-          { message: 'User is not associated with an organization' },
+          { message: 'Utilizatorul nu este asociat cu o organizație' },
           { status: 400 }
         )
       }
@@ -174,7 +174,7 @@ export async function PUT(request: Request) {
 
     } else {
       return NextResponse.json(
-        { message: 'Invalid update type. Must be "user" or "organization"' },
+        { message: 'Tip de actualizare invalid. Trebuie să fie „user” sau „organization”' },
         { status: 400 }
       )
     }
@@ -182,14 +182,14 @@ export async function PUT(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Profile update error:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

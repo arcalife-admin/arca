@@ -1,6 +1,6 @@
 # Database Seeding Documentation
 
-This document explains how the database seeding works in the Dentiva application.
+This document explains how the database seeding works in the Arca application.
 
 ## Overview
 
@@ -9,6 +9,7 @@ The database is automatically seeded with essential data whenever you reset or i
 ## What Gets Seeded
 
 ### 1. Dental Codes (334 codes total)
+
 - **A-codes**: 4 codes - Anesthesia
 - **B-codes**: 3 codes - Basic procedures  
 - **C-codes**: 14 codes - Consultations
@@ -27,6 +28,7 @@ The database is automatically seeded with essential data whenever you reset or i
 - **Y-codes**: 2 codes - Special procedures
 
 ### 2. Instruction Videos (8 videos)
+
 - How Braces Work
 - Dry Socket
 - Wisdom Tooth Extraction
@@ -37,6 +39,7 @@ The database is automatically seeded with essential data whenever you reset or i
 - Overdenture with Dental Implants (3D Animation)
 
 ### 3. Instruction Images (9 images)
+
 - Crowns
 - Implants
 - Tooth Extraction
@@ -50,6 +53,7 @@ The database is automatically seeded with essential data whenever you reset or i
 ## How It Works
 
 ### Automatic Seeding
+
 The database is automatically seeded in the following scenarios:
 
 1. **After `prisma migrate reset`** - The seed script runs automatically
@@ -57,6 +61,7 @@ The database is automatically seeded in the following scenarios:
 3. **Manual execution** - Using `npm run db:seed`
 
 ### Seed Script Configuration
+
 The seeding is configured in `package.json`:
 
 ```json
@@ -72,45 +77,57 @@ The seeding is configured in `package.json`:
 ```
 
 ### Seed Script Location
+
 The main seed script is located at `prisma/seed.cjs`.
 
 ## Available Commands
 
 ### Manual Database Reset with Seeding
+
 ```bash
 npm run db:reset
 ```
+
 This command:
+
 1. Builds the dental codes TypeScript files
 2. Resets the database completely
 3. Applies all migrations
 4. Runs the seed script automatically
 
 ### Manual Seeding Only
+
 ```bash
 npm run db:seed
 ```
+
 This command runs only the seeding process without resetting the database.
 
 ### Build Dental Codes
+
 ```bash
 npm run build:codes
 ```
+
 This command compiles the TypeScript dental code files to JavaScript, which is required before seeding.
 
 ## Important Notes
 
 ### Prerequisites
+
 - The dental codes must be built (`npm run build:codes`) before seeding
 - The database schema must be up to date with migrations
 
 ### Upsert Behavior
+
 The seed script uses `upsert` operations, which means:
+
 - If a record already exists (by unique key), it will be updated
 - If a record doesn't exist, it will be created
 - This prevents duplicate entries and allows safe re-running
 
 ### Custom vs Default Content
+
 - **Dental codes**: Always marked as system data
 - **Instructions**: Default content is marked with `isCustom: false`
 - User-added instruction videos and images are marked with `isCustom: true`
@@ -119,24 +136,31 @@ The seed script uses `upsert` operations, which means:
 ## Troubleshooting
 
 ### Dental Codes Not Loading
+
 If dental codes aren't being imported:
+
 1. Run `npm run build:codes` to ensure TypeScript files are compiled
 2. Check that files exist in `dist/data/dental-codes/`
 3. Run `npm run db:seed` manually to see detailed output
 
 ### Missing Instruction Tables
+
 If instruction videos/images fail to import:
+
 1. Ensure the latest migrations have been applied
 2. Check that `InstructionVideo` and `InstructionImage` tables exist in the database
 3. Run `npx prisma migrate dev` to apply any pending migrations
 
 ### Verifying Seed Success
+
 You can verify the seed worked by checking record counts:
+
 - Dental codes: Should have ~334 records
 - Instruction videos: Should have 8 records  
 - Instruction images: Should have 9 records
 
 Use Prisma Studio to inspect the database:
+
 ```bash
 npx prisma studio
 ```

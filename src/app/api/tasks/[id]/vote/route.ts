@@ -16,7 +16,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const taskId = params.id;
@@ -35,11 +35,11 @@ export async function POST(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită' }, { status: 404 });
     }
 
     if (task.type !== TaskType.POLL) {
-      return NextResponse.json({ error: 'Task is not a poll' }, { status: 400 });
+      return NextResponse.json({ error: 'Sarcina nu este un sondaj' }, { status: 400 });
     }
 
     // Check if user has permission to vote
@@ -48,14 +48,14 @@ export async function POST(
       task.assignments.length > 0;
 
     if (!canVote) {
-      return NextResponse.json({ error: 'You do not have permission to vote on this poll' }, { status: 403 });
+      return NextResponse.json({ error: 'Nu aveți permisiunea de a vota la acest sondaj' }, { status: 403 });
     }
 
     // If optionId is provided, validate it exists
     if (optionId) {
       const option = task.options.find(opt => opt.id === optionId);
       if (!option) {
-        return NextResponse.json({ error: 'Invalid option' }, { status: 400 });
+        return NextResponse.json({ error: 'Opțiune invalidă' }, { status: 400 });
       }
     }
 
@@ -94,12 +94,12 @@ export async function POST(
     console.error('Error casting vote:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to cast vote' },
+      { error: 'Votarea a eșuat' },
       { status: 500 }
     );
   }
@@ -112,7 +112,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const taskId = params.id;
@@ -128,7 +128,7 @@ export async function DELETE(
     });
 
     if (!existingVote) {
-      return NextResponse.json({ error: 'Vote not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Votul nu a fost găsit' }, { status: 404 });
     }
 
     // Delete the vote
@@ -141,12 +141,12 @@ export async function DELETE(
       }
     });
 
-    return NextResponse.json({ message: 'Vote removed successfully' });
+    return NextResponse.json({ message: 'Votul a fost eliminat cu succes' });
 
   } catch (error) {
     console.error('Error removing vote:', error);
     return NextResponse.json(
-      { error: 'Failed to remove vote' },
+      { error: 'Eliminarea votului a eșuat' },
       { status: 500 }
     );
   }

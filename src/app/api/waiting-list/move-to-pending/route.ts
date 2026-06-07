@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const data = await request.json();
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     if (!waitingAppointment) {
       return NextResponse.json(
-        { error: 'Waiting appointment not found' },
+        { error: 'Programarea din lista de așteptare nu a fost găsită' },
         { status: 404 }
       );
     }
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error moving waiting appointment to pending:', error);
     return NextResponse.json(
-      { error: 'Failed to move waiting appointment to pending' },
+      { error: 'Mutarea programării în așteptare a eșuat' },
       { status: 500 }
     );
   }

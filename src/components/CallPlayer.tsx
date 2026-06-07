@@ -11,6 +11,23 @@ function formatCallDuration(seconds: number) {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+function getStatusLabel(status: string) {
+  switch (status) {
+    case 'hold':
+      return 'În așteptare';
+    case 'dialing':
+      return 'Se apelează';
+    case 'ringing':
+      return 'Sună';
+    case 'connected':
+      return 'Conectat';
+    case 'ended':
+      return 'Încheiat';
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+}
+
 export default function CallPlayer() {
   const {
     currentCall,
@@ -114,7 +131,7 @@ export default function CallPlayer() {
             {/* Header */}
             <div className={`text-white p-4 ${getStatusColor().split(' ')[0]} bg-opacity-90`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">📞 Call in Progress</h3>
+                <h3 className="text-lg font-semibold">📞 Apel în desfășurare</h3>
                 <button
                   onClick={() => setCallMenuOpen(false)}
                   className="text-white hover:text-gray-200 transition-colors"
@@ -140,15 +157,14 @@ export default function CallPlayer() {
                 <div>
                   <p className="font-medium">{currentCall.patientName}</p>
                   <p className="text-sm text-gray-600">
-                    Status:
+                    Stare:
                     <span className={`ml-1 font-medium ${currentCall.status === 'connected' ? 'text-green-600' :
                       currentCall.status === 'hold' ? 'text-orange-600' :
                         currentCall.status === 'ringing' ? 'text-yellow-600' :
                           currentCall.status === 'dialing' ? 'text-blue-600' :
                             'text-red-600'
                       }`}>
-                      {currentCall.status === 'hold' ? 'On Hold' :
-                        currentCall.status.charAt(0).toUpperCase() + currentCall.status.slice(1)}
+                      {getStatusLabel(currentCall.status)}
                     </span>
                   </p>
                 </div>
@@ -160,7 +176,7 @@ export default function CallPlayer() {
                   <div className="text-2xl font-mono font-bold text-gray-700">
                     {formatCallDuration(currentCall.duration)}
                   </div>
-                  <p className="text-xs text-gray-500">Call duration</p>
+                  <p className="text-xs text-gray-500">Durata apelului</p>
                 </div>
               )}
 
@@ -169,7 +185,7 @@ export default function CallPlayer() {
                 <div className="text-center py-2">
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span className="text-sm text-gray-600">Dialing...</span>
+                    <span className="text-sm text-gray-600">Se apelează...</span>
                   </div>
                 </div>
               )}
@@ -178,7 +194,7 @@ export default function CallPlayer() {
                 <div className="text-center py-2">
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-600">Ringing...</span>
+                    <span className="text-sm text-gray-600">Sună...</span>
                   </div>
                 </div>
               )}
@@ -190,14 +206,14 @@ export default function CallPlayer() {
                     <button
                       onClick={putOnHold}
                       className="p-3 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-full transition-colors"
-                      title="Put on hold"
+                      title="Pune în așteptare"
                     >
                       <Pause className="w-5 h-5" />
                     </button>
                     <button
                       onClick={endCall}
                       className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
-                      title="End call"
+                      title="Încheie apelul"
                     >
                       <PhoneOff className="w-5 h-5" />
                     </button>
@@ -209,14 +225,14 @@ export default function CallPlayer() {
                     <button
                       onClick={resumeCall}
                       className="p-3 bg-green-100 hover:bg-green-200 text-green-700 rounded-full transition-colors"
-                      title="Resume call"
+                      title="Reluare apel"
                     >
                       <Play className="w-5 h-5" />
                     </button>
                     <button
                       onClick={endCall}
                       className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
-                      title="End call"
+                      title="Încheie apelul"
                     >
                       <PhoneOff className="w-5 h-5" />
                     </button>
@@ -227,7 +243,7 @@ export default function CallPlayer() {
                   <button
                     onClick={endCall}
                     className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
-                    title="Cancel call"
+                    title="Anulează apelul"
                   >
                     <PhoneOff className="w-5 h-5" />
                   </button>
@@ -237,7 +253,7 @@ export default function CallPlayer() {
                   <div className="text-center py-2">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                      <span className="text-sm text-red-600">Call Ended</span>
+                      <span className="text-sm text-red-600">Apel încheiat</span>
                     </div>
                   </div>
                 )}
@@ -246,13 +262,13 @@ export default function CallPlayer() {
               {/* Quick Actions */}
               {currentCall.status === 'connected' && (
                 <div className="border-t pt-3">
-                  <p className="text-xs text-gray-500 mb-2">Quick Actions</p>
+                  <p className="text-xs text-gray-500 mb-2">Acțiuni rapide</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button className="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
-                      📝 Add Note
+                      📝 Adaugă notă
                     </button>
                     <button className="text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded transition-colors">
-                      📅 Schedule Follow-up
+                      📅 Programează control
                     </button>
                   </div>
                 </div>

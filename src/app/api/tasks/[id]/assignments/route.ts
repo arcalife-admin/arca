@@ -19,7 +19,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Check if user has access to this task
@@ -35,7 +35,7 @@ export async function GET(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     const assignments = await prisma.taskAssignment.findMany({
@@ -68,7 +68,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching task assignments:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch assignments' },
+      { error: 'Încărcarea atribuirilor a eșuat' },
       { status: 500 }
     );
   }
@@ -81,7 +81,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Check if user has access to this task and can assign users
@@ -97,7 +97,7 @@ export async function POST(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -112,7 +112,7 @@ export async function POST(
     });
 
     if (users.length !== data.userIds.length) {
-      return NextResponse.json({ error: 'One or more users not found' }, { status: 400 });
+      return NextResponse.json({ error: 'Unul sau mai mulți utilizatori nu au fost găsiți' }, { status: 400 });
     }
 
     // Get existing assignments to avoid duplicates
@@ -127,7 +127,7 @@ export async function POST(
     const newUserIds = data.userIds.filter(id => !existingUserIds.includes(id));
 
     if (newUserIds.length === 0) {
-      return NextResponse.json({ error: 'All users are already assigned to this task' }, { status: 400 });
+      return NextResponse.json({ error: 'Toți utilizatorii sunt deja atribuiți la această sarcină' }, { status: 400 });
     }
 
     // Create new assignments
@@ -171,12 +171,12 @@ export async function POST(
     console.error('Error assigning users to task:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to assign users' },
+      { error: 'Atribuirea utilizatorilor a eșuat' },
       { status: 500 }
     );
   }
@@ -189,7 +189,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -208,7 +208,7 @@ export async function DELETE(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     // Check if assignment exists
@@ -220,7 +220,7 @@ export async function DELETE(
     });
 
     if (!assignment) {
-      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Atribuirea nu a fost găsită' }, { status: 404 });
     }
 
     // Don't allow removing the last assignment
@@ -229,7 +229,7 @@ export async function DELETE(
     });
 
     if (assignmentCount <= 1) {
-      return NextResponse.json({ error: 'Cannot remove the last assignment from a task' }, { status: 400 });
+      return NextResponse.json({ error: 'Nu se poate elimina ultima atribuire de la o sarcină' }, { status: 400 });
     }
 
     // Remove assignment
@@ -237,18 +237,18 @@ export async function DELETE(
       where: { id: assignment.id }
     });
 
-    return NextResponse.json({ message: 'User unassigned successfully' });
+    return NextResponse.json({ message: 'Utilizatorul a fost dezatribuit cu succes' });
 
   } catch (error) {
     console.error('Error unassigning user from task:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to unassign user' },
+      { error: 'Dezatribuirea utilizatorului a eșuat' },
       { status: 500 }
     );
   }

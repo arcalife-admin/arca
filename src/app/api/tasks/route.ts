@@ -340,12 +340,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 401 });
       }
       if (error.message.includes('Database operations cannot be performed in the browser')) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        return NextResponse.json({ error: 'Eroare de configurare a serverului' }, { status: 500 });
       }
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
+      { error: 'Încărcarea sarcinilor a eșuat' },
       { status: 500 }
     );
   }
@@ -499,18 +499,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 401 });
       }
       if (error.message.includes('Database operations cannot be performed in the browser')) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        return NextResponse.json({ error: 'Eroare de configurare a serverului' }, { status: 500 });
       }
     }
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to create task' },
+      { error: 'Crearea sarcinii a eșuat' },
       { status: 500 }
     );
   }

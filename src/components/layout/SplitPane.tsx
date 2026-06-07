@@ -87,11 +87,11 @@ const SplitPane: React.FC<SplitPaneProps> = ({
         onMouseDown={handleMouseDown}
         className={`${isHorizontal ? 'w-2 cursor-col-resize' : 'h-2 cursor-row-resize'} bg-gray-200 hover:bg-blue-300 transition-colors duration-150 flex-shrink-0`}
         style={{ backgroundColor: '#e5e7eb', minWidth: isHorizontal ? '8px' : 'auto', minHeight: isHorizontal ? 'auto' : '8px' }}
-        title="Drag to resize"
+        title="Trageți pentru redimensionare"
       />
 
       {/* Secondary pane */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
         {children[1]}
       </div>
     </div>

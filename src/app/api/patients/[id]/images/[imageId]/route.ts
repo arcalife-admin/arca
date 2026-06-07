@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
-// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -14,7 +15,11 @@ export async function DELETE(
   { params }: { params: { id: string; imageId: string } }
 ) {
   try {
-    // First get the image to get its URL
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+    }
+
     const image = await prisma.image.findUnique({
       where: {
         id: params.imageId,
@@ -23,31 +28,20 @@ export async function DELETE(
     });
 
     if (!image) {
-      return NextResponse.json(
-        { error: 'Image not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Imaginea nu a fost găsită' }, { status: 404 });
     }
 
-    // Delete from Cloudinary
-    // Extract public_id from the URL
     const publicId = image.url.split('/').slice(-1)[0].split('.')[0];
     await cloudinary.uploader.destroy(publicId);
 
-    // Delete from database
     await prisma.image.delete({
-      where: {
-        id: params.imageId,
-      },
+      where: { id: params.imageId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting image:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete image' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Ștergerea imaginii a eșuat' }, { status: 500 });
   }
 }
 
@@ -56,16 +50,21 @@ export async function PATCH(
   { params }: { params: { id: string; imageId: string } }
 ) {
   try {
-    const body = await request.json();
-    const { type, side, dateTaken, toothNumber, notes } = body;
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+    }
 
-    // Build data object only with provided fields
-    const updateData: any = {};
+    const body = await request.json();
+    const { type, view, side, bodyArea, dateTaken, notes } = body;
+
+    const updateData: Record<string, unknown> = {};
 
     if (type !== undefined) updateData.type = type;
-    if (side !== undefined) updateData.side = side;
+    if (view !== undefined) updateData.view = view;
+    else if (side !== undefined) updateData.view = side;
+    if (bodyArea !== undefined) updateData.bodyArea = bodyArea || null;
     if (dateTaken !== undefined) updateData.dateTaken = new Date(dateTaken);
-    if (toothNumber !== undefined) updateData.toothNumber = toothNumber ? parseInt(toothNumber) : null;
     if (notes !== undefined) updateData.notes = notes || null;
 
     const image = await prisma.image.update({
@@ -79,9 +78,6 @@ export async function PATCH(
     return NextResponse.json(image);
   } catch (error) {
     console.error('Error updating image:', error);
-    return NextResponse.json(
-      { error: 'Failed to update image' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Actualizarea imaginii a eșuat' }, { status: 500 });
   }
-} 
+}

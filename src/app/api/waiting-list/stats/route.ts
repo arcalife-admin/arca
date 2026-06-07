@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Get waiting list statistics grouped by practitioner
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching waiting list stats:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch waiting list stats' },
+      { error: 'Încărcarea statisticilor listei de așteptare a eșuat' },
       { status: 500 }
     );
   }

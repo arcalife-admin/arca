@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch orders' },
+      { error: 'Încărcarea comenzilor a eșuat' },
       { status: 500 }
     );
   }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     if (!vendorId || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: 'Vendor ID and items are required' },
+        { error: 'ID-ul furnizorului și articolele sunt obligatorii' },
         { status: 400 }
       );
     }
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     if (!vendor) {
       return NextResponse.json(
-        { error: 'Vendor not found' },
+        { error: 'Furnizorul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { error: 'Crearea comenzii a eșuat' },
       { status: 500 }
     );
   }

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const products = await prisma.product.findMany({
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
+      { error: 'Încărcarea produselor a eșuat' },
       { status: 500 }
     );
   }
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -45,14 +45,14 @@ export async function POST(request: NextRequest) {
 
     if (!name || defaultPrice === undefined || defaultPrice === null) {
       return NextResponse.json(
-        { error: 'Name and default price are required' },
+        { error: 'Numele și prețul implicit sunt obligatorii' },
         { status: 400 }
       );
     }
 
     if (defaultPrice < 0) {
       return NextResponse.json(
-        { error: 'Default price must be non-negative' },
+        { error: 'Prețul implicit trebuie să fie nenegativ' },
         { status: 400 }
       );
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating product:', error);
     return NextResponse.json(
-      { error: 'Failed to create product' },
+      { error: 'Crearea produsului a eșuat' },
       { status: 500 }
     );
   }

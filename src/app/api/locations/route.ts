@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const locations = await prisma.location.findMany({
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching locations:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch locations' },
+      { error: 'Încărcarea locațiilor a eșuat' },
       { status: 500 }
     );
   }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json(
-        { error: 'Location name is required' },
+        { error: 'Numele locației este obligatoriu' },
         { status: 400 }
       );
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating location:', error);
     return NextResponse.json(
-      { error: 'Failed to create location' },
+      { error: 'Crearea locației a eșuat' },
       { status: 500 }
     );
   }
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id || !name) {
       return NextResponse.json(
-        { error: 'Location ID and name are required' },
+        { error: 'ID-ul și numele locației sunt obligatorii' },
         { status: 400 }
       );
     }
@@ -108,7 +108,7 @@ export async function PUT(request: NextRequest) {
 
     if (!existingLocation) {
       return NextResponse.json(
-        { error: 'Location not found' },
+        { error: 'Locația nu a fost găsită' },
         { status: 404 }
       );
     }
@@ -126,7 +126,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating location:', error);
     return NextResponse.json(
-      { error: 'Failed to update location' },
+      { error: 'Actualizarea locației a eșuat' },
       { status: 500 }
     );
   }

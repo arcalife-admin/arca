@@ -21,7 +21,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const task = await prisma.task.findFirst({
@@ -97,7 +97,7 @@ export async function GET(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită' }, { status: 404 });
     }
 
     return NextResponse.json(task);
@@ -105,7 +105,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching task:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch task' },
+      { error: 'Încărcarea sarcinii a eșuat' },
       { status: 500 }
     );
   }
@@ -118,7 +118,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -137,7 +137,7 @@ export async function PUT(
     });
 
     if (!existingTask) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     // Prepare update data
@@ -236,12 +236,12 @@ export async function PUT(
     console.error('Error updating task:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to update task' },
+      { error: 'Actualizarea sarcinii a eșuat' },
       { status: 500 }
     );
   }
@@ -254,7 +254,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Check if user has permission to delete this task (only creator can delete)
@@ -267,7 +267,7 @@ export async function DELETE(
     });
 
     if (!existingTask) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     // Delete task (this will cascade delete assignments, messages, and reminders)
@@ -275,12 +275,12 @@ export async function DELETE(
       where: { id: params.id }
     });
 
-    return NextResponse.json({ message: 'Task deleted successfully' });
+    return NextResponse.json({ message: 'Sarcina a fost ștearsă cu succes' });
 
   } catch (error) {
     console.error('Error deleting task:', error);
     return NextResponse.json(
-      { error: 'Failed to delete task' },
+      { error: 'Ștergerea sarcinii a eșuat' },
       { status: 500 }
     );
   }

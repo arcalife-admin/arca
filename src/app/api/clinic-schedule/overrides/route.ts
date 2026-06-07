@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
     if (!scheduleId) {
       return NextResponse.json(
-        { message: 'Schedule ID is required' },
+        { message: 'ID-ul programului este obligatoriu' },
         { status: 400 }
       )
     }
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching schedule overrides:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     const userRole = session.user.role
     if (userRole !== 'ORGANIZATION_OWNER' && userRole !== 'MANAGER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners and managers can create schedule overrides' },
+        { message: 'Neautorizat — doar proprietarii și managerii pot crea excepții de program' },
         { status: 403 }
       )
     }
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
     if (!schedule) {
       return NextResponse.json(
-        { message: 'Schedule not found' },
+        { message: 'Programul nu a fost găsit' },
         { status: 404 }
       )
     }
@@ -159,14 +159,14 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error creating schedule override:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -178,7 +178,7 @@ export async function DELETE(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -187,7 +187,7 @@ export async function DELETE(request: Request) {
     const userRole = session.user.role
     if (userRole !== 'ORGANIZATION_OWNER' && userRole !== 'MANAGER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners and managers can delete schedule overrides' },
+        { message: 'Neautorizat — doar proprietarii și managerii pot șterge excepții de program' },
         { status: 403 }
       )
     }
@@ -208,7 +208,7 @@ export async function DELETE(request: Request) {
 
       if (!schedule) {
         return NextResponse.json(
-          { message: 'Schedule not found' },
+          { message: 'Programul nu a fost găsit' },
           { status: 404 }
         )
       }
@@ -228,7 +228,7 @@ export async function DELETE(request: Request) {
     // Handle single override deletion
     if (!overrideId) {
       return NextResponse.json(
-        { message: 'Override ID or Schedule ID is required' },
+        { message: 'ID-ul excepției sau ID-ul programului este obligatoriu' },
         { status: 400 }
       )
     }
@@ -245,7 +245,7 @@ export async function DELETE(request: Request) {
 
     if (!override) {
       return NextResponse.json(
-        { message: 'Override not found' },
+        { message: 'Excepția nu a fost găsită' },
         { status: 404 }
       )
     }
@@ -257,11 +257,11 @@ export async function DELETE(request: Request) {
       },
     })
 
-    return NextResponse.json({ message: 'Override deleted successfully' })
+    return NextResponse.json({ message: 'Excepția a fost ștearsă cu succes' })
   } catch (error) {
     console.error('Error deleting schedule override:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Settings, AlertTriangle } from 'lucide-react';
+import { appAlert } from '@/lib/app-alert';
 
 interface NewRepairModalProps {
   isOpen: boolean;
@@ -118,48 +119,48 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
         });
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to create repair request'}`);
+        appAlert(error.error || 'Crearea cererii de reparație a eșuat', { title: 'Eroare' });
       }
     } catch (error) {
       console.error('Error creating repair request:', error);
-      alert('Failed to create repair request');
+      appAlert('Crearea cererii de reparație a eșuat', { title: 'Eroare' });
     } finally {
       setLoading(false);
     }
   };
 
   const urgencyOptions = [
-    { value: 'LOW', label: 'Low', icon: '🟢' },
-    { value: 'NORMAL', label: 'Normal', icon: '🔵' },
-    { value: 'HIGH', label: 'High', icon: '🟠' },
-    { value: 'URGENT', label: 'Urgent', icon: '🔴' },
-    { value: 'EMERGENCY', label: 'Emergency', icon: '🚨' },
+    { value: 'LOW', label: 'Scăzută', icon: '🟢' },
+    { value: 'NORMAL', label: 'Normală', icon: '🔵' },
+    { value: 'HIGH', label: 'Ridicată', icon: '🟠' },
+    { value: 'URGENT', label: 'Urgentă', icon: '🔴' },
+    { value: 'EMERGENCY', label: 'Urgență', icon: '🚨' },
   ];
 
   const issueCategories = [
-    { value: 'MECHANICAL', label: 'Mechanical' },
-    { value: 'ELECTRICAL', label: 'Electrical' },
+    { value: 'MECHANICAL', label: 'Mecanică' },
+    { value: 'ELECTRICAL', label: 'Electrică' },
     { value: 'SOFTWARE', label: 'Software' },
-    { value: 'MAINTENANCE', label: 'Maintenance' },
-    { value: 'CALIBRATION', label: 'Calibration' },
-    { value: 'CLEANING', label: 'Cleaning' },
-    { value: 'INSTALLATION', label: 'Installation' },
-    { value: 'UPGRADE', label: 'Upgrade' },
-    { value: 'EMERGENCY', label: 'Emergency' },
-    { value: 'OTHER', label: 'Other' },
+    { value: 'MAINTENANCE', label: 'Mentenanță' },
+    { value: 'CALIBRATION', label: 'Calibrare' },
+    { value: 'CLEANING', label: 'Curățenie' },
+    { value: 'INSTALLATION', label: 'Instalare' },
+    { value: 'UPGRADE', label: 'Actualizare' },
+    { value: 'EMERGENCY', label: 'Urgență' },
+    { value: 'OTHER', label: 'Altele' },
   ];
 
   const symptomOptions = [
-    'Not turning on',
-    'Makes noise',
-    'Overheating',
-    'Slow performance',
-    'Error messages',
-    'Physical damage',
-    'Calibration issues',
-    'Software errors',
-    'Connection problems',
-    'Other',
+    'Nu pornește',
+    'Zgomot anormal',
+    'Supraîncălzire',
+    'Performanță redusă',
+    'Mesaje de eroare',
+    'Deteriorare fizică',
+    'Probleme de calibrare',
+    'Erori software',
+    'Probleme de conectare',
+    'Altele',
   ];
 
   const handleSymptomToggle = (symptom: string) => {
@@ -177,40 +178,40 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5 text-blue-600" />
-            Report Repair Issue
+            Raportează o problemă de reparație
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Issue Details</h3>
+            <h3 className="font-medium text-gray-900">Detalii problemă</h3>
 
             <div>
-              <Label htmlFor="title">Issue Title *</Label>
+              <Label htmlFor="title">Titlu problemă *</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Dental Chair 1 - Water line blockage"
+                placeholder="ex.: Aspirator sală operație — presiune vacuum redusă"
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">Descriere (opțional)</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Detailed description of the problem..."
+                placeholder="Descriere detaliată a problemei..."
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="urgency">Urgency</Label>
+                <Label htmlFor="urgency">Urgență</Label>
                 <Select
                   value={formData.urgency}
                   onValueChange={(value) => setFormData({ ...formData, urgency: value })}
@@ -232,7 +233,7 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
               </div>
 
               <div>
-                <Label htmlFor="issueCategory">Issue Category</Label>
+                <Label htmlFor="issueCategory">Categorie problemă</Label>
                 <Select
                   value={formData.issueCategory}
                   onValueChange={(value) => setFormData({ ...formData, issueCategory: value })}
@@ -254,16 +255,16 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
 
           {/* Location and Equipment */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Location & Equipment</h3>
+            <h3 className="font-medium text-gray-900">Locație și echipament</h3>
 
             <div>
-              <Label htmlFor="location">Location *</Label>
+              <Label htmlFor="location">Locație *</Label>
               <Select
                 value={formData.locationId}
                 onValueChange={(value) => setFormData({ ...formData, locationId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a location..." />
+                  <SelectValue placeholder="Selectați o locație..." />
                 </SelectTrigger>
                 <SelectContent>
                   {locations.map((location) => (
@@ -276,13 +277,13 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
             </div>
 
             <div>
-              <Label htmlFor="equipment">Equipment (Optional)</Label>
+              <Label htmlFor="equipment">Echipament (opțional)</Label>
               <Select
                 value={formData.equipmentId}
                 onValueChange={(value) => setFormData({ ...formData, equipmentId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select equipment if applicable..." />
+                  <SelectValue placeholder="Selectați echipamentul, dacă este cazul..." />
                 </SelectTrigger>
                 <SelectContent>
                   {equipment.map((item) => (
@@ -300,7 +301,7 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
 
           {/* Symptoms */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Symptoms (Optional)</h3>
+            <h3 className="font-medium text-gray-900">Simptome (opțional)</h3>
             <div className="grid grid-cols-2 gap-2">
               {symptomOptions.map((symptom) => (
                 <label key={symptom} className="flex items-center space-x-2">
@@ -316,11 +317,11 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
 
           {/* Scheduling */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Scheduling (Optional)</h3>
+            <h3 className="font-medium text-gray-900">Programare (opțional)</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="scheduledDate">Preferred Date</Label>
+                <Label htmlFor="scheduledDate">Data preferată</Label>
                 <Input
                   id="scheduledDate"
                   type="date"
@@ -330,18 +331,18 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
               </div>
 
               <div>
-                <Label htmlFor="scheduledTime">Preferred Time</Label>
+                <Label htmlFor="scheduledTime">Interval orar preferat</Label>
                 <Input
                   id="scheduledTime"
                   value={formData.scheduledTime}
                   onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
-                  placeholder="e.g., 09:00-11:00"
+                  placeholder="ex.: 09:00-11:00"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="estimatedDuration">Estimated Duration (minutes)</Label>
+              <Label htmlFor="estimatedDuration">Durată estimată (minute)</Label>
               <Input
                 id="estimatedDuration"
                 type="number"
@@ -349,23 +350,23 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
                 step={15}
                 value={formData.estimatedDuration}
                 onChange={(e) => setFormData({ ...formData, estimatedDuration: e.target.value })}
-                placeholder="e.g., 60"
+                placeholder="ex.: 60"
               />
             </div>
           </div>
 
           {/* Contact Assignment */}
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900">Contact Assignment (Optional)</h3>
+            <h3 className="font-medium text-gray-900">Contact preferat (opțional)</h3>
 
             <div>
-              <Label htmlFor="contactPerson">Preferred Contact</Label>
+              <Label htmlFor="contactPerson">Persoană de contact</Label>
               <Select
                 value={formData.contactPersonId}
                 onValueChange={(value) => setFormData({ ...formData, contactPersonId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a contact person..." />
+                  <SelectValue placeholder="Selectați o persoană de contact..." />
                 </SelectTrigger>
                 <SelectContent>
                   {contactPersons.map((contact) => (
@@ -385,14 +386,14 @@ export default function NewRepairModal({ isOpen, onClose, onSuccess }: NewRepair
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Anulare
             </Button>
             <Button type="submit" disabled={loading || !formData.title.trim() || !formData.locationId}>
-              {loading ? 'Creating...' : 'Report Issue'}
+              {loading ? 'Se creează...' : 'Raportează problema'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-} 
+}

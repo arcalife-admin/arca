@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching repair requests:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch repair requests' },
+      { error: 'Încărcarea cererilor de reparație a eșuat' },
       { status: 500 }
     );
   }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (!title || !locationId || !issueCategory) {
       return NextResponse.json(
-        { error: 'Title, location, and issue category are required' },
+        { error: 'Titlul, locația și categoria problemei sunt obligatorii' },
         { status: 400 }
       );
     }
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating repair request:', error);
     return NextResponse.json(
-      { error: 'Failed to create repair request' },
+      { error: 'Crearea cererii de reparație a eșuat' },
       { status: 500 }
     );
   }
@@ -149,7 +149,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -157,7 +157,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Repair request ID is required' },
+        { error: 'ID-ul cererii de reparație este obligatoriu' },
         { status: 400 }
       );
     }
@@ -172,7 +172,7 @@ export async function PUT(request: NextRequest) {
 
     if (!existingRequest) {
       return NextResponse.json(
-        { error: 'Repair request not found' },
+        { error: 'Cererea de reparație nu a fost găsită' },
         { status: 404 }
       );
     }
@@ -230,7 +230,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating repair request:', error);
     return NextResponse.json(
-      { error: 'Failed to update repair request' },
+      { error: 'Actualizarea cererii de reparație a eșuat' },
       { status: 500 }
     );
   }

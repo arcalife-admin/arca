@@ -20,12 +20,12 @@ const addressSchema = z.object({
 })
 
 const registerSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().min(1, 'Phone number is required'),
-  address: z.string().min(1, 'Address is required'),
+  firstName: z.string().min(2, 'Prenumele trebuie să aibă cel puțin 2 caractere'),
+  lastName: z.string().min(2, 'Numele trebuie să aibă cel puțin 2 caractere'),
+  email: z.string().email('Adresă de e-mail invalidă'),
+  password: z.string().min(8, 'Parola trebuie să aibă cel puțin 8 caractere'),
+  phone: z.string().min(1, 'Numărul de telefon este obligatoriu'),
+  address: z.string().min(1, 'Adresa este obligatorie'),
   role: z.enum([
     'ORGANIZATION_OWNER',
     'MANAGER',
@@ -58,7 +58,7 @@ const registerSchema = z.object({
   // If role is not ORGANIZATION_OWNER, organizationId is required
   return !!data.organizationId
 }, {
-  message: "Organization details are required based on your role",
+  message: 'Detaliile organizației sunt obligatorii în funcție de rolul dvs.',
   path: ["organization", "organizationId"]
 })
 
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { message: 'User already exists' },
+        { message: 'Utilizatorul există deja' },
         { status: 400 }
       )
     }
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
       // Require organization info
       if (!validatedData.organization) {
         return NextResponse.json(
-          { message: 'Organization info required for organization owner' },
+          { message: 'Informațiile organizației sunt obligatorii pentru proprietar' },
           { status: 400 }
         )
       }
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
       // Require organizationId for non-organization owners
       if (!validatedData.organizationId) {
         return NextResponse.json(
-          { message: 'Organization selection required' },
+          { message: 'Selectarea organizației este obligatorie' },
           { status: 400 }
         )
       }
@@ -154,7 +154,7 @@ export async function POST(req: Request) {
 
       if (!existingOrg) {
         return NextResponse.json(
-          { message: 'Selected organization does not exist' },
+          { message: 'Organizația selectată nu există' },
           { status: 400 }
         )
       }
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        message: 'User registered successfully',
+        message: 'Utilizator înregistrat cu succes',
         user: userWithoutPassword,
         organization,
       },
@@ -222,7 +222,7 @@ export async function POST(req: Request) {
       }))
       return NextResponse.json(
         { 
-          message: 'Validation error', 
+          message: 'Eroare de validare', 
           errors: errorMessages,
           details: error.errors 
         },
@@ -232,7 +232,7 @@ export async function POST(req: Request) {
 
     console.error('Registration error:', error)
     return NextResponse.json(
-      { message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: 'Eroare internă de server', error: error instanceof Error ? error.message : 'Eroare necunoscută' },
       { status: 500 }
     )
   }

@@ -23,7 +23,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body: PaymentRequest = await request.json();
@@ -32,7 +32,7 @@ export async function POST(
 
     if (!purchaseIds || purchaseIds.length === 0) {
       return NextResponse.json(
-        { error: 'No purchases selected for payment' },
+        { error: 'Nu au fost selectate achiziții pentru plată' },
         { status: 400 }
       );
     }
@@ -55,7 +55,7 @@ export async function POST(
 
     if (purchases.length === 0) {
       return NextResponse.json(
-        { error: 'No valid unpaid purchases found' },
+        { error: 'Nu s-au găsit achiziții neplătite valide' },
         { status: 400 }
       );
     }
@@ -123,7 +123,7 @@ export async function POST(
   } catch (error) {
     console.error('Shop payment processing error:', error);
     return NextResponse.json(
-      { error: 'Failed to process payment' },
+      { error: 'Procesarea plății a eșuat' },
       { status: 500 }
     );
   }

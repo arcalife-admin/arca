@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const url = new URL(request.url);
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching boards:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch boards' },
+      { error: 'Încărcarea panourilor a eșuat' },
       { status: 500 }
     );
   }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -191,12 +191,12 @@ export async function POST(request: NextRequest) {
     console.error('Error creating board:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to create board' },
+      { error: 'Crearea panoului a eșuat' },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,20 @@ import { Switch } from '@/components/ui/switch';
 import { X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CreateWaitingListEntryData } from '@/types/waiting-list';
-import { treatmentTypes } from '@/data/treatmentTypes';
+import { useAppointmentProcedureTypes } from '@/hooks/useAppointmentProcedureTypes';
+
+const EMPTY_FORM_DATA = {
+  patientId: '',
+  practitionerId: '',
+  notes: '',
+  includeWaitingAppointment: false,
+  appointmentTypeId: '',
+  appointmentDuration: 30,
+  appointmentNotes: '',
+  appointmentPriority: 'medium',
+  appointmentStartTime: '',
+  appointmentEndTime: '',
+};
 
 interface WaitingListFormModalProps {
   isOpen: boolean;
@@ -31,6 +44,7 @@ interface WaitingListFormModalProps {
   patients: Array<{ id: string; firstName: string; lastName: string; patientCode: string }>;
   practitioners: Array<{ id: string; firstName: string; lastName: string; role: string }>;
   isLoading: boolean;
+  initialPatientId?: string;
 }
 
 export default function WaitingListFormModal({
@@ -40,28 +54,29 @@ export default function WaitingListFormModal({
   patients,
   practitioners,
   isLoading,
+  initialPatientId,
 }: WaitingListFormModalProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    patientId: '',
-    practitionerId: '',
-    notes: '',
-    includeWaitingAppointment: false,
-    appointmentType: '',
-    appointmentDuration: 30,
-    appointmentNotes: '',
-    appointmentPriority: 'medium',
-    appointmentStartTime: '',
-    appointmentEndTime: '',
-  });
+  const { procedureTypes, loading: loadingProcedureTypes } = useAppointmentProcedureTypes();
+  const [formData, setFormData] = useState(EMPTY_FORM_DATA);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        ...EMPTY_FORM_DATA,
+        patientId: initialPatientId ?? '',
+        includeWaitingAppointment: Boolean(initialPatientId),
+      });
+    }
+  }, [isOpen, initialPatientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.patientId || !formData.practitionerId) {
       toast({
-        title: 'Error',
-        description: 'Please select both patient and practitioner',
+        title: 'Eroare',
+        description: 'Selectați pacientul și practicianul',
         variant: 'destructive',
       });
       return;
@@ -73,9 +88,13 @@ export default function WaitingListFormModal({
       notes: formData.notes.trim() || undefined,
     };
 
-    if (formData.includeWaitingAppointment && formData.appointmentType) {
+    const selectedProcedure = procedureTypes.find(
+      (type) => type.id === formData.appointmentTypeId
+    );
+
+    if (formData.includeWaitingAppointment && selectedProcedure) {
       submitData.waitingAppointment = {
-        type: formData.appointmentType,
+        type: selectedProcedure.name,
         duration: formData.appointmentDuration,
         notes: formData.appointmentNotes.trim() || undefined,
         priority: formData.appointmentPriority,
@@ -96,19 +115,19 @@ export default function WaitingListFormModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Patient to Waiting List</DialogTitle>
+          <DialogTitle>Adaugă pacient în lista de așteptare</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label>Patient *</Label>
+            <Label>Pacient *</Label>
             <Select
               value={formData.patientId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, patientId: value }))}
               disabled={isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a patient" />
+                <SelectValue placeholder="Selectați un pacient" />
               </SelectTrigger>
               <SelectContent>
                 {patients.map((patient) => (
@@ -121,14 +140,14 @@ export default function WaitingListFormModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Practitioner *</Label>
+            <Label>Practician *</Label>
             <Select
               value={formData.practitionerId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, practitionerId: value }))}
               disabled={isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a practitioner" />
+                <SelectValue placeholder="Selectați un practician" />
               </SelectTrigger>
               <SelectContent>
                 {practitioners.map((practitioner) => (
@@ -141,9 +160,9 @@ export default function WaitingListFormModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>Notițe</Label>
             <Textarea
-              placeholder="Reason for waiting list..."
+              placeholder="Motivul adăugării în lista de așteptare..."
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               disabled={isLoading}
@@ -159,34 +178,40 @@ export default function WaitingListFormModal({
               }
               disabled={isLoading}
             />
-            <Label>Include waiting appointment</Label>
+            <Label>Include programare în așteptare</Label>
           </div>
 
           {formData.includeWaitingAppointment && (
             <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-              <h4 className="font-medium">Waiting Appointment Details</h4>
+              <h4 className="font-medium">Detalii programare în așteptare</h4>
 
               <div className="space-y-2">
-                <Label>Appointment Type *</Label>
+                <Label>Tip programare *</Label>
                 <Select
-                  value={formData.appointmentType}
+                  value={formData.appointmentTypeId}
                   onValueChange={(value) => {
-                    const type = treatmentTypes.find(t => t.name === value);
+                    const type = procedureTypes.find((t) => t.id === value);
                     setFormData(prev => ({
                       ...prev,
-                      appointmentType: value,
+                      appointmentTypeId: value,
                       appointmentDuration: type?.duration || 30
                     }));
                   }}
-                  disabled={isLoading}
+                  disabled={isLoading || loadingProcedureTypes}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select appointment type" />
+                    <SelectValue placeholder={loadingProcedureTypes ? 'Se încarcă procedurile...' : 'Selectați tipul programării'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {treatmentTypes.map((type) => (
-                      <SelectItem key={type.name} value={type.name}>
-                        {type.name} ({type.duration} min)
+                    {procedureTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: type.color }}
+                          />
+                          <span>{type.description} ({type.duration} min)</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -194,7 +219,7 @@ export default function WaitingListFormModal({
               </div>
 
               <div className="space-y-2">
-                <Label>Duration (minutes)</Label>
+                <Label>Durată (minute)</Label>
                 <Input
                   type="number"
                   min="5"
@@ -213,11 +238,11 @@ export default function WaitingListFormModal({
 
           <div className="flex justify-end space-x-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-              Cancel
+              Anulează
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Add to Waiting List
+              Adaugă în lista de așteptare
             </Button>
           </div>
         </form>

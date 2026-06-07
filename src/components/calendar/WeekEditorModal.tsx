@@ -77,6 +77,16 @@ interface WeekEditorModalProps {
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+const WEEKDAY_LABELS: Record<string, string> = {
+  Monday: 'Luni',
+  Tuesday: 'Marți',
+  Wednesday: 'Miercuri',
+  Thursday: 'Joi',
+  Friday: 'Vineri',
+  Saturday: 'Sâmbătă',
+  Sunday: 'Duminică',
+}
+
 export default function WeekEditorModal({
   isOpen,
   onClose,
@@ -146,11 +156,11 @@ export default function WeekEditorModal({
       )
 
       await onSaveShifts(allShifts)
-      toast({ title: 'Success', description: 'Week schedule saved successfully' })
+      toast({ title: 'Succes', description: 'Programul săptămânal a fost salvat cu succes' })
       onClose()
     } catch (error) {
       console.error('Error saving shifts:', error)
-      toast({ title: 'Error', description: 'Failed to save week schedule', variant: 'destructive' })
+      toast({ title: 'Eroare', description: 'Salvarea programului săptămânal a eșuat', variant: 'destructive' })
     } finally {
       setIsSaving(false)
     }
@@ -170,7 +180,7 @@ export default function WeekEditorModal({
 
   const getPractitionerName = (practitionerId: string) => {
     const practitioner = practitioners.find(p => p.id === practitionerId)
-    return practitioner ? `${practitioner.firstName} ${practitioner.lastName}` : 'Unknown'
+    return practitioner ? `${practitioner.firstName} ${practitioner.lastName}` : 'Necunoscut'
   }
 
   return (
@@ -178,7 +188,7 @@ export default function WeekEditorModal({
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>Week Schedule Editor - Room {roomNumber}</DialogTitle>
+            <DialogTitle>Editor program săptămânal - Cabinet {roomNumber}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -187,9 +197,9 @@ export default function WeekEditorModal({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-24">Day</TableHead>
-                    <TableHead>Shifts</TableHead>
-                    <TableHead className="w-20">Actions</TableHead>
+                    <TableHead className="w-24">Zi</TableHead>
+                    <TableHead>Schimburi</TableHead>
+                    <TableHead className="w-20">Acțiuni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -198,12 +208,12 @@ export default function WeekEditorModal({
                     return (
                       <TableRow key={day}>
                         <TableCell className="font-medium">
-                          {day}
+                          {WEEKDAY_LABELS[day] ?? day}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-2">
                             {dayShifts.length === 0 ? (
-                              <div className="text-gray-500 text-sm">No shifts scheduled</div>
+                              <div className="text-gray-500 text-sm">Niciun schimb programat</div>
                             ) : (
                               dayShifts.map((shift, index) => (
                                 <div
@@ -225,12 +235,12 @@ export default function WeekEditorModal({
                                       {shift.startTime} - {shift.endTime}
                                       {shift.isOverride && (
                                         <Badge variant="secondary" className="ml-2 text-xs">
-                                          Override
+                                          Excepție
                                         </Badge>
                                       )}
                                       {shift.priority > 0 && (
                                         <Badge variant="outline" className="ml-2 text-xs">
-                                          Priority: {shift.priority}
+                                          Prioritate: {shift.priority}
                                         </Badge>
                                       )}
                                     </div>
@@ -262,7 +272,7 @@ export default function WeekEditorModal({
                             }}
                           >
                             <Plus className="h-3 w-3 mr-1" />
-                            Add
+                            Adaugă
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -274,28 +284,28 @@ export default function WeekEditorModal({
 
             {/* Summary */}
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Summary</h4>
+              <h4 className="font-medium text-blue-900 mb-2">Rezumat</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <div className="text-blue-700 font-medium">Total Shifts</div>
+                  <div className="text-blue-700 font-medium">Total schimburi</div>
                   <div className="text-blue-600">
                     {WEEKDAYS.reduce((sum, day) => sum + (shifts[day]?.length || 0), 0)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-blue-700 font-medium">Days Covered</div>
+                  <div className="text-blue-700 font-medium">Zile acoperite</div>
                   <div className="text-blue-600">
                     {WEEKDAYS.filter(day => (shifts[day]?.length || 0) > 0).length} / 7
                   </div>
                 </div>
                 <div>
-                  <div className="text-blue-700 font-medium">Override Shifts</div>
+                  <div className="text-blue-700 font-medium">Schimburi cu excepție</div>
                   <div className="text-blue-600">
                     {WEEKDAYS.reduce((sum, day) => sum + (shifts[day]?.filter(s => s.isOverride).length || 0), 0)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-blue-700 font-medium">Unique Practitioners</div>
+                  <div className="text-blue-700 font-medium">Practicieni unici</div>
                   <div className="text-blue-600">
                     {new Set(
                       WEEKDAYS.flatMap(day =>
@@ -310,10 +320,10 @@ export default function WeekEditorModal({
 
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              Anulare
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Week Schedule'}
+              {isSaving ? 'Se salvează...' : 'Salvează programul săptămânal'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -329,8 +339,8 @@ export default function WeekEditorModal({
           const conflicts = getShiftConflicts(selectedDay, { ...shiftData, dayOfWeek: selectedDay })
           if (conflicts.length > 0 && !shiftData.isOverride) {
             toast({
-              title: 'Time Conflict',
-              description: `This shift overlaps with existing shifts. Use "Override" if intentional.`,
+              title: 'Conflict de program',
+              description: `Acest schimb se suprapune cu schimburile existente. Folosiți „Excepție" dacă este intenționat.`,
               variant: 'destructive'
             })
             return
@@ -338,8 +348,8 @@ export default function WeekEditorModal({
           addShift(selectedDay, shiftData)
           setShowAddShiftDialog(false)
           toast({
-            title: 'Shift Added',
-            description: `Added shift for ${selectedDay}`
+            title: 'Schimb adăugat',
+            description: `Schimb adăugat pentru ${WEEKDAY_LABELS[selectedDay] ?? selectedDay}`
           })
         }}
       />
@@ -404,15 +414,15 @@ function AddShiftToWeekDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Shift for {day}</DialogTitle>
+          <DialogTitle>Adaugă schimb pentru {WEEKDAY_LABELS[day] ?? day}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="practitioner">Main Practitioner</Label>
+            <Label htmlFor="practitioner">Practician principal</Label>
             <Select value={practitionerId} onValueChange={setPractitionerId}>
               <SelectTrigger>
-                <SelectValue placeholder="Select practitioner" />
+                <SelectValue placeholder="Selectați practicianul" />
               </SelectTrigger>
               <SelectContent>
                 {practitioners.map((p) => (
@@ -425,13 +435,13 @@ function AddShiftToWeekDialog({
           </div>
 
           <div>
-            <Label htmlFor="sidePractitioner">Side Practitioner (Optional)</Label>
+            <Label htmlFor="sidePractitioner">Practician secundar (opțional)</Label>
             <Select value={sidePractitionerId} onValueChange={setSidePractitionerId}>
               <SelectTrigger>
-                <SelectValue placeholder="None" />
+                <SelectValue placeholder="Niciunul" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="">Niciunul</SelectItem>
                 {practitioners
                   .filter(p => p.id !== practitionerId)
                   .map((p) => (
@@ -445,7 +455,7 @@ function AddShiftToWeekDialog({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label htmlFor="startTime">Start Time</Label>
+              <Label htmlFor="startTime">Ora de început</Label>
               <Input
                 id="startTime"
                 type="time"
@@ -454,7 +464,7 @@ function AddShiftToWeekDialog({
               />
             </div>
             <div>
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">Ora de sfârșit</Label>
               <Input
                 id="endTime"
                 type="time"
@@ -465,7 +475,7 @@ function AddShiftToWeekDialog({
           </div>
 
           <div>
-            <Label htmlFor="priority">Priority (0-10)</Label>
+            <Label htmlFor="priority">Prioritate (0-10)</Label>
             <Input
               id="priority"
               type="number"
@@ -478,27 +488,27 @@ function AddShiftToWeekDialog({
 
           <div className="flex items-center space-x-2">
             <Switch checked={isOverride} onCheckedChange={setIsOverride} />
-            <Label>Override existing shifts</Label>
+            <Label>Înlocuiește schimburile existente</Label>
           </div>
 
           {isOverride && (
             <div>
-              <Label htmlFor="reason">Reason</Label>
+              <Label htmlFor="reason">Motiv</Label>
               <Textarea
                 id="reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Why is this override needed?"
+                placeholder="De ce este necesară această excepție?"
               />
             </div>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Anulare
             </Button>
             <Button type="submit" disabled={!practitionerId || startTime >= endTime}>
-              Add Shift
+              Adaugă schimb
             </Button>
           </DialogFooter>
         </form>

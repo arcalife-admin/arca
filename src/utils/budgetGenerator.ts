@@ -1,15 +1,14 @@
 import jsPDF from 'jspdf';
 
-interface DentalCode {
+interface SurgicalProcedureCode {
   id: string;
   code: string;
   description: string;
-  points: number | null;
-  rate: number | null;
+  price: number | null;
   category: string;
 }
 
-interface DentalProcedure {
+interface SurgicalProcedure {
   id: string;
   patientId: string;
   codeId: string;
@@ -18,14 +17,15 @@ interface DentalProcedure {
   status: string;
   createdAt: string;
   updatedAt: string;
-  code: DentalCode;
+  code: SurgicalProcedureCode;
   practitioner?: {
     id: string;
     firstName: string;
     lastName: string;
   };
-  toothNumber?: number;
+  bodyArea?: string | null;
   quantity?: number;
+  cost?: number | null;
 }
 
 interface Patient {
@@ -51,7 +51,7 @@ interface Organization {
 
 interface BudgetOptions {
   includeNotes?: boolean;
-  includeToothNumbers?: boolean;
+  includeBodyAreas?: boolean;
   vatRate?: number;
   validUntil?: Date;
   additionalNotes?: string;
@@ -66,13 +66,13 @@ export class BudgetGenerator {
 
   generateBudget(
     patient: Patient,
-    procedures: DentalProcedure[],
+    procedures: SurgicalProcedure[],
     organization?: Organization,
     options: BudgetOptions = {}
   ): Blob {
     const {
       includeNotes = true,
-      includeToothNumbers = true,
+      includeBodyAreas = true,
       vatRate = 0.21, // Default 21% VAT
       validUntil,
       additionalNotes
@@ -91,7 +91,7 @@ export class BudgetGenerator {
     this.addBudgetTitle(validUntil);
 
     // Add procedures table
-    this.addProceduresTable(procedures, includeNotes, includeToothNumbers);
+    this.addProceduresTable(procedures, includeNotes, includeBodyAreas);
 
     // Add cost summary
     this.addCostSummary(procedures, vatRate);
@@ -113,7 +113,7 @@ export class BudgetGenerator {
     // Organization name
     this.doc.setFontSize(20);
     this.doc.setFont('helvetica', 'bold');
-    const orgName = organization?.name || 'Dental Practice';
+    const orgName = organization?.name || 'Clinică medicală';
     this.doc.text(orgName, pageWidth / 2, 25, { align: 'center' });
 
     // Organization details
@@ -146,17 +146,17 @@ export class BudgetGenerator {
   private addPatientInfo(patient: Patient): void {
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('Patient Information:', 20, 70);
+    this.doc.text('Informații pacient:', 20, 70);
 
     this.doc.setFont('helvetica', 'normal');
     this.doc.setFontSize(10);
 
     const patientInfo = [
-      `Name: ${patient.firstName} ${patient.lastName}`,
-      `Date of Birth: ${new Date(patient.dateOfBirth).toLocaleDateString()}`,
-      `Address: ${patient.address.display_name}`,
-      ...(patient.phone ? [`Phone: ${patient.phone}`] : []),
-      ...(patient.email ? [`Email: ${patient.email}`] : [])
+      `Nume: ${patient.firstName} ${patient.lastName}`,
+      `Data nașterii: ${new Date(patient.dateOfBirth).toLocaleDateString('ro-RO')}`,
+      `Adresă: ${patient.address.display_name}`,
+      ...(patient.phone ? [`Telefon: ${patient.phone}`] : []),
+      ...(patient.email ? [`E-mail: ${patient.email}`] : [])
     ];
 
     let yPos = 80;
@@ -171,21 +171,21 @@ export class BudgetGenerator {
 
     this.doc.setFontSize(16);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('TREATMENT BUDGET', pageWidth / 2, 135, { align: 'center' });
+    this.doc.text('DEVIZ DE TRATAMENT', pageWidth / 2, 135, { align: 'center' });
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - 20, 145, { align: 'right' });
+    this.doc.text(`Data: ${new Date().toLocaleDateString('ro-RO')}`, pageWidth - 20, 145, { align: 'right' });
 
     if (validUntil) {
-      this.doc.text(`Valid until: ${validUntil.toLocaleDateString()}`, pageWidth - 20, 155, { align: 'right' });
+      this.doc.text(`Valabil până la: ${validUntil.toLocaleDateString('ro-RO')}`, pageWidth - 20, 155, { align: 'right' });
     }
   }
 
   private addProceduresTable(
-    procedures: DentalProcedure[],
+    procedures: SurgicalProcedure[],
     includeNotes: boolean,
-    includeToothNumbers: boolean
+    includeBodyAreas: boolean
   ): void {
     const pageWidth = this.doc.internal.pageSize.width;
     const pageHeight = this.doc.internal.pageSize.height;
@@ -198,13 +198,13 @@ export class BudgetGenerator {
     // Calculate dynamic column widths to prevent overflow
     const availableWidth = tableWidth - 10; // Account for padding
     const baseColumns = [
-      { key: 'code', header: 'Code', width: 22 },
-      { key: 'description', header: 'Description', width: includeNotes ? 45 : 65 },
-      ...(includeToothNumbers ? [{ key: 'tooth', header: 'Tooth', width: 18 }] : []),
-      { key: 'qty', header: 'Qty', width: 12 },
-      { key: 'rate', header: 'Rate (€)', width: 22 },
+      { key: 'code', header: 'Cod', width: 22 },
+      { key: 'description', header: 'Descriere', width: includeNotes ? 45 : 65 },
+      ...(includeBodyAreas ? [{ key: 'bodyArea', header: 'Zonă', width: 22 }] : []),
+      { key: 'qty', header: 'Cant.', width: 12 },
+      { key: 'price', header: 'Preț (€)', width: 22 },
       { key: 'total', header: 'Total (€)', width: 22 },
-      ...(includeNotes ? [{ key: 'notes', header: 'Notes', width: 28 }] : [])
+      ...(includeNotes ? [{ key: 'notes', header: 'Note', width: 28 }] : [])
     ];
 
     // Verify total width doesn't exceed available width
@@ -237,8 +237,8 @@ export class BudgetGenerator {
 
     procedures.forEach((proc, index) => {
       const quantity = proc.quantity || 1;
-      const rate = proc.code.rate || 0;
-      const total = quantity * rate;
+      const unitPrice = proc.cost ?? (proc.code.price || 0);
+      const total = quantity * unitPrice;
 
       // Alternate row colors
       if (index % 2 === 1) {
@@ -262,10 +262,10 @@ export class BudgetGenerator {
       xPos += baseColumns[1].width;
 
       // Tooth (if included)
-      if (includeToothNumbers) {
-        const toothText = proc.toothNumber ? proc.toothNumber.toString() : '-';
-        this.doc.text(toothText, xPos + 5, currentY + 4, { align: 'center' });
-        xPos += baseColumns.find(c => c.key === 'tooth')!.width;
+      if (includeBodyAreas) {
+        const areaText = proc.bodyArea || '-';
+        this.doc.text(areaText, xPos + 5, currentY + 4, { align: 'center' });
+        xPos += baseColumns.find(c => c.key === 'bodyArea')!.width;
       }
 
       // Quantity
@@ -273,8 +273,8 @@ export class BudgetGenerator {
       xPos += baseColumns.find(c => c.key === 'qty')!.width;
 
       // Rate
-      this.doc.text(rate.toFixed(2), xPos + baseColumns.find(c => c.key === 'rate')!.width - 5, currentY + 4, { align: 'right' });
-      xPos += baseColumns.find(c => c.key === 'rate')!.width;
+      this.doc.text(unitPrice.toFixed(2), xPos + baseColumns.find(c => c.key === 'price')!.width - 5, currentY + 4, { align: 'right' });
+      xPos += baseColumns.find(c => c.key === 'price')!.width;
 
       // Total
       this.doc.text(total.toFixed(2), xPos + baseColumns.find(c => c.key === 'total')!.width - 5, currentY + 4, { align: 'right' });
@@ -297,7 +297,7 @@ export class BudgetGenerator {
     (this.doc as any).lastAutoTable = { finalY: currentY };
   }
 
-  private addCostSummary(procedures: DentalProcedure[], vatRate: number): void {
+  private addCostSummary(procedures: SurgicalProcedure[], vatRate: number): void {
     const pageWidth = this.doc.internal.pageSize.width;
     const pageHeight = this.doc.internal.pageSize.height;
     const margin = 20;
@@ -305,8 +305,8 @@ export class BudgetGenerator {
     // Calculate totals
     const subtotal = procedures.reduce((sum, proc) => {
       const quantity = proc.quantity || 1;
-      const rate = proc.code.rate || 0;
-      return sum + (quantity * rate);
+      const unitPrice = proc.cost ?? (proc.code.price || 0);
+      return sum + (quantity * unitPrice);
     }, 0);
 
     const vatAmount = subtotal * vatRate;
@@ -337,8 +337,8 @@ export class BudgetGenerator {
 
     yPos += 8;
 
-    // VAT
-    this.doc.text(`VAT (${(vatRate * 100).toFixed(0)}%):`, boxX + 5, yPos);
+    // TVA
+    this.doc.text(`TVA (${(vatRate * 100).toFixed(0)}%):`, boxX + 5, yPos);
     this.doc.text(`€${vatAmount.toFixed(2)}`, boxX + boxWidth - 5, yPos, { align: 'right' });
 
     yPos += 10;
@@ -363,12 +363,12 @@ export class BudgetGenerator {
 
     // Terms and conditions
     const terms = [
-      'Terms and Conditions:',
-      '• This budget is valid for the period specified above',
-      '• Prices are subject to change without prior notice',
-      '• Treatment must be completed within the validity period',
-      '• Payment is due upon completion of treatment',
-      '• Additional costs may apply for complex cases'
+      'Termeni și condiții:',
+      '• Acest deviz este valabil pentru perioada specificată mai sus',
+      '• Prețurile pot fi modificate fără notificare prealabilă',
+      '• Tratamentul trebuie finalizat în perioada de valabilitate',
+      '• Plata se efectuează la finalizarea tratamentului',
+      '• Pot apărea costuri suplimentare pentru cazuri complexe'
     ];
 
     terms.forEach((term, index) => {
@@ -386,7 +386,7 @@ export class BudgetGenerator {
     if (additionalNotes) {
       yPos += 5;
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text('Additional Notes:', margin, yPos);
+      this.doc.text('Note suplimentare:', margin, yPos);
       yPos += 5;
 
       this.doc.setFont('helvetica', 'normal');
@@ -398,7 +398,7 @@ export class BudgetGenerator {
   // Method to generate and download PDF
   static generateAndDownload(
     patient: Patient,
-    procedures: DentalProcedure[],
+    procedures: SurgicalProcedure[],
     organization?: Organization,
     options: BudgetOptions = {}
   ): void {
@@ -419,7 +419,7 @@ export class BudgetGenerator {
   // Method to generate PDF for email attachment
   static generateForEmail(
     patient: Patient,
-    procedures: DentalProcedure[],
+    procedures: SurgicalProcedure[],
     organization?: Organization,
     options: BudgetOptions = {}
   ): Blob {

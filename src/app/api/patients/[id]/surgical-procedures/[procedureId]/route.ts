@@ -12,7 +12,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const body = await request.json();
     const { date, notes, status, quantity, cost, bodyArea, procedureType, anesthesiaType } = body;
@@ -83,7 +83,7 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating surgical procedure:', error);
     return NextResponse.json(
-      { error: 'Failed to update surgical procedure' },
+      { error: 'Actualizarea procedurii chirurgicale a eșuat' },
       { status: 500 }
     );
   }
@@ -97,7 +97,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     // Fetch procedure for backup and logging
     const toDelete = await prisma.surgicalProcedure.findUnique({
@@ -141,7 +141,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting surgical procedure:', error);
     return NextResponse.json(
-      { error: 'Failed to delete surgical procedure' },
+      { error: 'Ștergerea procedurii chirurgicale a eșuat' },
       { status: 500 }
     );
   }

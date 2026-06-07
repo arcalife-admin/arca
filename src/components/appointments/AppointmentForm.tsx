@@ -61,16 +61,16 @@ function PatientInfoModal({ patient, onClose }: { patient: any, onClose: () => v
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
       <div className="bg-white rounded-lg shadow-lg p-6 min-w-[320px] max-w-[90vw] relative">
         <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={onClose}>&times;</button>
-        <h2 className="text-lg font-semibold mb-2">Patient Info</h2>
+        <h2 className="text-lg font-semibold mb-2">Informații pacient</h2>
         <div className="space-y-1">
-          <div><b>Name:</b> {patient.name}</div>
-          <div><b>Date of Birth:</b> {new Date(patient.dateOfBirth).toLocaleDateString()}</div>
-          <div><b>Gender:</b> {gender}</div>
+          <div><b>Nume:</b> {patient.name}</div>
+          <div><b>Data nașterii:</b> {new Date(patient.dateOfBirth).toLocaleDateString()}</div>
+          <div><b>Sex:</b> {gender}</div>
           <div><b>Email:</b> {patient.email || '-'}</div>
-          <div><b>Phone:</b> {patient.phone || '-'}</div>
-          <div><b>Address:</b> {patient.address || '-'}</div>
+          <div><b>Telefon:</b> {patient.phone || '-'}</div>
+          <div><b>Adresă:</b> {patient.address || '-'}</div>
           <div><b>CNP:</b> {patient.cnp || '-'}</div>
-          <div><b>Country:</b> {patient.country || '-'}</div>
+          <div><b>Țară:</b> {patient.country || '-'}</div>
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@ function normalizeDate(dateString: string): string[] {
   if (!dateString) return [];
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return [dateString];
-  const us = date.toLocaleDateString('en-US');
+  const us = date.toLocaleDateString('ro-RO');
   const gb = date.toLocaleDateString('en-GB');
   const iso = date.toISOString().slice(0, 10);
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -193,13 +193,13 @@ export function AppointmentForm({
     <Card className="p-6">
       <form id="appointment-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="patient">Patient</Label>
+          <Label htmlFor="patient">Pacient</Label>
           <div className="relative">
             {editingPatient || !selectedPatientObj ? (
               <>
                 <Input
                   type="text"
-                  placeholder="Search patients..."
+                  placeholder="Căutați pacienți..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full"
@@ -258,10 +258,10 @@ export function AppointmentForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="type">Appointment Type</Label>
+          <Label htmlFor="type">Tip programare</Label>
           <Select value={selectedType?.id} onValueChange={handleTypeChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Select type" />
+              <SelectValue placeholder="Selectați tipul" />
             </SelectTrigger>
             <SelectContent>
               {treatmentTypes.map((type) => (
@@ -281,10 +281,10 @@ export function AppointmentForm({
 
         {!isPendingMode && (
           <div className="space-y-2">
-            <Label htmlFor="practitioner">Practitioner</Label>
+            <Label htmlFor="practitioner">Practician</Label>
             <Select value={selectedPractitioner} onValueChange={setSelectedPractitioner}>
               <SelectTrigger>
-                <SelectValue placeholder="Select practitioner" />
+                <SelectValue placeholder="Selectați practicianul" />
               </SelectTrigger>
               <SelectContent>
                 {(practitioners).map((practitioner) => (
@@ -298,7 +298,7 @@ export function AppointmentForm({
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="startTime">Start Time</Label>
+          <Label htmlFor="startTime">Ora de început</Label>
           <Input
             type="datetime-local"
             value={formatDateForInput(startTime)}
@@ -307,7 +307,7 @@ export function AppointmentForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duration">Duration (minutes)</Label>
+          <Label htmlFor="duration">Durată (minute)</Label>
           <Input
             type="number"
             value={duration}
@@ -318,11 +318,11 @@ export function AppointmentForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="notes">Notes</Label>
+          <Label htmlFor="notes">Notițe</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add any notes here..."
+            placeholder="Adăugați notițe aici..."
           />
         </div>
       </form>

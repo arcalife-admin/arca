@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
+import { ensureOrderCategoriesSeeded } from '@/lib/orders/service';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
+
+    await ensureOrderCategoriesSeeded(session.user.organizationId);
 
     const categories = await prisma.itemCategory.findMany({
       where: {
@@ -32,7 +35,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching categories:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch categories' },
+      { error: 'Încărcarea categoriilor a eșuat' },
       { status: 500 }
     );
   }
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json(
-        { error: 'Category name is required' },
+        { error: 'Numele categoriei este obligatoriu' },
         { status: 400 }
       );
     }
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating category:', error);
     return NextResponse.json(
-      { error: 'Failed to create category' },
+      { error: 'Crearea categoriei a eșuat' },
       { status: 500 }
     );
   }

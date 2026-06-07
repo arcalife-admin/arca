@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const settings = await prisma.userFinanceSettings.findUnique({
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(settings)
   } catch (error) {
     console.error('Error fetching finance settings:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const data = await request.json()
@@ -71,6 +71,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(settings)
   } catch (error) {
     console.error('Error updating finance settings:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

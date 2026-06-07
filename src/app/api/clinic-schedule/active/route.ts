@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -135,7 +135,7 @@ export async function GET(request: Request) {
     if (!activeSchedule) {
       return NextResponse.json({
         schedule: null,
-        message: 'No active schedule found',
+        message: 'Nu s-a găsit niciun program activ',
       })
     }
 
@@ -152,14 +152,14 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching active clinic schedule:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
 }
 
 async function calculateAvailability(schedule: any, date: Date) {
-  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' })
+  const dayName = date.toLocaleDateString('ro-RO', { weekday: 'long' })
 
   // Get existing appointments for the date
   const startOfDay = new Date(date)
@@ -281,7 +281,7 @@ export async function POST(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
 
     if (!startDate || !endDate) {
       return NextResponse.json(
-        { message: 'Start date and end date are required' },
+        { message: 'Data de început și data de sfârșit sunt obligatorii' },
         { status: 400 }
       )
     }
@@ -376,7 +376,7 @@ export async function POST(request: Request) {
     if (!activeSchedule) {
       return NextResponse.json({
         schedule: null,
-        message: 'No active schedule found',
+        message: 'Nu s-a găsit niciun program activ',
       })
     }
 
@@ -389,7 +389,7 @@ export async function POST(request: Request) {
       const availability = await calculateAvailability(activeSchedule, new Date(current))
       dailyAvailability.push({
         date: current.toISOString().split('T')[0],
-        dayName: current.toLocaleDateString('en-US', { weekday: 'long' }),
+        dayName: current.toLocaleDateString('ro-RO', { weekday: 'long' }),
         availability,
       })
     }
@@ -401,7 +401,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error generating schedule availability:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

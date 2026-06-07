@@ -52,6 +52,20 @@ const statusColors = {
   [TaskStatus.CANCELLED]: 'bg-gray-100 text-gray-800'
 };
 
+const statusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.PENDING]: 'În așteptare',
+  [TaskStatus.IN_PROGRESS]: 'În desfășurare',
+  [TaskStatus.COMPLETED]: 'Finalizat',
+  [TaskStatus.CANCELLED]: 'Anulat',
+};
+
+const priorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.LOW]: 'Scăzută',
+  [TaskPriority.MEDIUM]: 'Medie',
+  [TaskPriority.HIGH]: 'Ridicată',
+  [TaskPriority.URGENT]: 'Urgentă',
+};
+
 export default function TaskDetailModal({
   isOpen,
   onClose,
@@ -138,23 +152,23 @@ export default function TaskDetailModal({
               </DialogTitle>
               <div className="flex items-center space-x-2">
                 <Badge className={statusColors[task.status]}>
-                  {task.status.replace('_', ' ')}
+                  {statusLabels[task.status]}
                 </Badge>
                 <Badge className={priorityColors[task.priority]} variant="outline">
                   {task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT ? (
                     <AlertTriangle className="w-3 h-3 mr-1" />
                   ) : null}
-                  {task.priority}
+                  {priorityLabels[task.priority]}
                 </Badge>
                 {isOverdue && (
-                  <Badge variant="destructive">Overdue</Badge>
+                  <Badge variant="destructive">Depășit</Badge>
                 )}
               </div>
             </div>
             {canEdit && (
               <Button variant="outline" size="sm" onClick={() => onEdit(task)}>
                 <Edit className="w-4 h-4 mr-2" />
-                Edit
+                Editează
               </Button>
             )}
           </div>
@@ -165,12 +179,12 @@ export default function TaskDetailModal({
           <div className="lg:col-span-1 space-y-4 overflow-y-auto">
             <Card>
               <CardHeader className="pb-3">
-                <h3 className="font-medium">Task Information</h3>
+                <h3 className="font-medium">Informații sarcină</h3>
               </CardHeader>
               <CardContent className="space-y-4">
                 {task.description && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Description</p>
+                    <p className="text-sm text-muted-foreground">Descriere</p>
                     <p className="text-sm">{task.description}</p>
                   </div>
                 )}
@@ -179,9 +193,9 @@ export default function TaskDetailModal({
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Deadline</p>
+                      <p className="text-sm text-muted-foreground">Termen limită</p>
                       <p className="text-sm font-medium">
-                        {format(new Date(task.deadline), 'MMM dd, yyyy \'at\' HH:mm')}
+                        {format(new Date(task.deadline), 'MMM dd, yyyy \'la\' HH:mm')}
                       </p>
                     </div>
                   </div>
@@ -191,7 +205,7 @@ export default function TaskDetailModal({
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Patient</p>
+                      <p className="text-sm text-muted-foreground">Pacient</p>
                       <p className="text-sm font-medium">
                         {task.patient.firstName} {task.patient.lastName}
                       </p>
@@ -202,9 +216,9 @@ export default function TaskDetailModal({
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Created</p>
+                    <p className="text-sm text-muted-foreground">Creat</p>
                     <p className="text-sm">
-                      {format(new Date(task.createdAt), 'MMM dd, yyyy \'at\' HH:mm')} by {task.creator.firstName} {task.creator.lastName}
+                      {format(new Date(task.createdAt), 'MMM dd, yyyy \'la\' HH:mm')} de {task.creator.firstName} {task.creator.lastName}
                     </p>
                   </div>
                 </div>
@@ -213,9 +227,9 @@ export default function TaskDetailModal({
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-4 h-4 text-green-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Completed</p>
+                      <p className="text-sm text-muted-foreground">Finalizat</p>
                       <p className="text-sm">
-                        {format(new Date(task.completedAt), 'MMM dd, yyyy \'at\' HH:mm')} by {task.completer.firstName} {task.completer.lastName}
+                        {format(new Date(task.completedAt), 'MMM dd, yyyy \'la\' HH:mm')} de {task.completer.firstName} {task.completer.lastName}
                       </p>
                     </div>
                   </div>
@@ -228,7 +242,7 @@ export default function TaskDetailModal({
               <CardHeader className="pb-3">
                 <h3 className="font-medium flex items-center">
                   <Users className="w-4 h-4 mr-2" />
-                  Assigned Practitioners ({task.assignments.length})
+                  Practicieni atribuiți ({task.assignments.length})
                 </h3>
               </CardHeader>
               <CardContent>
@@ -258,7 +272,7 @@ export default function TaskDetailModal({
                 <CardHeader className="pb-3">
                   <h3 className="font-medium flex items-center">
                     <Bell className="w-4 h-4 mr-2" />
-                    Upcoming Reminders ({upcomingReminders.length})
+                    Memento-uri viitoare ({upcomingReminders.length})
                   </h3>
                 </CardHeader>
                 <CardContent>
@@ -266,7 +280,7 @@ export default function TaskDetailModal({
                     {upcomingReminders.map((reminder) => (
                       <div key={reminder.id} className="text-sm">
                         <p className="font-medium">
-                          {format(new Date(reminder.reminderTime), 'MMM dd, yyyy \'at\' HH:mm')}
+                          {format(new Date(reminder.reminderTime), 'MMM dd, yyyy \'la\' HH:mm')}
                         </p>
                         {reminder.message && (
                           <p className="text-muted-foreground">{reminder.message}</p>
@@ -282,7 +296,7 @@ export default function TaskDetailModal({
             {task.status !== TaskStatus.COMPLETED && canEdit && (
               <Card>
                 <CardHeader className="pb-3">
-                  <h3 className="font-medium">Quick Actions</h3>
+                  <h3 className="font-medium">Acțiuni rapide</h3>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {task.status === TaskStatus.PENDING && (
@@ -292,7 +306,7 @@ export default function TaskDetailModal({
                       className="w-full"
                       onClick={() => handleStatusUpdate(TaskStatus.IN_PROGRESS)}
                     >
-                      Start Task
+                      Începe sarcina
                     </Button>
                   )}
                   {task.status === TaskStatus.IN_PROGRESS && (
@@ -302,7 +316,7 @@ export default function TaskDetailModal({
                       onClick={() => handleStatusUpdate(TaskStatus.COMPLETED)}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark Complete
+                      Marchează finalizată
                     </Button>
                   )}
                 </CardContent>
@@ -316,7 +330,7 @@ export default function TaskDetailModal({
               <CardHeader className="pb-3 flex-shrink-0">
                 <h3 className="font-medium flex items-center">
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Messages ({messages.length})
+                  Mesaje ({messages.length})
                 </h3>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col p-0">
@@ -325,7 +339,7 @@ export default function TaskDetailModal({
                     {messages.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">
                         <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p>No messages yet. Start the conversation!</p>
+                        <p>Nu există mesaje încă. Începeți conversația!</p>
                       </div>
                     ) : (
                       messages.map((message) => (
@@ -359,7 +373,7 @@ export default function TaskDetailModal({
                     <div className="p-4 flex-shrink-0">
                       <div className="flex space-x-2">
                         <Input
-                          placeholder="Type a message..."
+                          placeholder="Scrieți un mesaj..."
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={handleKeyPress}

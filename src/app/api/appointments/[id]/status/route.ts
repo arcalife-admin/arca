@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
-import { AppointmentStatusMetadata, APPOINTMENT_STATUS_CONFIGS } from '@/types/appointment-status';
+import { AppointmentStatusMetadata, APPOINTMENT_STATUS_CONFIGS, getStatusConfig, normalizeStatusType } from '@/types/appointment-status';
 
 export async function PATCH(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { id } = params;
@@ -23,19 +23,19 @@ export async function PATCH(
     } = body;
 
     // Validate status type
-    if (!status || !APPOINTMENT_STATUS_CONFIGS[status.type]) {
-      return NextResponse.json({ error: 'Invalid status type' }, { status: 400 });
+    if (!status || !APPOINTMENT_STATUS_CONFIGS[normalizeStatusType(status.type)]) {
+      return NextResponse.json({ error: 'Tip de status invalid' }, { status: 400 });
     }
 
-    const config = APPOINTMENT_STATUS_CONFIGS[status.type];
+    const config = getStatusConfig(status.type);
 
     // Validate required inputs
     if (config.requiresInput) {
       if (config.inputType === 'minutes' && (!status.minutesLate || status.minutesLate <= 0)) {
-        return NextResponse.json({ error: 'Minutes late is required for running late status' }, { status: 400 });
+        return NextResponse.json({ error: 'Minutele de întârziere sunt obligatorii pentru statusul întârzie' }, { status: 400 });
       }
       if (config.inputType === 'note' && (!status.importantNote || status.importantNote.trim() === '')) {
-        return NextResponse.json({ error: 'Important note is required for important status' }, { status: 400 });
+        return NextResponse.json({ error: 'Nota importantă este obligatorie pentru statusul important' }, { status: 400 });
       }
     }
 
@@ -54,7 +54,7 @@ export async function PATCH(
     });
 
     if (!existingAppointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Programarea nu a fost găsită' }, { status: 404 });
     }
 
     // Prepare status data with timestamp
@@ -97,7 +97,7 @@ export async function PATCH(
   } catch (error) {
     console.error('Error updating appointment status:', error);
     return NextResponse.json(
-      { error: 'Failed to update appointment status' },
+      { error: 'Actualizarea statusului programării a eșuat' },
       { status: 500 }
     );
   }
@@ -110,7 +110,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { id } = params;
@@ -136,7 +136,7 @@ export async function DELETE(
     });
 
     if (!existingAppointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Programarea nu a fost găsită' }, { status: 404 });
     }
 
     // Prepare update data
@@ -176,7 +176,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error clearing appointment status:', error);
     return NextResponse.json(
-      { error: 'Failed to clear appointment status' },
+      { error: 'Ștergerea statusului programării a eșuat' },
       { status: 500 }
     );
   }

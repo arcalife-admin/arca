@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     if (!session?.user?.email) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -34,21 +34,21 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { message: 'User not found' },
+        { message: 'Utilizatorul nu a fost găsit' },
         { status: 404 }
       )
     }
 
     if (user.role !== 'ORGANIZATION_OWNER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners can update the logo' },
+        { message: 'Neautorizat — doar proprietarii organizației pot actualiza logo-ul' },
         { status: 403 }
       )
     }
 
     if (!user.organizationId) {
       return NextResponse.json(
-        { message: 'User is not associated with an organization' },
+        { message: 'Utilizatorul nu este asociat cu o organizație' },
         { status: 400 }
       )
     }
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json(
-        { message: 'No logo file provided' },
+        { message: 'Nu a fost furnizat niciun fișier logo' },
         { status: 400 }
       )
     }
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       return NextResponse.json(
-        { message: 'File must be an image' },
+        { message: 'Fișierul trebuie să fie o imagine' },
         { status: 400 }
       )
     }
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
       return NextResponse.json(
-        { message: 'File size must be less than 5MB' },
+        { message: 'Dimensiunea fișierului trebuie să fie sub 5 MB' },
         { status: 400 }
       )
     }
@@ -110,13 +110,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       logoUrl: updatedOrganization.logoUrl,
-      message: 'Logo uploaded successfully',
+      message: 'Logo încărcat cu succes',
     })
 
   } catch (error) {
     console.error('Logo upload error:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -129,7 +129,7 @@ export async function DELETE(request: Request) {
 
     if (!session?.user?.email) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -142,21 +142,21 @@ export async function DELETE(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { message: 'User not found' },
+        { message: 'Utilizatorul nu a fost găsit' },
         { status: 404 }
       )
     }
 
     if (user.role !== 'ORGANIZATION_OWNER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners can remove the logo' },
+        { message: 'Neautorizat — doar proprietarii organizației pot elimina logo-ul' },
         { status: 403 }
       )
     }
 
     if (!user.organizationId) {
       return NextResponse.json(
-        { message: 'User is not associated with an organization' },
+        { message: 'Utilizatorul nu este asociat cu o organizație' },
         { status: 400 }
       )
     }
@@ -187,13 +187,13 @@ export async function DELETE(request: Request) {
     })
 
     return NextResponse.json({
-      message: 'Logo removed successfully',
+      message: 'Logo eliminat cu succes',
     })
 
   } catch (error) {
     console.error('Logo removal error:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

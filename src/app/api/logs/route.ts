@@ -41,12 +41,12 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user has manager permissions for viewing logs
     if (!hasManagerPermissions(session.user.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -160,12 +160,12 @@ export async function GET(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid filter parameters', details: error.errors },
+        { error: 'Parametri de filtrare invalizi', details: error.errors },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -251,12 +251,12 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -265,12 +265,12 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user has manager permissions for deleting logs
     if (!hasManagerPermissions(session.user.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -291,7 +291,7 @@ export async function DELETE(request: NextRequest) {
         in: logIds
       }
     } else {
-      return NextResponse.json({ error: 'No logs specified for deletion' }, { status: 400 })
+      return NextResponse.json({ error: 'Nu au fost specificate jurnale pentru ștergere' }, { status: 400 })
     }
 
     // TODO: Fix activityLog model issue
@@ -310,6 +310,6 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error deleting logs:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

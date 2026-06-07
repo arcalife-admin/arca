@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     // Fetch patient info
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient || !patient.email) {
-      return NextResponse.json({ error: 'Patient not found or missing email address' }, { status: 404 });
+      return NextResponse.json({ error: 'Pacientul nu a fost găsit sau lipsește adresa de e-mail' }, { status: 404 });
     }
 
     // Fetch upcoming appointments for the patient
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to: patient.email,
-      subject: 'Appointment Confirmation',
+      subject: 'Confirmare programare',
       html: htmlContent,
     });
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error sending confirmation email:', error);
     return NextResponse.json(
-      { error: 'Failed to send confirmation email' },
+      { error: 'Trimiterea e-mailului de confirmare a eșuat' },
       { status: 500 }
     );
   }

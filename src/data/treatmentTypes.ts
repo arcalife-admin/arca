@@ -26,6 +26,58 @@ const getColorForTreatment = (treatment: string): string => {
   return '#607D8B'; // Blue-grey for others
 };
 
+
+const TREATMENT_LABELS_RO: Record<string, string> = {
+  "Check-up": "Control",
+  "X-rays": "Radiografii",
+  "Intra-oral scanning": "Scanare intraorală",
+  "Periodontal charting": "Charting parodontal",
+  "Treatment plan discussion": "Discuție plan de tratament",
+  "Second opinion": "A doua opinie",
+  "Consultation": "Consultație",
+  "Intake": "Admitere",
+  "Dental cleaning": "Curățare dentară",
+  "Fluoride application": "Aplicare fluor",
+  "Sealing": "Sigilare",
+  "Instruction": "Instrucțiuni",
+  "Behavioral counseling": "Consiliere comportamentală",
+  "Filling": "Obturație",
+  "Caries removal": "Îndepărtare carii",
+  "Crown preparation": "Pregătire coroană",
+  "Crown placement": "Montare coroană",
+  "Bridge preparation": "Pregătire punte",
+  "Bridge placement": "Montare punte",
+  "Root canal treatment start": "Început tratament canal radicular",
+  "Root canal treatment finish": "Finalizare tratament canal radicular",
+  "Pulpotomy": "Pulpotomie",
+  "Apexification": "Apexificare",
+  "Apicoectomy": "Apicoectomie",
+  "Periodontal surgery": "Chirurgie parodontală",
+  "Gingivectomy": "Gingivectomie",
+  "Crown lenghtening": "Prelungire coroană",
+  "Soft tissue graft": "Grefă de țesut moale",
+  "Bite registration": "Înregistrare ocluzie",
+  "Prosthodontics placement": "Montare protetică",
+  "Proshtodontics repair": "Reparație protetică",
+  "Bleaching": "Albire",
+  "Veneers": "Fațete",
+  "Smile design": "Design zâmbet",
+  "Tooth reshaping": "Remodelare dinte",
+  "Enamel microabrasion": "Microabraziune smalț",
+  "Tooth extraction": "Extracție dinte",
+  "Frenectomy": "Frenectomie",
+  "Soft tissue biopsy": "Biopsie țesut moale",
+  "Abscess drainage": "Drenaj abces",
+  "Cyst removal": "Îndepărtare chist",
+  "Bone grafting": "Grefă osoasă",
+  "Sinus lift": "Sinus lift",
+  "Stainless steel crown": "Coroană oțel inoxidabil",
+  "Space maintainer": "Menținător de spațiu",
+  "Emergency treatment": "Tratament de urgență",
+  "Occlusal adjustment": "Ajustare ocluzală",
+  "Follow-up": "Control de urmărire",
+};
+
 export const treatmentTypes: AppointmentType[] = [
   { treatment: "Check-up", baseTimeMinutes: 15 },
   { treatment: "X-rays", baseTimeMinutes: 10 },
@@ -77,8 +129,8 @@ export const treatmentTypes: AppointmentType[] = [
   { treatment: "Follow-up", baseTimeMinutes: 15 }
 ].map(treatment => ({
   id: treatment.treatment.toLowerCase().replace(/\s+/g, '-'),
-  name: treatment.treatment,
+  name: TREATMENT_LABELS_RO[treatment.treatment] || treatment.treatment,
   duration: treatment.baseTimeMinutes,
   color: getColorForTreatment(treatment.treatment),
-  description: `${treatment.treatment} - Base duration: ${treatment.baseTimeMinutes} minutes`
+  description: `${TREATMENT_LABELS_RO[treatment.treatment] || treatment.treatment} - Durată de bază: ${treatment.baseTimeMinutes} minute`
 })); 

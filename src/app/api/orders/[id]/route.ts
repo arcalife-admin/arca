@@ -11,7 +11,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const order = await prisma.order.findFirst({
@@ -43,14 +43,14 @@ export async function GET(
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Comanda nu a fost găsită' }, { status: 404 });
     }
 
     return NextResponse.json(order);
   } catch (error) {
     console.error('Error fetching order:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch order' },
+      { error: 'Încărcarea comenzii a eșuat' },
       { status: 500 }
     );
   }
@@ -64,7 +64,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -79,7 +79,7 @@ export async function PUT(
     });
 
     if (!existingOrder) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Comanda nu a fost găsită' }, { status: 404 });
     }
 
     const updateData: any = {};
@@ -142,7 +142,7 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating order:', error);
     return NextResponse.json(
-      { error: 'Failed to update order' },
+      { error: 'Actualizarea comenzii a eșuat' },
       { status: 500 }
     );
   }

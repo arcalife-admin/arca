@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch equipment' },
+      { error: 'Încărcarea echipamentului a eșuat' },
       { status: 500 }
     );
   }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     if (!name || !category || !locationId) {
       return NextResponse.json(
-        { error: 'Name, category, and location are required' },
+        { error: 'Numele, categoria și locația sunt obligatorii' },
         { status: 400 }
       );
     }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to create equipment' },
+      { error: 'Crearea echipamentului a eșuat' },
       { status: 500 }
     );
   }
@@ -122,7 +122,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -130,7 +130,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Equipment ID is required' },
+        { error: 'ID-ul echipamentului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest) {
 
     if (!existingEquipment) {
       return NextResponse.json(
-        { error: 'Equipment not found' },
+        { error: 'Echipamentul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -183,7 +183,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to update equipment' },
+      { error: 'Actualizarea echipamentului a eșuat' },
       { status: 500 }
     );
   }

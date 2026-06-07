@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : 'Eroare necunoscută',
       environment: checkEnvironment(),
     }, { status: 500 });
   }

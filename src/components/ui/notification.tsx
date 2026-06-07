@@ -113,7 +113,7 @@ export function NotificationContainer() {
   const { notifications } = useNotifications();
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 pointer-events-none">
+    <div className="fixed bottom-24 left-4 z-50 pointer-events-none">
       <div className="space-y-3 pointer-events-auto">
         {notifications.slice(0, 5).map((notification) => (
           <NotificationItem

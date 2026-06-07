@@ -7,25 +7,25 @@ import bcrypt from 'bcryptjs'
 
 // Schema for creating a new user
 const createUserSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().min(1, 'Phone number is required'),
-  address: z.string().min(1, 'Address is required'),
+  firstName: z.string().min(2, 'Prenumele trebuie să aibă cel puțin 2 caractere'),
+  lastName: z.string().min(2, 'Numele trebuie să aibă cel puțin 2 caractere'),
+  email: z.string().email('Adresă de e-mail invalidă'),
+  password: z.string().min(8, 'Parola trebuie să aibă cel puțin 8 caractere'),
+  phone: z.string().min(1, 'Numărul de telefon este obligatoriu'),
+  address: z.string().min(1, 'Adresa este obligatorie'),
   role: z.enum([
+    'ORGANIZATION_OWNER',
     'MANAGER',
-    'DENTIST',
-    'HYGIENIST',
+    'PLASTIC_SURGEON',
+    'SURGEON',
+    'NURSE',
     'RECEPTIONIST',
     'ASSISTANT',
-    'ORTHODONTIST',
-    'PERIODONTOLOGIST',
-    'IMPLANTOLOGIST',
-    'ENDODONTIST',
     'ANESTHESIOLOGIST',
-    'DENTAL_TECHNICIAN',
-    'DENTAL_LAB_TECHNICIAN',
+    'AESTHETIC_NURSE',
+    'MEDICAL_ASSISTANT',
+    'COUNSELOR',
+    'PHOTOGRAPHER',
   ]),
 })
 
@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user has manager permissions
     if (!hasManagerPermissions(session.user.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
             appointments: true,
             createdTasks: true,
             completedTasks: true,
-            dentalProcedures: true,
+            surgicalProcedures: true,
             leaveRequests: true,
           },
         },
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(users)
   } catch (error) {
     console.error('Error fetching users:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -118,12 +118,12 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user has manager permissions
     if (!hasManagerPermissions(session.user.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { error: 'Există deja un utilizator cu acest e-mail' },
         { status: 400 }
       )
     }
@@ -193,12 +193,12 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -207,12 +207,12 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user has manager permissions
     if (!hasManagerPermissions(session.user.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -220,7 +220,7 @@ export async function PUT(request: NextRequest) {
     const validatedData = updateUserStatusSchema.parse(actionData)
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'ID-ul utilizatorului este obligatoriu' }, { status: 400 })
     }
 
     // Check if target user exists and belongs to the same organization
@@ -232,13 +232,13 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Utilizatorul nu a fost găsit' }, { status: 404 })
     }
 
     // Prevent disabling/deleting organization owner
     if (targetUser.role === 'ORGANIZATION_OWNER') {
       return NextResponse.json(
-        { error: 'Cannot disable or delete organization owner' },
+        { error: 'Nu se poate dezactiva sau șterge proprietarul organizației' },
         { status: 400 }
       )
     }
@@ -246,7 +246,7 @@ export async function PUT(request: NextRequest) {
     // Prevent users from disabling themselves
     if (targetUser.id === session.user.id) {
       return NextResponse.json(
-        { error: 'Cannot disable your own account' },
+        { error: 'Nu vă puteți dezactiva propriul cont' },
         { status: 400 }
       )
     }
@@ -310,11 +310,11 @@ export async function PUT(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

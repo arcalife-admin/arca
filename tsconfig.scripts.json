@@ -12,17 +12,9 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     }
   },
-  "include": [
-    "scripts/**/*.ts",
-    "src/data/dental-codes/**/*.ts",
-    "src/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["scripts/**/*.ts", "src/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

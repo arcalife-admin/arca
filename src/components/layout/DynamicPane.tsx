@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface DynamicPaneProps {
   className?: string;
@@ -11,18 +12,18 @@ export interface DynamicPaneRef {
 }
 
 const pageOptions = [
-  { label: '🏠 Dashboard', value: 'dashboard' },
-  { label: '📅 Week Calendar', value: 'weekCalendar' },
-  { label: '⚙️📅 Calendar Settings', value: 'calendarSettings' },
-  { label: '👥 Patients', value: 'patients' },
-  { label: '📸 Imaging', value: 'imaging' },
+  { label: '🏠 Panou principal', value: 'dashboard' },
+  { label: '📅 Calendar săptămânal', value: 'weekCalendar' },
+  { label: '⚙️📅 Setări calendar', value: 'calendarSettings' },
+  { label: '👥 Pacienți', value: 'patients' },
   { label: '💬 Chat', value: 'chat' },
-  { label: '💊 Pharmacology', value: 'pharmacology' },
-  { label: '💰 Finance', value: 'finance' },
-  { label: '📦 Orders', value: 'orders' },
-  { label: '✅ Tasks', value: 'tasks' },
-  { label: '📞 Phone Calls', value: 'phoneCalls' },
-  { label: '⚙️👤 Personal Settings', value: 'personalSettings' },
+  { label: '💊 Farmacologie', value: 'pharmacology' },
+  { label: '💰 Finanțe', value: 'finance' },
+  { label: '📦 Comenzi', value: 'orders' },
+  { label: '✅ Sarcini', value: 'tasks' },
+  { label: '📞 Apeluri telefonice', value: 'phoneCalls' },
+  { label: '⚙️👤 Setări personale', value: 'personalSettings' },
+  { label: '🛠️ Panou manager', value: 'manager' },
   // { label: '⚙️🏢 Organization Settings', value: 'organizationSettings' },
 ];
 
@@ -30,7 +31,6 @@ const pathMap: Record<string, string> = {
   dashboard: '/dashboard',
   patients: '/dashboard/patients',
   calendarSettings: '/dashboard/calendar-settings',
-  imaging: '/dashboard/imaging',
   chat: '/dashboard/chat',
   pharmacology: '/dashboard/pharma-guide',
   finance: '/dashboard/finance',
@@ -38,12 +38,49 @@ const pathMap: Record<string, string> = {
   tasks: '/dashboard/tasks',
   phoneCalls: '/dashboard/phone-calls',
   personalSettings: '/dashboard/profile',
+  manager: '/dashboard/manager',
   organizationSettings: '/dashboard/settings',
 };
 
+function pathnameToPane(pathname: string): { pane: string; patientId?: string } {
+  if (pathname === '/dashboard') {
+    return { pane: 'dashboard' };
+  }
+
+  const patientMatch = pathname.match(/^\/dashboard\/patients\/([^/]+)$/);
+  if (patientMatch && patientMatch[1] !== 'new') {
+    return { pane: 'patient', patientId: patientMatch[1] };
+  }
+
+  if (pathname.startsWith('/dashboard/appointments')) {
+    return { pane: 'weekCalendar' };
+  }
+
+  // Match longest paths first — /dashboard/profile must not match /dashboard
+  const entries = Object.entries(pathMap)
+    .filter(([pane]) => pane !== 'dashboard')
+    .sort(([, a], [, b]) => b.length - a.length);
+
+  for (const [pane, path] of entries) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) {
+      return { pane };
+    }
+  }
+
+  return { pane: 'dashboard' };
+}
+
 const DynamicPane = forwardRef<DynamicPaneRef, DynamicPaneProps>(({ className }, ref) => {
+  const pathname = usePathname();
   const [selected, setSelected] = useState('dashboard');
   const [patientId, setPatientId] = useState<string | null>(null);
+
+  // Keep the workspace pane in sync with URL navigation (e.g. profile, manager links)
+  useEffect(() => {
+    const { pane, patientId: pid } = pathnameToPane(pathname);
+    setSelected(pane);
+    setPatientId(pane === 'patient' && pid ? pid : null);
+  }, [pathname]);
 
   // Expose navigation method via ref
   useImperativeHandle(ref, () => ({
@@ -115,7 +152,7 @@ const DynamicPane = forwardRef<DynamicPaneRef, DynamicPaneProps>(({ className },
         />
       );
     }
-    return <p className="p-4">Unknown selection</p>;
+    return <p className="p-4">Selecție necunoscută</p>;
   };
 
   return (
@@ -127,7 +164,7 @@ const DynamicPane = forwardRef<DynamicPaneRef, DynamicPaneProps>(({ className },
           onChange={(e) => setSelected(e.target.value)}
           className="w-full p-1 border rounded"
         >
-          <option value="">Select a pane</option>
+          <option value="">Selectați un panou</option>
           {pageOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Get procedure income data
-    const procedureIncomeData = await prisma.dentalProcedure.findMany({
+    const procedureIncomeData = await prisma.surgicalProcedure.findMany({
       where: {
         practitionerId: session.user.id,
         date: {
@@ -95,8 +95,9 @@ export async function GET(request: NextRequest) {
     // Calculate totals
     const manualIncome = incomeData.reduce((sum, item) => sum + item.amount, 0)
     const procedureIncome = procedureIncomeData.reduce((sum, procedure) => {
-      const quantity = (procedure as any).quantity || 1
-      return sum + (procedure.code.rate * quantity)
+      const quantity = procedure.quantity || 1
+      const unitPrice = procedure.cost ?? (procedure.code.price || 0)
+      return sum + unitPrice * quantity
     }, 0)
     const totalIncome = manualIncome + procedureIncome
     const totalExpenses = expenseData.reduce((sum, item) => sum + item.amount, 0)
@@ -126,11 +127,12 @@ export async function GET(request: NextRequest) {
       csvContent += '\n' + '='.repeat(80) + '\n'
       csvContent += '"PROCEDURE INCOME DETAILS"\n'
       csvContent += '='.repeat(80) + '\n'
-      csvContent += '"Date";"Code";"Description";"Patient";"Tooth";"Quantity";"Rate";"Total"\n'
+      csvContent += '"Date";"Code";"Description";"Patient";"Body Area";"Quantity";"Price";"Total"\n'
       procedureIncomeData.forEach(procedure => {
-        const quantity = (procedure as any).quantity || 1
-        const total = procedure.code.rate * quantity
-        csvContent += `"${procedure.date.toLocaleDateString()}";"${procedure.code.code}";"${procedure.code.description.replace(/"/g, '""')}";"${procedure.patient.firstName} ${procedure.patient.lastName}";"${procedure.toothNumber || ''}";"${quantity}";"€${procedure.code.rate.toFixed(2)}";"€${total.toFixed(2)}"\n`
+        const quantity = procedure.quantity || 1
+        const unitPrice = procedure.cost ?? (procedure.code.price || 0)
+        const total = unitPrice * quantity
+        csvContent += `"${procedure.date.toLocaleDateString()}";"${procedure.code.code}";"${procedure.code.description.replace(/"/g, '""')}";"${procedure.patient.firstName} ${procedure.patient.lastName}";"${procedure.bodyArea || ''}";"${quantity}";"€${unitPrice.toFixed(2)}";"€${total.toFixed(2)}"\n`
       })
 
       // Manual income details
@@ -198,22 +200,23 @@ export async function GET(request: NextRequest) {
         doc.text('Procedure Income Details', 20, currentY)
 
         const procedureData = procedureIncomeData.map(procedure => {
-          const quantity = (procedure as any).quantity || 1
-          const total = procedure.code.rate * quantity
+          const quantity = procedure.quantity || 1
+          const unitPrice = procedure.cost ?? (procedure.code.price || 0)
+          const total = unitPrice * quantity
           return [
             procedure.date.toLocaleDateString(),
             procedure.code.code,
             procedure.code.description.substring(0, 30) + (procedure.code.description.length > 30 ? '...' : ''),
             `${procedure.patient.firstName} ${procedure.patient.lastName}`,
-            procedure.toothNumber?.toString() || '',
+            procedure.bodyArea || '',
             quantity.toString(),
-            `€${procedure.code.rate.toFixed(2)}`,
+            `€${unitPrice.toFixed(2)}`,
             `€${total.toFixed(2)}`
           ]
         })
 
           ; (autoTable as any)(doc, {
-            head: [['Date', 'Code', 'Description', 'Patient', 'Tooth', 'Qty', 'Rate', 'Total']],
+            head: [['Date', 'Code', 'Description', 'Patient', 'Area', 'Qty', 'Price', 'Total']],
             body: procedureData,
             startY: currentY + 5,
             styles: { fontSize: 8 },
@@ -351,23 +354,24 @@ export async function GET(request: NextRequest) {
         procHeaderRow.getCell(1).font.color = { argb: 'FFFFFFFF' }
         worksheet.mergeCells(`A${procHeaderRow.number}:H${procHeaderRow.number}`)
 
-        const procSubHeaderRow = worksheet.addRow(['Date', 'Code', 'Description', 'Patient', 'Tooth', 'Quantity', 'Rate', 'Total'])
+        const procSubHeaderRow = worksheet.addRow(['Date', 'Code', 'Description', 'Patient', 'Body Area', 'Quantity', 'Price', 'Total'])
         procSubHeaderRow.eachCell(cell => {
           cell.font = { bold: true }
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F8F5' } }
         })
 
         procedureIncomeData.forEach(procedure => {
-          const quantity = (procedure as any).quantity || 1
-          const total = procedure.code.rate * quantity
+          const quantity = procedure.quantity || 1
+          const unitPrice = procedure.cost ?? (procedure.code.price || 0)
+          const total = unitPrice * quantity
           worksheet.addRow([
             procedure.date.toLocaleDateString(),
             procedure.code.code,
             procedure.code.description,
             `${procedure.patient.firstName} ${procedure.patient.lastName}`,
-            procedure.toothNumber || '',
+            procedure.bodyArea || '',
             quantity,
-            `€${procedure.code.rate.toFixed(2)}`,
+            `€${unitPrice.toFixed(2)}`,
             `€${total.toFixed(2)}`
           ])
         })
@@ -457,9 +461,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({ error: 'Invalid format' }, { status: 400 })
+    return NextResponse.json({ error: 'Format invalid' }, { status: 400 })
   } catch (error) {
     console.error('Error exporting financial report:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

@@ -330,3 +330,10 @@
   opacity: 0.9;
   filter: brightness(1.3) !important;
 }
+
+/* Suppress browser print headers/footers (URL, date, title) for in-page window.print() */
+@media print {
+  @page {
+    margin: 0;
+  }
+}

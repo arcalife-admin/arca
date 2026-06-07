@@ -56,8 +56,8 @@ export async function POST(
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string;
-    const side = formData.get('side') as string | null;
-    const toothNumber = formData.get('toothNumber') as string;
+    const view = (formData.get('view') || formData.get('side')) as string | null;
+    const bodyArea = (formData.get('bodyArea') || formData.get('toothNumber')) as string | null;
     const notes = formData.get('notes') as string;
 
     if (!file) {
@@ -72,7 +72,7 @@ export async function POST(
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: 'image',
-          folder: `dental-images/${params.id}`,
+          folder: `patient-images/${params.id}`,
         },
         (error, result) => {
           if (error) reject(error);
@@ -88,8 +88,8 @@ export async function POST(
       data: {
         url: (result as any).secure_url,
         type: type as any, // Cast to ImageType enum
-        side: side || null,
-        toothNumber: toothNumber ? parseInt(toothNumber) : null,
+        view: view || null,
+        bodyArea: bodyArea || null,
         notes: notes || null,
         patientId: params.id,
         dateTaken: new Date()

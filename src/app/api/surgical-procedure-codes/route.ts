@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     return NextResponse.json(codes);
   } catch (error) {
     console.error('Error searching surgical procedure codes:', error);
-    return NextResponse.json({ error: 'Failed to search surgical procedure codes' }, { status: 500 });
+    return NextResponse.json({ error: 'Căutarea codurilor de proceduri chirurgicale a eșuat' }, { status: 500 });
   }
 }
 
@@ -76,12 +76,13 @@ export async function POST(request: Request) {
       requirements,
       price,
       duration,
+      currency,
     } = body;
 
     // Validate required fields
     if (!code || !description || !category || !section || !subSection) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Câmpuri obligatorii lipsă' },
         { status: 400 }
       );
     }
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
 
     if (existingCode) {
       return NextResponse.json(
-        { error: 'Code already exists' },
+        { error: 'Codul există deja' },
         { status: 400 }
       );
     }
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
         patientType: patientType || null,
         requirements: requirements || {},
         price: price || null,
+        currency: currency || 'EUR',
         duration: duration || null,
       },
     });
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating surgical procedure code:', error);
     return NextResponse.json(
-      { error: 'Failed to create surgical procedure code' },
+      { error: 'Crearea codului de procedură chirurgicală a eșuat' },
       { status: 500 }
     );
   }

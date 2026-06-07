@@ -46,16 +46,16 @@ export default function PatientEditModal({
     }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Patient Information</DialogTitle>
+          <DialogTitle>Editează informațiile pacientului</DialogTitle>
           <DialogDescription>
-            Update the patient's personal information
+            Actualizați datele personale ale pacientului
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="firstName">Prenume</Label>
               <Input
                 id="firstName"
                 value={editFormData.firstName}
@@ -64,7 +64,7 @@ export default function PatientEditModal({
               />
             </div>
             <div>
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label htmlFor="lastName">Nume</Label>
               <Input
                 id="lastName"
                 value={editFormData.lastName}
@@ -76,7 +76,7 @@ export default function PatientEditModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="dateOfBirth">Date of Birth</Label>
+              <Label htmlFor="dateOfBirth">Data nașterii</Label>
               <Input
                 id="dateOfBirth"
                 type="date"
@@ -86,7 +86,7 @@ export default function PatientEditModal({
               />
             </div>
             <div>
-              <Label htmlFor="gender">Gender</Label>
+              <Label htmlFor="gender">Sex</Label>
               <Select
                 value={editFormData.gender}
                 onValueChange={(value) => setEditFormData(prev => ({ ...prev, gender: value as 'MALE' | 'FEMALE' | 'OTHER' }))}
@@ -95,16 +95,16 @@ export default function PatientEditModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MALE">Male</SelectItem>
-                  <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="MALE">Masculin</SelectItem>
+                  <SelectItem value="FEMALE">Feminin</SelectItem>
+                  <SelectItem value="OTHER">Altul</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input
               id="email"
               type="email"
@@ -115,7 +115,7 @@ export default function PatientEditModal({
           </div>
 
           <div>
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">Telefon</Label>
             <Input
               id="phone"
               type="tel"
@@ -126,7 +126,7 @@ export default function PatientEditModal({
           </div>
 
           <div>
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">Adresă</Label>
             <AddressAutocomplete
               onSelect={(result) => {
                 if (result.display_name !== editFormData.address) {
@@ -137,7 +137,7 @@ export default function PatientEditModal({
                   console.log('Same address selected, ignoring')
                 }
               }}
-              placeholder="Enter address..."
+              placeholder="Introduceți adresa..."
               className="w-full"
               value={editFormData.address}
             />
@@ -154,7 +154,7 @@ export default function PatientEditModal({
               />
             </div>
             <div>
-              <Label htmlFor="country">Country</Label>
+              <Label htmlFor="country">Țară</Label>
               <Input
                 id="country"
                 value={editFormData.country}
@@ -176,7 +176,7 @@ export default function PatientEditModal({
               htmlFor="allowEarlySpotContact"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Allow contact for early appointment slots
+              Acceptă contact pentru programări anticipate
             </Label>
           </div>
 
@@ -192,16 +192,16 @@ export default function PatientEditModal({
               htmlFor="isLongTermCareAct"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Patient is under Long-term Care Act (WLZ)
+              Pacient în regim de îngrijire pe termen lung
             </Label>
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Anulează
             </Button>
             <Button type="submit">
-              Save Changes
+              Salvează modificările
             </Button>
           </DialogFooter>
         </form>

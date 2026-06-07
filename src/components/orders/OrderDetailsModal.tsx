@@ -154,11 +154,11 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Order Details: {order.orderNumber}
+            Detalii comandă: {order.orderNumber}
           </DialogTitle>
         </DialogHeader>
         <div className="mb-4">
-          <span className="font-medium">Vendor:</span> {order.vendor.name}
+          <span className="font-medium">Furnizor:</span> {order.vendor.name}
           <Badge className="ml-2">{order.status}</Badge>
         </div>
         <div className="space-y-4">
@@ -174,7 +174,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
                   )}
                 </div>
                 <div className="text-sm text-gray-600">{item.description}</div>
-                <div className="text-xs text-gray-500">Ordered: {item.quantity}</div>
+                <div className="text-xs text-gray-500">Comandat: {item.quantity}</div>
               </div>
               <div className="flex flex-col gap-2 min-w-[180px]">
                 <label className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
                     checked={itemUpdates[item.id]?.isReceived || false}
                     onChange={(e) => handleItemChange(item.id, 'isReceived', e.target.checked)}
                   />
-                  Received
+                  Primit
                 </label>
                 <Input
                   type="number"
@@ -192,13 +192,13 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
                   value={itemUpdates[item.id]?.quantityReceived || 0}
                   onChange={(e) => handleItemChange(item.id, 'quantityReceived', Number(e.target.value))}
                   disabled={!itemUpdates[item.id]?.isReceived}
-                  placeholder="Qty received"
+                  placeholder="Cant. primită"
                 />
                 <Textarea
                   value={itemUpdates[item.id]?.notes || ''}
                   onChange={(e) => handleItemChange(item.id, 'notes', e.target.value)}
                   disabled={!itemUpdates[item.id]?.isReceived}
-                  placeholder="Notes (optional)"
+                  placeholder="Note (opțional)"
                   rows={2}
                 />
               </div>
@@ -206,18 +206,18 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
           ))}
         </div>
         <div className="mt-8">
-          <h4 className="font-semibold mb-2">Order Timeline</h4>
+          <h4 className="font-semibold mb-2">Istoric comandă</h4>
           <div className="space-y-4 border-l-2 border-blue-200 pl-4">
             {timelineLoading ? (
-              <div>Loading timeline...</div>
+              <div>Se încarcă istoricul...</div>
             ) : timeline.length === 0 ? (
-              <div className="text-gray-500 text-sm">No events yet.</div>
+              <div className="text-gray-500 text-sm">Niciun eveniment încă.</div>
             ) : (
               timeline.map(event => (
                 <div key={event.id} className="relative">
                   <div className="absolute -left-5 top-1.5 w-3 h-3 rounded-full bg-blue-500"></div>
                   <div className="ml-2">
-                    <div className="text-xs text-gray-400">{new Date(event.createdAt).toLocaleString()}</div>
+                    <div className="text-xs text-gray-400">{new Date(event.createdAt).toLocaleString('ro-RO')}</div>
                     <div className="text-sm">
                       <span className="font-medium">{event.type.replace(/_/g, ' ')}</span>
                       {event.orderItem && (
@@ -228,7 +228,7 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
                       )}
                     </div>
                     {event.createdBy && (
-                      <div className="text-xs text-gray-500">By {event.createdBy.firstName} {event.createdBy.lastName}</div>
+                      <div className="text-xs text-gray-500">De {event.createdBy.firstName} {event.createdBy.lastName}</div>
                     )}
                   </div>
                 </div>
@@ -239,22 +239,22 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
             <Textarea
               value={newNote}
               onChange={e => setNewNote(e.target.value)}
-              placeholder="Add a note or issue to the timeline..."
+              placeholder="Adăugați o notă sau o problemă în istoric..."
               rows={2}
               className="flex-1"
             />
             <Button onClick={handleAddNote} disabled={addingNote || !newNote.trim()} className="bg-blue-600 hover:bg-blue-700 h-fit mt-1">
-              {addingNote ? 'Adding...' : 'Add'}
+              {addingNote ? 'Se adaugă...' : 'Adaugă'}
             </Button>
           </div>
         </div>
         <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>Închide</Button>
           <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? 'Se salvează...' : 'Salvează modificările'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-} 
+}

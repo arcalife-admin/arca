@@ -1,24 +1,18 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { HexColorPicker } from 'react-colorful';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  PlusCircle,
   Upload,
-  Settings,
   ZoomIn,
   ZoomOut,
   RotateCcw,
@@ -29,20 +23,16 @@ import {
   Type,
   PencilLine,
   Ruler as RulerIcon,
-  Brain as BrainIcon,
-  Wand2,
   Sun,
   Contrast,
-  Eye,
-  Grid3x3,
-  Maximize2,
-  Save,
   Trash2,
-  X,
   Users,
   MoreVertical,
   MousePointer2,
-  Eraser
+  Eraser,
+  ChevronLeft,
+  ChevronRight,
+  ImagePlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,13 +46,13 @@ interface PatientFile {
   createdAt?: string;
 }
 
+type ImageCategory = 'BEFORE_PHOTO' | 'AFTER_PHOTO';
+
 interface PatientImage {
   id: string;
   url: string;
-  type: 'BITEWING' | 'OPG' | 'SOLO' | 'XRAY' | 'INTRAORAL' | 'EXTRAORAL' | 'PANORAMIC' | 'CBCT';
-  side?: 'LEFT' | 'RIGHT';
+  type: ImageCategory | string;
   dateTaken?: string;
-  toothNumber?: number;
   notes?: string;
   patientId?: string;
 }
@@ -71,7 +61,7 @@ interface EnhancedPatientImagesSectionProps {
   patientId: string;
   patientFiles: PatientFile[];
   patientImages: PatientImage[];
-  onRefresh?: () => void;
+  onRefresh?: () => void | Promise<void>;
 }
 
 // Advanced tool functionality types
@@ -119,14 +109,7 @@ interface Annotation {
   measurement?: number;
 }
 
-type ViewPreference =
-  | 'latest_bitewings_opg'
-  | 'recent_and_previous_bitewings'
-  | 'chronological_all'
-  | 'by_type'
-  | 'custom_grid';
-
-type ToolId = 'cursor' | 'pan' | 'rectangle' | 'circle' | 'text' | 'freehand' | 'calibrate' | 'eraser' | 'ai-detect' | 'ai-enhance';
+type ToolId = 'cursor' | 'pan' | 'rectangle' | 'circle' | 'text' | 'freehand' | 'calibrate' | 'eraser';
 
 interface Tool {
   id: ToolId;
@@ -136,45 +119,22 @@ interface Tool {
 }
 
 const tools: Tool[] = [
-  { id: 'cursor', name: 'Cursor', icon: <MousePointer2 className="h-4 w-4" />, shortcut: 'V' },
-  { id: 'pan', name: 'Pan', icon: <Move className="h-4 w-4" />, shortcut: 'H' },
-  { id: 'rectangle', name: 'Rectangle', icon: <RectangleHorizontal className="h-4 w-4" />, shortcut: 'R' },
-  { id: 'circle', name: 'Circle', icon: <Circle className="h-4 w-4" />, shortcut: 'C' },
+  { id: 'cursor', name: 'Selectare', icon: <MousePointer2 className="h-4 w-4" />, shortcut: 'V' },
+  { id: 'pan', name: 'Panoramare', icon: <Move className="h-4 w-4" />, shortcut: 'H' },
+  { id: 'rectangle', name: 'Dreptunghi', icon: <RectangleHorizontal className="h-4 w-4" />, shortcut: 'R' },
+  { id: 'circle', name: 'Cerc', icon: <Circle className="h-4 w-4" />, shortcut: 'C' },
   { id: 'text', name: 'Text', icon: <Type className="h-4 w-4" />, shortcut: 'T' },
-  { id: 'freehand', name: 'Freehand', icon: <PencilLine className="h-4 w-4" />, shortcut: 'F' },
-  { id: 'eraser', name: 'Eraser', icon: <Eraser className="h-4 w-4" />, shortcut: 'E' },
-  { id: 'calibrate', name: 'Calibrate', icon: <RulerIcon className="h-4 w-4" />, shortcut: 'M' },
-  { id: 'ai-detect', name: 'AI Detection', icon: <BrainIcon className="h-4 w-4" /> },
-  { id: 'ai-enhance', name: 'AI Enhancement', icon: <Wand2 className="h-4 w-4" /> }
+  { id: 'freehand', name: 'Desen liber', icon: <PencilLine className="h-4 w-4" />, shortcut: 'F' },
+  { id: 'eraser', name: 'Radieră', icon: <Eraser className="h-4 w-4" />, shortcut: 'E' },
+  { id: 'calibrate', name: 'Calibrare', icon: <RulerIcon className="h-4 w-4" />, shortcut: 'M' }
 ];
 
-const viewPreferences: { value: ViewPreference; label: string; description: string }[] = [
-  {
-    value: 'latest_bitewings_opg',
-    label: 'Latest Bitewings + OPG',
-    description: 'Show latest bitewing pair with OPG underneath'
-  },
-  {
-    value: 'recent_and_previous_bitewings',
-    label: 'Recent & Previous Bitewings',
-    description: 'Current bitewings on top, previous set below'
-  },
-  {
-    value: 'chronological_all',
-    label: 'Chronological All Images',
-    description: 'All images sorted by date (newest first)'
-  },
-  {
-    value: 'by_type',
-    label: 'Grouped by Type',
-    description: 'Group images by X-ray type (OPG, Bitewing, etc.)'
-  },
-  {
-    value: 'custom_grid',
-    label: 'Custom Grid Layout',
-    description: 'Drag and arrange images in custom positions'
-  }
-];
+const sortByDate = (images: PatientImage[]) =>
+  [...images].sort((a, b) => {
+    const dateA = a.dateTaken ? new Date(a.dateTaken).getTime() : 0;
+    const dateB = b.dateTaken ? new Date(b.dateTaken).getTime() : 0;
+    return dateB - dateA;
+  });
 
 export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSectionProps> = ({
   patientId,
@@ -182,21 +142,39 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
   patientImages,
   onRefresh
 }) => {
-  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasViewportRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fitCanvasToViewport = useCallback(() => {
+    const canvas = canvasRef.current;
+    const viewport = canvasViewportRef.current;
+    if (!canvas || !viewport || canvas.width === 0 || canvas.height === 0) return;
+
+    const { width: vw, height: vh } = viewport.getBoundingClientRect();
+    if (vw <= 0 || vh <= 0) return;
+
+    const scale = Math.min(vw / canvas.width, vh / canvas.height);
+    canvas.style.width = `${Math.floor(canvas.width * scale)}px`;
+    canvas.style.height = `${Math.floor(canvas.height * scale)}px`;
+  }, []);
 
   // State management
-  const [viewPreference, setViewPreference] = useState<ViewPreference>('latest_bitewings_opg');
   const [selectedImage, setSelectedImage] = useState<PatientImage | null>(null);
-  const [activeTab, setActiveTab] = useState<'xray' | 'light'>('xray');
+  const [beforeIndex, setBeforeIndex] = useState(0);
+  const [afterIndex, setAfterIndex] = useState(0);
   const [selectedTool, setSelectedTool] = useState<ToolId>('cursor');
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [showSettings, setShowSettings] = useState(false);
-  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<ImageCategory>('BEFORE_PHOTO');
+  const [showDragOverlay, setShowDragOverlay] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const dragCounterRef = useRef(0);
 
   // Advanced tool functionality state
   const [canvasImage, setCanvasImage] = useState<HTMLImageElement | null>(null);
@@ -225,9 +203,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
   const lastDrawPoint = useRef<{ x: number; y: number } | null>(null);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
 
-  // Drag and drop state
-  const [draggedImage, setDraggedImage] = useState<PatientImage | null>(null);
-  const [dragOverContainer, setDragOverContainer] = useState<string | null>(null);
+  // Drag overlay state (file drops from OS)
 
   // Move/delete functionality
   const [showMoveDialog, setShowMoveDialog] = useState(false);
@@ -237,63 +213,91 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
   const [availablePatients, setAvailablePatients] = useState<any[]>([]);
 
   // Categorize images
-  const xrayImages = patientImages?.filter(img =>
-    ['BITEWING', 'OPG', 'SOLO', 'XRAY', 'PANORAMIC', 'CBCT'].includes(img.type)
-  ) || [];
+  const beforeImages = sortByDate(
+    patientImages?.filter(img => img.type === 'BEFORE_PHOTO') || []
+  );
+  const afterImages = sortByDate(
+    patientImages?.filter(img => img.type === 'AFTER_PHOTO') || []
+  );
 
-  const lightImages = [
-    ...(patientFiles?.filter(file => file.type?.startsWith('image/')) || []),
-    ...(patientImages?.filter(img =>
-      ['INTRAORAL', 'EXTRAORAL'].includes(img.type)
-    ).map(img => ({
-      id: img.id,
-      url: img.url,
-      name: `${img.type} ${img.dateTaken ? `(${new Date(img.dateTaken).toLocaleDateString()})` : ''}`,
-      type: 'image/jpeg'
-    })) || [])
-  ];
-
-  // Sort images by date taken (newest first)
-  const sortedXrayImages = [...xrayImages].sort((a, b) => {
-    const dateA = a.dateTaken ? new Date(a.dateTaken).getTime() : 0;
-    const dateB = b.dateTaken ? new Date(b.dateTaken).getTime() : 0;
-    return dateB - dateA;
-  });
-
-  // Group images by type for organized display
-  const groupedImages = sortedXrayImages.reduce((groups, image) => {
-    const type = image.type;
-    if (!groups[type]) groups[type] = [];
-    groups[type].push(image);
-    return groups;
-  }, {} as Record<string, PatientImage[]>);
-
-  // Get images based on view preference
-  const getImagesForView = useCallback(() => {
-    switch (viewPreference) {
-      case 'latest_bitewings_opg':
-        const latestBitewings = groupedImages['BITEWING']?.slice(0, 2) || [];
-        const latestOPG = groupedImages['OPG']?.[0] ? [groupedImages['OPG'][0]] : [];
-        return { top: latestBitewings, bottom: latestOPG };
-
-      case 'recent_and_previous_bitewings':
-        const recentBitewings = groupedImages['BITEWING']?.slice(0, 2) || [];
-        const previousBitewings = groupedImages['BITEWING']?.slice(2, 4) || [];
-        return { top: recentBitewings, bottom: previousBitewings };
-
-      case 'chronological_all':
-        return { grid: sortedXrayImages };
-
-      case 'by_type':
-        return { grouped: groupedImages };
-
-      case 'custom_grid':
-        return { custom: sortedXrayImages };
-
-      default:
-        return { top: [], bottom: [] };
+  useEffect(() => {
+    if (beforeIndex >= beforeImages.length) {
+      setBeforeIndex(Math.max(0, beforeImages.length - 1));
     }
-  }, [viewPreference, groupedImages, sortedXrayImages]);
+  }, [beforeImages.length, beforeIndex]);
+
+  useEffect(() => {
+    if (afterIndex >= afterImages.length) {
+      setAfterIndex(Math.max(0, afterImages.length - 1));
+    }
+  }, [afterImages.length, afterIndex]);
+
+  const uploadImages = async (files: FileList | File[], type: ImageCategory) => {
+    const fileArray = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (fileArray.length === 0) {
+      toast.error('Nu au fost selectate fișiere imagine valide');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      for (const file of fileArray) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', type);
+
+        const uploadRes = await fetch(`/api/patients/${patientId}/images`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!uploadRes.ok) {
+          const errText = await uploadRes.text();
+          throw new Error(errText || 'Încărcarea a eșuat');
+        }
+      }
+
+      const label = type === 'BEFORE_PHOTO' ? 'Înainte' : 'După';
+      toast.success(`${fileArray.length} fotografii ${label} încărcate`);
+      if (onRefresh) await onRefresh();
+      // Show newest uploaded image in the matching carousel
+      if (type === 'BEFORE_PHOTO') setBeforeIndex(0);
+      else setAfterIndex(0);
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Încărcarea imaginii/imaginilor a eșuat');
+    } finally {
+      setIsUploading(false);
+      setShowDragOverlay(false);
+      dragCounterRef.current = 0;
+    }
+  };
+
+  const handleSectionDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setShowDragOverlay(true);
+  };
+
+  const handleSectionDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setShowDragOverlay(false);
+    }
+  };
+
+  const handleFileDrop = async (e: React.DragEvent, type: ImageCategory) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setShowDragOverlay(false);
+    if (e.dataTransfer.files.length > 0) {
+      await uploadImages(e.dataTransfer.files, type);
+    }
+  };
 
   // Helper function to convert screen coordinates to canvas coordinates
   const screenToCanvas = (screenX: number, screenY: number) => {
@@ -593,7 +597,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
 
   // Handle image selection
   const handleImageSelect = (image: PatientImage) => {
-    setSelectedImage(image);
+    setSelectedImage({ ...image, patientId: image.patientId || patientId });
     // Reset adjustments when selecting new image
     setZoom(100);
     setRotation(0);
@@ -603,6 +607,17 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
     setShapes([]);
     setMeasurements([]);
     setCalibration(null);
+  };
+
+  const goToCarouselIndex = (
+    images: PatientImage[],
+    newIndex: number,
+    setIndex: React.Dispatch<React.SetStateAction<number>>
+  ) => {
+    setIndex(newIndex);
+    if (images[newIndex]) {
+      handleImageSelect(images[newIndex]);
+    }
   };
 
   // Helpers for improved click-vs-drag detection on text
@@ -1214,14 +1229,14 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
               body: JSON.stringify(calibrationData)
             });
 
-            if (!response.ok) throw new Error('Failed to save calibration');
+            if (!response.ok) throw new Error('Salvarea calibrării a eșuat');
 
             const newCalibration = await response.json();
             setCalibration(newCalibration);
 
-            toast.success(`Calibration Complete: ${realLength} mm = ${Math.round(pixelLength)} pixels`);
+            toast.success(`Calibrare finalizată: ${realLength} mm = ${Math.round(pixelLength)} pixeli`);
           } catch (error) {
-            toast.error('Failed to save calibration');
+            toast.error('Salvarea calibrării a eșuat');
           }
         } else if (realLength > 0) {
           // Create local calibration for demo purposes
@@ -1230,7 +1245,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
             realWidth: realLength
           });
 
-          toast.success(`Temporary Calibration: ${realLength} mm = ${Math.round(pixelLength)} pixels (not saved)`);
+          toast.success(`Calibrare temporară: ${realLength} mm = ${Math.round(pixelLength)} pixeli (nesalvată)`);
         }
 
         // Reset measurement state
@@ -1260,7 +1275,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
         const calibRealWidth = calibration.realWidth || calibration.realHeight;
 
         if (!calibPixelWidth || !calibRealWidth || calibPixelWidth === 0) {
-          toast.error('Invalid calibration data. Please recalibrate.');
+          toast.error('Date de calibrare invalide. Recalibrați, vă rugăm.');
           return;
         }
 
@@ -1271,7 +1286,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
 
         // Validate the result
         if (!isFinite(realLength) || realLength <= 0) {
-          toast.error('Invalid measurement result. Please check calibration.');
+          toast.error('Rezultat de măsurare invalid. Verificați calibrarea.');
           return;
         }
 
@@ -1307,14 +1322,14 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
               })
             });
 
-            if (!response.ok) throw new Error('Failed to save measurement');
+            if (!response.ok) throw new Error('Salvarea măsurătorii a eșuat');
 
-            toast.success(`Measurement Saved: ${realLength.toFixed(2)} mm`);
+            toast.success(`Măsurătoare salvată: ${realLength.toFixed(2)} mm`);
           } catch (error) {
-            toast.error('Failed to save measurement');
+            toast.error('Salvarea măsurătorii a eșuat');
           }
         } else {
-          toast.success(`Measurement Complete: ${realLength.toFixed(2)} mm (not saved)`);
+          toast.success(`Măsurătoare finalizată: ${realLength.toFixed(2)} mm (nesalvată)`);
         }
 
         // Reset measurement state
@@ -1525,165 +1540,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
     setStartPos(null);
     lastDrawPoint.current = null;
 
-    if (toolId === 'ai-detect') {
-      handleAIDetection();
-      return;
-    }
-    if (toolId === 'ai-enhance') {
-      handleAIEnhancement();
-      return;
-    }
-
     setSelectedTool(toolId);
-  };
-
-  // AI Detection functionality
-  const handleAIDetection = async () => {
-    if (!selectedImage) return;
-
-    try {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-        }, 'image/png');
-      });
-
-      const formData = new FormData();
-      formData.append('image', blob);
-
-      toast.info('AI Detection: Analyzing image...');
-
-      const response = await fetch('/api/ai-detect', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) throw new Error('Detection failed');
-
-      const results = await response.json();
-
-      // Draw detection results on canvas
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Save current transformations
-      ctx.save();
-
-      // Apply current view transformations
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const scale = zoom / 100;
-      const angleInRadians = (rotation * Math.PI) / 180;
-
-      ctx.translate(centerX, centerY);
-      ctx.scale(scale, scale);
-      ctx.rotate(angleInRadians);
-      ctx.translate(-centerX + panOffset.x / scale, -centerY + panOffset.y / scale);
-
-      // Draw detections - handle Grounding DINO format
-      results.detections.forEach((detection: any) => {
-        const [x0, y0, x1, y1] = detection.box; // Grounding DINO returns [x0, y0, x1, y1]
-        const width = x1 - x0;
-        const height = y1 - y0;
-        const label = detection.label || 'Object';
-        const score = detection.score || 0;
-
-        // Draw bounding box
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2 / scale; // Adjust line width for zoom
-        ctx.strokeRect(x0, y0, width, height);
-
-        // Draw label
-        ctx.fillStyle = '#00ff00';
-        ctx.font = `${14 / scale}px Arial`; // Adjust font size for zoom
-        ctx.fillText(
-          `${label} (${(score * 100).toFixed(1)}%)`,
-          x0,
-          y0 - 5 / scale
-        );
-
-        // Save detection as annotation if we have a selected image
-        if (selectedImage?.patientId && selectedImage?.id) {
-          fetch(`/api/patients/${selectedImage.patientId}/images/${selectedImage.id}/annotations`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'DETECTION',
-              points: { x: x0, y: y0, width, height },
-              text: `${label} (${(score * 100).toFixed(1)}%)`,
-              color: '#00ff00',
-              size: 2
-            })
-          }).catch(console.error);
-        }
-      });
-
-      // Restore transformations
-      ctx.restore();
-
-      toast.success(`AI Detection: Found ${results.detections.length} objects`);
-    } catch (error) {
-      console.error('Error in AI detection:', error);
-      toast.error('AI detection failed. Please try again.');
-    }
-  };
-
-  // AI Enhancement functionality
-  const handleAIEnhancement = async () => {
-    if (!selectedImage) return;
-    setIsEnhancing(true);
-
-    try {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-        }, 'image/png');
-      });
-
-      const formData = new FormData();
-      formData.append('image', blob);
-
-      toast.info('AI Enhancement: Enhancing image...');
-
-      const response = await fetch('/api/ai-enhance', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) throw new Error('Enhancement failed');
-
-      const enhancedImageBlob = await response.blob();
-      const enhancedImageUrl = URL.createObjectURL(enhancedImageBlob);
-
-      // Load enhanced image
-      const img = new Image();
-      img.onload = () => {
-        setCanvasImage(img);
-        // Reset adjustments when applying enhancement
-        setBrightness(100);
-        setContrast(100);
-        requestAnimationFrame(applyImageAdjustments);
-
-        // NOTE: We deliberately do NOT save the enhanced image automatically.
-        toast.success('Enhanced image applied (not saved)');
-      };
-      img.src = enhancedImageUrl;
-    } catch (error) {
-      console.error('Error in AI enhancement:', error);
-      toast.error('Failed to enhance image. Please try again.');
-    } finally {
-      setIsEnhancing(false);
-    }
   };
 
   // Load image when selected image changes
@@ -1714,11 +1571,14 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
         }
 
         setCanvasImage(img);
-        requestAnimationFrame(applyImageAdjustments);
+        requestAnimationFrame(() => {
+          fitCanvasToViewport();
+          applyImageAdjustments();
+        });
       };
 
       img.onerror = () => {
-        toast.error('Failed to load image');
+        toast.error('Încărcarea imaginii a eșuat');
       };
 
       img.crossOrigin = 'anonymous';
@@ -1726,7 +1586,19 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
     };
 
     loadImage();
-  }, [selectedImage]);
+  }, [selectedImage, fitCanvasToViewport]);
+
+  // Keep canvas display sized to fit the viewport when container resizes
+  useEffect(() => {
+    if (!selectedImage) return;
+    const viewport = canvasViewportRef.current;
+    if (!viewport) return;
+
+    fitCanvasToViewport();
+    const ro = new ResizeObserver(() => fitCanvasToViewport());
+    ro.observe(viewport);
+    return () => ro.disconnect();
+  }, [selectedImage, fitCanvasToViewport]);
 
   // Load annotations and calibration when image changes
   useEffect(() => {
@@ -1785,124 +1657,6 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
     loadImageData();
   }, [selectedImage]);
 
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, image: PatientImage) => {
-    setDraggedImage(image);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, containerType: string) => {
-    if (selectedTool !== 'cursor') return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverContainer(containerType);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverContainer(null);
-  };
-
-  const handleDrop = async (e: React.DragEvent, containerType: string, position?: number) => {
-    if (selectedTool !== 'cursor') return;
-    e.preventDefault();
-    setDragOverContainer(null);
-
-    // 1) Handle drops that originate from the OS / file system first -----------------
-    const droppedFiles = e.dataTransfer?.files;
-    if (droppedFiles && droppedFiles.length > 0) {
-      try {
-        for (let i = 0; i < droppedFiles.length; i++) {
-          const file = droppedFiles[i];
-          // Only allow image types
-          if (!file.type.startsWith('image/')) continue;
-
-          // Decide default type/side based on container that received the drop
-          let uploadType: string = 'XRAY';
-          let uploadSide: string | null = null;
-
-          if (containerType === 'bitewing-left') {
-            uploadType = 'BITEWING';
-            uploadSide = 'LEFT';
-          } else if (containerType === 'bitewing-right') {
-            uploadType = 'BITEWING';
-            uploadSide = 'RIGHT';
-          } else if (containerType === 'opg') {
-            uploadType = 'OPG';
-          }
-
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('type', uploadType);
-          if (uploadSide) formData.append('side', uploadSide);
-
-          const uploadRes = await fetch(`/api/patients/${patientId}/images`, {
-            method: 'POST',
-            body: formData
-          });
-
-          if (!uploadRes.ok) {
-            const errText = await uploadRes.text();
-            console.error('Upload failed:', errText);
-            throw new Error(errText || 'Upload failed');
-          }
-        }
-
-        toast.success('Image(s) uploaded successfully');
-        if (onRefresh) onRefresh(); // Auto-refresh after successful upload
-      } catch (err) {
-        console.error('File-drop upload error:', err);
-        toast.error('Failed to upload image(s)');
-      }
-      return; // Skip the intra-app drag logic
-    }
-
-    // 2) In-app drag-and-drop (re-categorising an existing X-ray) --------------------
-    if (!draggedImage) return;
-
-    try {
-      // Update image type based on container
-      let newType = draggedImage.type;
-      let newSide = draggedImage.side;
-
-      if (containerType === 'bitewing-left') {
-        newType = 'BITEWING';
-        newSide = 'LEFT';
-      } else if (containerType === 'bitewing-right') {
-        newType = 'BITEWING';
-        newSide = 'RIGHT';
-      } else if (containerType === 'opg') {
-        newType = 'OPG';
-        newSide = undefined;
-      }
-
-      // Update the image - use PATCH method and only send the fields we want to update
-      const response = await fetch(`/api/patients/${draggedImage.patientId}/images/${draggedImage.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: newType,
-          side: newSide,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Update failed:', errorData);
-        throw new Error('Failed to update image');
-      }
-
-      toast.success(`Image moved to ${containerType.replace('-', ' ')}`);
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error('Drop error:', error);
-      toast.error('Failed to move image');
-    }
-
-    setDraggedImage(null);
-  };
-
   // Delete image
   const handleDeleteImage = async () => {
     if (!selectedImageForAction) return;
@@ -1912,14 +1666,14 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete image');
+      if (!response.ok) throw new Error('Ștergerea image');
 
-      toast.success('Image deleted successfully');
+      toast.success('Imaginea a fost ștearsă cu succes');
       setShowDeleteDialog(false);
       setSelectedImageForAction(null);
-      if (onRefresh) onRefresh();
+      if (onRefresh) await onRefresh();
     } catch (error) {
-      toast.error('Failed to delete image');
+      toast.error('Ștergerea imaginii a eșuat');
     }
   };
 
@@ -1938,14 +1692,14 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to move image');
+      if (!response.ok) throw new Error('Mutarea imaginii a eșuat');
 
-      toast.success('Image moved to patient successfully');
+      toast.success('Imaginea a fost mutată la pacient cu succes');
       setShowMoveDialog(false);
       setSelectedImageForAction(null);
-      if (onRefresh) onRefresh();
+      if (onRefresh) await onRefresh();
     } catch (error) {
-      toast.error('Failed to move image to patient');
+      toast.error('Mutarea imaginii la pacient a eșuat');
     }
   };
 
@@ -2031,8 +1785,6 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
     measurementActive,
     applyImageAdjustments
   ]);
-
-  const displayData = getImagesForView();
 
   const saveShapeToServer = useCallback((shape: Shape) => {
     if (!selectedImage?.patientId || !selectedImage?.id) return;
@@ -2168,648 +1920,413 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
 
   const handleEraserClick = (e: React.MouseEvent) => performErase(e.clientX, e.clientY);
 
-  return (
-    <div className="border-2 border-blue-400 bg-white p-2 rounded-xl min-h-[50vh]">
-      <div className="flex flex-col">
-        {/* Header with view preferences */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Patient Images</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <Settings className="w-4 h-4 mr-1" />
-              View Settings
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push(`/dashboard/imaging?patientId=${patientId}`)}
-            >
-              <PlusCircle className="w-4 h-4 mr-1" />
-              Add Images
-            </Button>
-          </div>
+  const renderCarouselPanel = (
+    label: string,
+    images: PatientImage[],
+    index: number,
+    setIndex: React.Dispatch<React.SetStateAction<number>>
+  ) => {
+    const image = images[index];
+    const isSelected = !!image && selectedImage?.id === image.id;
+
+    return (
+      <div className="flex flex-col flex-1 min-w-0 min-h-0 h-full overflow-hidden">
+        <div className="flex items-center justify-between mb-2 shrink-0">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            {label}
+            <Badge variant="secondary">{images.length}</Badge>
+          </h4>
+          {image && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40">
+                <div className="space-y-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setSelectedImageForAction(image);
+                      setShowMoveDialog(true);
+                    }}
+                  >
+                    <Users className="h-3 w-3 mr-2" />
+                    Mută la pacient
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-red-600 hover:text-red-700"
+                    onClick={() => {
+                      setSelectedImageForAction(image);
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Șterge
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
-        {/* Settings Panel */}
-        {showSettings && (
-          <Card className="mb-4">
+        <div
+          className="relative flex-1 min-h-0 overflow-hidden border-2 border-dashed border-gray-300 rounded-lg bg-gray-50"
+          onClick={() => image && !isSelected && handleImageSelect(image)}
+        >
+          {!image ? (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm text-center p-4">
+              <div>
+                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Nu există fotografii {label === 'Înainte' ? 'înainte' : 'după'}</p>
+              </div>
+            </div>
+          ) : isSelected ? (
+            <div
+              ref={canvasViewportRef}
+              className="absolute inset-0 flex items-center justify-center overflow-hidden"
+              onDragStart={(e) => selectedTool !== 'cursor' && e.preventDefault()}
+              onDrop={(e) => e.preventDefault()}
+              onDragOver={(e) => e.preventDefault()}
+            >
+              <canvas
+                ref={canvasRef}
+                className={`block max-w-full max-h-full ${selectedTool === 'cursor' ? 'cursor-default' : 'cursor-crosshair'}`}
+                onClick={handleCanvasClick}
+                onMouseDown={selectedTool === 'cursor' ? undefined : handleMouseDown}
+                onMouseMove={selectedTool === 'cursor' ? undefined : handleMouseMove}
+                onMouseUp={selectedTool === 'cursor' ? undefined : handleMouseUp}
+                onMouseLeave={selectedTool === 'cursor' ? undefined : handleMouseUp}
+                onContextMenu={selectedTool === 'text' ? handleTextInteraction : undefined}
+                style={{ userSelect: 'none' }}
+              />
+            </div>
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center overflow-hidden p-2 cursor-pointer hover:bg-gray-100"
+              onClick={() => handleImageSelect(image)}
+            >
+              <img
+                src={image.url}
+                alt={label}
+                className="max-w-full max-h-full object-contain rounded"
+                draggable={false}
+              />
+            </div>
+          )}
+        </div>
+
+        {images.length > 0 && (
+          <div className="flex items-center justify-center gap-3 mt-3 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={index === 0}
+              onClick={() => goToCarouselIndex(images, index - 1, setIndex)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground min-w-[4rem] text-center">
+              {index + 1} / {images.length}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={index >= images.length - 1}
+              onClick={() => goToCarouselIndex(images, index + 1, setIndex)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      ref={sectionRef}
+      className="relative border-2 border-blue-400 bg-white p-2 rounded-xl h-full max-h-full min-h-0 flex flex-col overflow-hidden"
+      onDragEnter={handleSectionDragEnter}
+      onDragLeave={handleSectionDragLeave}
+      onDragOver={(e) => e.preventDefault()}
+    >
+      {showDragOverlay && (
+        <div className="absolute inset-0 z-50 bg-black/50 rounded-xl flex gap-4 p-4 items-stretch">
+          <div
+            className="flex-1 border-2 border-dashed border-white rounded-lg flex flex-col items-center justify-center text-white cursor-copy hover:bg-white/10 transition-colors"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleFileDrop(e, 'BEFORE_PHOTO')}
+          >
+            <Upload className="h-10 w-10 mb-2" />
+            <p className="text-lg font-medium">Plasați ca Înainte</p>
+          </div>
+          <div
+            className="flex-1 border-2 border-dashed border-white rounded-lg flex flex-col items-center justify-center text-white cursor-copy hover:bg-white/10 transition-colors"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleFileDrop(e, 'AFTER_PHOTO')}
+          >
+            <Upload className="h-10 w-10 mb-2" />
+            <p className="text-lg font-medium">Plasați ca După</p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <h3 className="text-lg font-semibold">Imagini pacient</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowUploadModal(true)}
+            disabled={isUploading}
+          >
+            <ImagePlus className="w-4 h-4 mr-1" />
+            Încarcă
+          </Button>
+        </div>
+
+        {selectedImage && (
+          <Card className="mb-4 shrink-0">
             <CardContent className="p-4">
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Default View Preference</Label>
-                  <Select value={viewPreference} onValueChange={(value) => setViewPreference(value as ViewPreference)}>
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {viewPreferences.map((pref) => (
-                        <SelectItem key={pref.value} value={pref.value}>
-                          <div>
-                            <div className="font-medium">{pref.label}</div>
-                            <div className="text-xs text-muted-foreground">{pref.description}</div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {tools.map((tool) => (
+                    <Button
+                      key={tool.id}
+                      variant={selectedTool === tool.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleToolSelect(tool.id)}
+                      className="flex items-center gap-1"
+                      title={tool.shortcut ? `${tool.name} (${tool.shortcut})` : tool.name}
+                    >
+                      {tool.icon}
+                      <span className="text-xs hidden sm:inline">{tool.name}</span>
+                    </Button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {(selectedTool === 'text' || selectedTool === 'freehand' || selectedTool === 'rectangle' || selectedTool === 'circle' || selectedTool === 'calibrate') && (
+                    <>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-8 h-8 p-0 rounded-full"
+                            style={{ backgroundColor: textColor }}
+                          />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <HexColorPicker color={textColor} onChange={setTextColor} />
+                        </PopoverContent>
+                      </Popover>
+
+                      {selectedTool === 'freehand' && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs">Grosime:</Label>
+                          <Slider
+                            value={[penSize]}
+                            onValueChange={([value]) => setPenSize(value)}
+                            min={1}
+                            max={20}
+                            step={1}
+                            className="w-20"
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <Separator orientation="vertical" className="h-6 hidden sm:block" />
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleZoom(Math.max(10, zoom - 10))}>
+                      <ZoomOut className="h-3 w-3" />
+                    </Button>
+                    <span className="text-xs w-12 text-center">{zoom}%</span>
+                    <Button variant="outline" size="sm" onClick={() => handleZoom(Math.min(400, zoom + 10))}>
+                      <ZoomIn className="h-3 w-3" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleRotate('left')}>
+                      <RotateCcw className="h-3 w-3" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleRotate('right')}>
+                      <RotateCw className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  <Separator orientation="vertical" className="h-6 hidden sm:block" />
+                  <div className="flex items-center gap-2">
+                    <Sun className="h-3 w-3" />
+                    <Slider
+                      value={[brightness]}
+                      onValueChange={([value]) => handleBrightnessChange(value)}
+                      min={0}
+                      max={200}
+                      step={5}
+                      className="w-16"
+                    />
+                    <span className="text-xs w-8">{brightness}%</span>
+                    <Contrast className="h-3 w-3" />
+                    <Slider
+                      value={[contrast]}
+                      onValueChange={([value]) => handleContrastChange(value)}
+                      min={0}
+                      max={200}
+                      step={5}
+                      className="w-16"
+                    />
+                    <span className="text-xs w-8">{contrast}%</span>
+                  </div>
+
+                  {(shapes.length > 0 || measurements.length > 0) && (
+                    <>
+                      <Separator orientation="vertical" className="h-6 hidden sm:block" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShapes([]);
+                          setMeasurements([]);
+                          setCalibration(null);
+                          setMeasurementStart(null);
+                          setMeasurementActive(false);
+                          setTextPosition(null);
+                          setSelectedTextId(null);
+                          setIsResizing(false);
+                          setIsDraggingText(false);
+                          if (selectedImage?.patientId && selectedImage?.id) {
+                            fetch(`/api/patients/${selectedImage.patientId}/images/${selectedImage.id}/annotations`, {
+                              method: 'DELETE'
+                            }).catch(console.error);
+                            fetch(`/api/patients/${selectedImage.patientId}/images/${selectedImage.id}/calibration`, {
+                              method: 'DELETE'
+                            }).catch(console.error);
+                          }
+                          requestAnimationFrame(applyImageAdjustments);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Șterge tot
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Image Categories Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'xray' | 'light')} className="flex-1">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="xray" className="flex items-center gap-2">
-              X-ray Images
-              <Badge variant="secondary">{xrayImages.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="light" className="flex items-center gap-2">
-              Light Images
-              <Badge variant="secondary">{lightImages.length}</Badge>
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full min-h-0">
+          {renderCarouselPanel('Înainte', beforeImages, beforeIndex, setBeforeIndex)}
+          {renderCarouselPanel('După', afterImages, afterIndex, setAfterIndex)}
+          </div>
+        </div>
 
-          {/* X-ray Images Tab */}
-          <TabsContent value="xray" className="flex-1 mt-4">
-            {/* Tools Bar */}
-            {selectedImage && (
-              <Card className="mb-4">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    {/* Left side: Tools */}
-                    <div className="flex items-center gap-2">
-                      {tools.map((tool) => (
-                        <Button
-                          key={tool.id}
-                          variant={selectedTool === tool.id ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleToolSelect(tool.id)}
-                          disabled={tool.id === 'ai-enhance' && isEnhancing}
-                          className="flex items-center gap-1"
-                          title={tool.shortcut ? `${tool.name} (${tool.shortcut})` : tool.name}
-                        >
-                          {tool.icon}
-                          <span className="text-xs hidden sm:inline">{tool.name}</span>
-                        </Button>
-                      ))}
-                    </div>
-
-                    {/* Right side: Color picker and settings */}
-                    <div className="flex items-center gap-2">
-                      {(selectedTool === 'text' || selectedTool === 'freehand' || selectedTool === 'rectangle' || selectedTool === 'circle' || selectedTool === 'calibrate') && (
-                        <>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                className="w-8 h-8 p-0 rounded-full"
-                                style={{ backgroundColor: textColor }}
-                              />
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <HexColorPicker color={textColor} onChange={setTextColor} />
-                            </PopoverContent>
-                          </Popover>
-
-                          {selectedTool === 'freehand' && (
-                            <div className="flex items-center gap-2">
-                              <Label className="text-xs">Size:</Label>
-                              <Slider
-                                value={[penSize]}
-                                onValueChange={([value]) => setPenSize(value)}
-                                min={1}
-                                max={20}
-                                step={1}
-                                className="w-20"
-                              />
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                      {/* Image Adjustments */}
-                      <Separator orientation="vertical" className="h-6" />
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleZoom(Math.max(10, zoom - 10))}>
-                          <ZoomOut className="h-3 w-3" />
-                        </Button>
-                        <span className="text-xs w-12 text-center">{zoom}%</span>
-                        <Button variant="outline" size="sm" onClick={() => handleZoom(Math.min(400, zoom + 10))}>
-                          <ZoomIn className="h-3 w-3" />
-                        </Button>
-
-                        <Button variant="outline" size="sm" onClick={() => handleRotate('left')}>
-                          <RotateCcw className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleRotate('right')}>
-                          <RotateCw className="h-3 w-3" />
-                        </Button>
-                      </div>
-
-                      {/* Brightness and Contrast */}
-                      <Separator orientation="vertical" className="h-6" />
-                      <div className="flex items-center gap-2">
-                        <Sun className="h-3 w-3" />
-                        <Slider
-                          value={[brightness]}
-                          onValueChange={([value]) => handleBrightnessChange(value)}
-                          min={0}
-                          max={200}
-                          step={5}
-                          className="w-16"
-                        />
-                        <span className="text-xs w-8">{brightness}%</span>
-
-                        <Contrast className="h-3 w-3" />
-                        <Slider
-                          value={[contrast]}
-                          onValueChange={([value]) => handleContrastChange(value)}
-                          min={0}
-                          max={200}
-                          step={5}
-                          className="w-16"
-                        />
-                        <span className="text-xs w-8">{contrast}%</span>
-                      </div>
-
-                      {/* Clear annotations */}
-                      {(shapes.length > 0 || measurements.length > 0) && (
-                        <>
-                          <Separator orientation="vertical" className="h-6" />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              // Clear local state
-                              setShapes([]);
-                              setMeasurements([]);
-                              setCalibration(null);
-                              // Clear measurement tool state
-                              setMeasurementStart(null);
-                              setMeasurementActive(false);
-                              // Clear text state
-                              setTextPosition(null);
-                              setSelectedTextId(null);
-                              setIsResizing(false);
-                              setIsDraggingText(false);
-                              // Clear from database if image is selected
-                              if (selectedImage?.patientId && selectedImage?.id) {
-                                // Clear annotations
-                                fetch(`/api/patients/${selectedImage.patientId}/images/${selectedImage.id}/annotations`, {
-                                  method: 'DELETE'
-                                }).catch(console.error);
-                                // Clear calibration
-                                fetch(`/api/patients/${selectedImage.patientId}/images/${selectedImage.id}/calibration`, {
-                                  method: 'DELETE'
-                                }).catch(console.error);
-                              }
-                              requestAnimationFrame(applyImageAdjustments);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Clear
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-12 gap-4 h-[500px]">
-              {/* Image List */}
-              <div className="col-span-2">
-                <Card className="h-full">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center justify-between">
-                      Available X-rays
-                      {selectedTool === 'cursor' && (
-                        <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                          Drag & Drop Enabled
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className={`h-[450px] mx-2 p-3 border-2 rounded-lg transition-colors ${selectedTool === 'cursor' ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200'
-                      }`}>
-                      {sortedXrayImages.map((image) => (
-                        <div
-                          key={image.id}
-                          draggable={selectedTool === 'cursor'}
-                          onDragStart={(e) => selectedTool === 'cursor' ? handleDragStart(e, image) : e.preventDefault()}
-                          className={`p-2 mb-2 rounded-lg cursor-pointer border transition-colors relative group ${selectedImage?.id === image.id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          onClick={() => handleImageSelect(image)}
-                        >
-                          <img
-                            src={image.url}
-                            alt={`${image.type} ${image.side || ''}`}
-                            className="w-full h-16 object-cover rounded mb-1"
-                          />
-                          <div className="text-xs">
-                            <div className="font-medium">{image.type}</div>
-                            {image.side && <div className="text-gray-500">{image.side}</div>}
-                            {image.dateTaken && (
-                              <div className="text-gray-400">
-                                {new Date(image.dateTaken).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Action buttons */}
-                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-6 w-6 p-0">
-                                  <MoreVertical className="h-3 w-3" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-40">
-                                <div className="space-y-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-start"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedImageForAction(image);
-                                      setShowMoveDialog(true);
-                                    }}
-                                  >
-                                    <Users className="h-3 w-3 mr-2" />
-                                    Move to Patient
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-start text-red-600 hover:text-red-700"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedImageForAction(image);
-                                      setShowDeleteDialog(true);
-                                    }}
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-2" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                        </div>
-                      ))}
-                      {sortedXrayImages.length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <Upload className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm">No X-ray images</p>
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+        {textPosition && (
+          <div
+            className="fixed z-50"
+            style={{
+              left: textPosition.screenX,
+              top: textPosition.screenY,
+              transform: 'translate(-50%, -100%)'
+            }}
+          >
+            <div className="flex flex-col space-y-2 bg-white p-2 rounded shadow-lg border">
+              <Input
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder="Introduceți textul..."
+                className="w-[200px]"
+                autoFocus
+              />
+              <div className="flex items-center space-x-2">
+                <Label className="text-xs">Scală:</Label>
+                <Slider
+                  value={[textScale]}
+                  onValueChange={([value]) => setTextScale(value)}
+                  min={0.5}
+                  max={3}
+                  step={0.1}
+                  className="w-[100px]"
+                />
               </div>
+              <Button onClick={handleTextConfirm}>Confirmă</Button>
+            </div>
+          </div>
+        )}
+      </div>
 
-              {/* Main Display Area */}
-              <div className="col-span-10">
-                <Card className="h-full">
-                  <CardContent className="p-4 h-full">
-                    <div className="h-full">
-                      {/* Main Display Logic */}
-                      {viewPreference === 'latest_bitewings_opg' && displayData.top && displayData.bottom ? (
-                        <div className="grid grid-rows-2 gap-2 h-full">
-                          {/* Top Row: Latest Bitewings */}
-                          <div className="grid grid-cols-2 gap-2">
-                            {/* Left Bitewing Container */}
-                            <div
-                              className={`border-2 border-dashed rounded-lg p-2 bg-gray-50 transition-colors ${selectedTool === 'cursor' && dragOverContainer === 'bitewing-left' ? 'border-blue-500 bg-blue-100' : 'border-gray-300'
-                                }`}
-                              onDragOver={(e) => handleDragOver(e, 'bitewing-left')}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, 'bitewing-left')}
-                            >
-                              {(() => {
-                                const leftImg = displayData.top.find(img => img.side === 'LEFT');
-                                const isSelected = selectedImage && leftImg && selectedImage.id === leftImg.id;
-                                return (
-                                  <div
-                                    className={`border-2 ${isSelected ? 'border-gray-300' : 'border-dashed border-gray-300'} rounded-lg p-2 bg-gray-50 transition-colors ${!isSelected && selectedTool === 'cursor' && dragOverContainer === 'bitewing-left' ? 'border-blue-500 bg-blue-100' : ''}`}
-                                    onDragOver={isSelected ? undefined : (e) => handleDragOver(e, 'bitewing-left')}
-                                    onDragLeave={isSelected ? undefined : handleDragLeave}
-                                    onDrop={isSelected ? undefined : (e) => handleDrop(e, 'bitewing-left')}
-                                  >
-                                    {/* inner rendering maintained below */}
-                                    {
-                                      !leftImg ? (
-                                        <div className="h-full flex items-center justify-center">
-                                          <div className="text-gray-400 text-sm text-center">
-                                            <div>Drop left bitewing here</div>
-                                            <div className="text-xs mt-1">or drag from images</div>
-                                          </div>
-                                        </div>
-                                      ) : isSelected ? (
-                                        // ... existing code for selected canvas view ...
-                                        <div
-                                          className="relative h-full"
-                                          onDragStart={(e) => selectedTool !== 'cursor' && e.preventDefault()}
-                                          onDrop={(e) => selectedTool !== 'cursor' && e.preventDefault()}
-                                          onDragOver={(e) => selectedTool !== 'cursor' && e.preventDefault()}
-                                        >
-                                          <canvas
-                                            ref={canvasRef}
-                                            width={500}
-                                            height={250}
-                                            className={`w-full h-full border rounded-lg ${selectedTool === 'cursor' ? 'cursor-default' : 'cursor-crosshair'}`}
-                                            onClick={handleCanvasClick}
-                                            onMouseDown={selectedTool === 'cursor' ? undefined : handleMouseDown}
-                                            onMouseMove={selectedTool === 'cursor' ? undefined : handleMouseMove}
-                                            onMouseUp={selectedTool === 'cursor' ? undefined : handleMouseUp}
-                                            onMouseLeave={selectedTool === 'cursor' ? undefined : handleMouseUp}
-                                            onContextMenu={selectedTool === 'text' ? handleTextInteraction : undefined}
-                                            style={{ userSelect: 'none' }}
-                                          />
-                                          {/* Text Input Overlay */}
-                                          {textPosition && (
-                                            <div
-                                              className="absolute z-50"
-                                              style={{
-                                                position: 'fixed',
-                                                left: textPosition.screenX,
-                                                top: textPosition.screenY,
-                                                transform: 'translate(-50%, -100%)'
-                                              }}
-                                            >
-                                              <div className="flex flex-col space-y-2 bg-white p-2 rounded shadow-lg border">
-                                                <Input
-                                                  value={textInput}
-                                                  onChange={(e) => setTextInput(e.target.value)}
-                                                  placeholder="Enter text..."
-                                                  className="w-[200px]"
-                                                  autoFocus
-                                                />
-                                                <div className="flex items-center space-x-2">
-                                                  <Label className="text-xs">Scale:</Label>
-                                                  <Slider
-                                                    value={[textScale]}
-                                                    onValueChange={([value]) => setTextScale(value)}
-                                                    min={0.5}
-                                                    max={3}
-                                                    step={0.1}
-                                                    className="w-[100px]"
-                                                  />
-                                                </div>
-                                                <Button onClick={handleTextConfirm}>Confirm</Button>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <div
-                                          className="h-full cursor-pointer hover:bg-gray-100 rounded"
-                                          onClick={() => handleImageSelect(leftImg)}
-                                        >
-                                          <img src={leftImg.url} alt="Left Bitewing" className="w-full h-full object-contain rounded" draggable={false} />
-                                          <div className="text-xs text-center mt-1">Left Bitewing</div>
-                                        </div>
-                                      )
-                                    }
-                                  </div>
-                                );
-                              })()}
-                            </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={async (e) => {
+          if (e.target.files?.length) {
+            await uploadImages(e.target.files, uploadCategory);
+            e.target.value = '';
+            setShowUploadModal(false);
+          }
+        }}
+      />
 
-                            {/* Right Bitewing Container */}
-                            <div
-                              className={`border-2 border-dashed rounded-lg p-2 bg-gray-50 transition-colors ${selectedTool === 'cursor' && dragOverContainer === 'bitewing-right' ? 'border-blue-500 bg-blue-100' : 'border-gray-300'
-                                }`}
-                              onDragOver={(e) => handleDragOver(e, 'bitewing-right')}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, 'bitewing-right')}
-                            >
-                              {(() => {
-                                const rightImg = displayData.top.find(img => img.side === 'RIGHT');
-                                const isSelected = selectedImage && rightImg && selectedImage.id === rightImg.id;
-                                return (
-                                  <div
-                                    className={`border-2 ${isSelected ? 'border-gray-300' : 'border-dashed border-gray-300'} rounded-lg p-2 bg-gray-50 transition-colors ${!isSelected && selectedTool === 'cursor' && dragOverContainer === 'bitewing-right' ? 'border-blue-500 bg-blue-100' : ''}`}
-                                    onDragOver={isSelected ? undefined : (e) => handleDragOver(e, 'bitewing-right')}
-                                    onDragLeave={isSelected ? undefined : handleDragLeave}
-                                    onDrop={isSelected ? undefined : (e) => handleDrop(e, 'bitewing-right')}
-                                  >
-                                    {/* inner rendering maintained below */}
-                                    {
-                                      !rightImg ? (
-                                        <div className="h-full flex items-center justify-center">
-                                          <div className="text-gray-400 text-sm text-center">
-                                            <div>Drop right bitewing here</div>
-                                            <div className="text-xs mt-1">or drag from images</div>
-                                          </div>
-                                        </div>
-                                      ) : isSelected ? (
-                                        // ... existing code for selected canvas view ...
-                                        <div
-                                          className="relative h-full"
-                                          onDragStart={(e) => selectedTool !== 'cursor' && e.preventDefault()}
-                                          onDrop={(e) => selectedTool !== 'cursor' && e.preventDefault()}
-                                          onDragOver={(e) => selectedTool !== 'cursor' && e.preventDefault()}
-                                        >
-                                          <canvas
-                                            ref={canvasRef}
-                                            width={500}
-                                            height={250}
-                                            className={`w-full h-full border rounded-lg ${selectedTool === 'cursor' ? 'cursor-default' : 'cursor-crosshair'}`}
-                                            onClick={handleCanvasClick}
-                                            onMouseDown={selectedTool === 'cursor' ? undefined : handleMouseDown}
-                                            onMouseMove={selectedTool === 'cursor' ? undefined : handleMouseMove}
-                                            onMouseUp={selectedTool === 'cursor' ? undefined : handleMouseUp}
-                                            onMouseLeave={selectedTool === 'cursor' ? undefined : handleMouseUp}
-                                            onContextMenu={selectedTool === 'text' ? handleTextInteraction : undefined}
-                                            style={{ userSelect: 'none' }}
-                                          />
-                                          {/* Text Input Overlay */}
-                                          {textPosition && (
-                                            <div
-                                              className="absolute z-50"
-                                              style={{
-                                                position: 'fixed',
-                                                left: textPosition.screenX,
-                                                top: textPosition.screenY,
-                                                transform: 'translate(-50%, -100%)'
-                                              }}
-                                            >
-                                              <div className="flex flex-col space-y-2 bg-white p-2 rounded shadow-lg border">
-                                                <Input
-                                                  value={textInput}
-                                                  onChange={(e) => setTextInput(e.target.value)}
-                                                  placeholder="Enter text..."
-                                                  className="w-[200px]"
-                                                  autoFocus
-                                                />
-                                                <div className="flex items-center space-x-2">
-                                                  <Label className="text-xs">Scale:</Label>
-                                                  <Slider
-                                                    value={[textScale]}
-                                                    onValueChange={([value]) => setTextScale(value)}
-                                                    min={0.5}
-                                                    max={3}
-                                                    step={0.1}
-                                                    className="w-[100px]"
-                                                  />
-                                                </div>
-                                                <Button onClick={handleTextConfirm}>Confirm</Button>
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <div
-                                          className="h-full cursor-pointer hover:bg-gray-100 rounded"
-                                          onClick={() => handleImageSelect(rightImg)}
-                                        >
-                                          <img src={rightImg.url} alt="Right Bitewing" className="w-full h-full object-contain rounded" draggable={false} />
-                                          <div className="text-xs text-center mt-1">Right Bitewing</div>
-                                        </div>
-                                      )
-                                    }
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* Bottom Row: OPG */}
-                          {/* <div
-                            className={`border-2 border-dashed rounded-lg p-2 bg-gray-50 transition-colors ${selectedTool === 'cursor' && dragOverContainer === 'opg' ? 'border-blue-500 bg-blue-100' : 'border-gray-300'
-                              }`}
-                            onDragOver={(e) => handleDragOver(e, 'opg')}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, 'opg')}
-                          >
-                            {displayData.bottom.length > 0 ? (
-                              <div
-                                className="h-full cursor-pointer hover:bg-gray-100 rounded"
-                                onClick={() => handleImageSelect(displayData.bottom[0])}
-                              >
-                                <img
-                                  src={displayData.bottom[0].url}
-                                  alt="OPG"
-                                  className="w-full h-full object-contain rounded"
-                                  draggable={false}
-                                  onDragStart={(e) => e.preventDefault()}
-                                />
-                                <div className="text-xs text-center mt-1">OPG</div>
-                              </div>
-                            ) : (
-                              <div className="h-full flex items-center justify-center">
-                                <div className="text-gray-400 text-sm text-center">
-                                  <div>Drop OPG here</div>
-                                  <div className="text-xs mt-1">or drag from images</div>
-                                </div>
-                              </div>
-                            )}
-                          </div> */}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-gray-500">
-                          <div className="text-center">
-                            <Eye className="h-12 w-12 mx-auto mb-2" />
-                            <p>Click on an image above to view and annotate</p>
-                            <p className="text-sm mt-2">Or drag images into the containers below</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Încărcare fotografii</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Categorie</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={uploadCategory === 'BEFORE_PHOTO' ? 'default' : 'outline'}
+                  onClick={() => setUploadCategory('BEFORE_PHOTO')}
+                >
+                  Înainte
+                </Button>
+                <Button
+                  type="button"
+                  variant={uploadCategory === 'AFTER_PHOTO' ? 'default' : 'outline'}
+                  onClick={() => setUploadCategory('AFTER_PHOTO')}
+                >
+                  După
+                </Button>
               </div>
             </div>
+            <Button
+              className="w-full"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {isUploading ? 'Se încarcă...' : 'Alegeți fișiere'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-            {/* Global Text Input Overlay - positioned outside containers */}
-            {textPosition && (
-              <div
-                className="fixed z-50"
-                style={{
-                  left: textPosition.screenX,
-                  top: textPosition.screenY,
-                  transform: 'translate(-50%, -100%)'
-                }}
-              >
-                <div className="flex flex-col space-y-2 bg-white p-2 rounded shadow-lg border">
-                  <Input
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Enter text..."
-                    className="w-[200px]"
-                    autoFocus
-                  />
-                  <div className="flex items-center space-x-2">
-                    <Label className="text-xs">Scale:</Label>
-                    <Slider
-                      value={[textScale]}
-                      onValueChange={([value]) => setTextScale(value)}
-                      min={0.5}
-                      max={3}
-                      step={0.1}
-                      className="w-[100px]"
-                    />
-                  </div>
-                  <Button onClick={handleTextConfirm}>Confirm</Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Light Images Tab */}
-          <TabsContent value="light" className="flex-1 mt-4">
-            <Card className="h-[300px]">
-              <CardContent className="p-2">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                  {lightImages.map((image) => (
-                    <div key={image.id} className="border rounded-lg p-2">
-                      <img
-                        src={image.url}
-                        alt={image.name}
-                        className="w-full h-20 object-cover rounded mb-1"
-                        draggable={false}
-                        onDragStart={(e) => e.preventDefault()}
-                      />
-                      <p className="text-xs truncate">{image.name}</p>
-                    </div>
-                  ))}
-                  {lightImages.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-gray-500">
-                      <Upload className="h-12 w-12 mx-auto mb-2" />
-                      <p>No light images available</p>
-                      <p className="text-sm mt-1">Upload photos from the imaging page</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
 
       {/* Move Patient Dialog */}
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Move Image to Another Patient</DialogTitle>
+            <DialogTitle>Mutare imagine la alt pacient</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Search Patient</Label>
+              <Label>Căutare pacient</Label>
               <Input
-                placeholder="Type patient name..."
+                placeholder="Tastați numele pacientului..."
                 value={targetPatientSearch}
                 onChange={(e) => setTargetPatientSearch(e.target.value)}
               />
@@ -2831,7 +2348,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
                       {patient.firstName} {patient.lastName}
                     </div>
                     <div className="text-sm text-gray-500">
-                      Code: {patient.patientCode || 'N/A'}
+                      Cod: {patient.patientCode || 'Nedisponibil'}
                     </div>
                   </div>
                 ))}
@@ -2846,7 +2363,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Trash2 className="h-5 w-5" />
-              Delete Image?
+              Ștergeți imaginea?
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -2855,14 +2372,13 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
                 <div className="mb-4">
                   <img
                     src={selectedImageForAction.url}
-                    alt="Image to delete"
+                    alt="Imagine de șters"
                     className="w-24 h-24 object-cover rounded-lg mx-auto border-2 border-red-200"
                   />
                   <div className="mt-2">
-                    <div className="font-medium">{selectedImageForAction.type}</div>
-                    {selectedImageForAction.side && (
-                      <div className="text-sm text-gray-500">{selectedImageForAction.side}</div>
-                    )}
+                    <div className="font-medium">
+                      {selectedImageForAction.type === 'BEFORE_PHOTO' ? 'Înainte' : selectedImageForAction.type === 'AFTER_PHOTO' ? 'După' : selectedImageForAction.type}
+                    </div>
                     {selectedImageForAction.dateTaken && (
                       <div className="text-sm text-gray-400">
                         {new Date(selectedImageForAction.dateTaken).toLocaleDateString()}
@@ -2872,7 +2388,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
                 </div>
               )}
               <p className="text-gray-600">
-                Are you sure you want to delete this image? This action cannot be undone.
+                Sigur doriți să ștergeți această imagine? Această acțiune nu poate fi anulată.
               </p>
             </div>
             <div className="flex gap-2 justify-end">
@@ -2883,7 +2399,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
                   setSelectedImageForAction(null);
                 }}
               >
-                Cancel
+                Anulare
               </Button>
               <Button
                 variant="destructive"
@@ -2891,7 +2407,7 @@ export const EnhancedPatientImagesSection: React.FC<EnhancedPatientImagesSection
                 className="bg-red-600 hover:bg-red-700"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete Image
+                Șterge imaginea
               </Button>
             </div>
           </div>

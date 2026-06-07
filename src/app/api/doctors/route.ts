@@ -11,7 +11,7 @@ export async function GET() {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       );
     }
@@ -32,7 +32,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching practitioners:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     );
   }

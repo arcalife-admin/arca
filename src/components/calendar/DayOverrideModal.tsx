@@ -108,8 +108,8 @@ export default function DayOverrideModal({
   const handleSubmit = async () => {
     if (!scheduleId || !selectedDate) {
       toast({
-        title: 'Error',
-        description: 'Missing schedule or date information',
+        title: 'Eroare',
+        description: 'Lipsesc informațiile despre program sau dată',
         variant: 'destructive',
       })
       return
@@ -117,8 +117,8 @@ export default function DayOverrideModal({
 
     if (!selectedPractitioner && !selectedRoom) {
       toast({
-        title: 'Error',
-        description: 'Please select either a practitioner or room',
+        title: 'Eroare',
+        description: 'Selectați un practician sau un cabinet',
         variant: 'destructive',
       })
       return
@@ -126,8 +126,8 @@ export default function DayOverrideModal({
 
     if (!isUnavailable && (!startTime || !endTime)) {
       toast({
-        title: 'Error',
-        description: 'Please provide start and end times',
+        title: 'Eroare',
+        description: 'Introduceți ora de început și ora de sfârșit',
         variant: 'destructive',
       })
       return
@@ -135,8 +135,8 @@ export default function DayOverrideModal({
 
     if (!isUnavailable && startTime >= endTime) {
       toast({
-        title: 'Error',
-        description: 'End time must be after start time',
+        title: 'Eroare',
+        description: 'Ora de sfârșit trebuie să fie după ora de început',
         variant: 'destructive',
       })
       return
@@ -164,10 +164,10 @@ export default function DayOverrideModal({
 
       if (response.ok) {
         toast({
-          title: 'Success',
+          title: 'Succes',
           description: isUnavailable
-            ? 'Unavailability set successfully'
-            : 'Custom times set successfully',
+            ? 'Indisponibilitatea a fost setată cu succes'
+            : 'Orele personalizate au fost setate cu succes',
         })
         onOverrideCreated()
         onClose()
@@ -178,8 +178,8 @@ export default function DayOverrideModal({
     } catch (error) {
       console.error('Error saving override:', error)
       toast({
-        title: 'Error',
-        description: `Failed to save override: ${error.message}`,
+        title: 'Eroare',
+        description: `Salvarea excepției a eșuat: ${error.message}`,
         variant: 'destructive',
       })
     } finally {
@@ -188,8 +188,8 @@ export default function DayOverrideModal({
   }
 
   const formatDate = (date: Date | null) => {
-    if (!date) return 'No date selected'
-    return date.toLocaleDateString('en-US', {
+    if (!date) return 'Nicio dată selectată'
+    return date.toLocaleDateString('ro-RO', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -209,7 +209,7 @@ export default function DayOverrideModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Day Override Settings
+            Setări excepție pentru zi
           </DialogTitle>
         </DialogHeader>
 
@@ -223,7 +223,7 @@ export default function DayOverrideModal({
             {selectedRoomNumber && (
               <div className="flex items-center gap-2 text-blue-600 mt-1">
                 <Home className="h-4 w-4" />
-                <span className="text-sm">Room {selectedRoomNumber}</span>
+                <span className="text-sm">Cabinet {selectedRoomNumber}</span>
               </div>
             )}
             {getSelectedPractitionerName() && (
@@ -236,13 +236,13 @@ export default function DayOverrideModal({
 
           {/* Practitioner Selection (optional, prefilled if provided) */}
           <div>
-            <Label htmlFor="practitioner">Practitioner (Optional)</Label>
+            <Label htmlFor="practitioner">Practician (opțional)</Label>
             <Select value={selectedPractitioner} onValueChange={(val) => setSelectedPractitioner(val === 'none' ? '' : val)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select practitioner (optional)" />
+                <SelectValue placeholder="Selectați practicianul (opțional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None (apply to all rooms)</SelectItem>
+                <SelectItem value="none">Niciunul (se aplică tuturor cabinetelor)</SelectItem>
                 {practitioners.map((practitioner) => (
                   <SelectItem key={practitioner.id} value={practitioner.id}>
                     {practitioner.firstName} {practitioner.lastName}
@@ -255,16 +255,16 @@ export default function DayOverrideModal({
           {/* Room Selection (if not pre-selected) */}
           {!selectedRoomNumber && !selectedPractitioner && (
             <div>
-              <Label htmlFor="room">Room (Optional)</Label>
+              <Label htmlFor="room">Cabinet (opțional)</Label>
               <Select value={selectedRoom} onValueChange={(val) => setSelectedRoom(val === 'none' ? '' : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select room (optional)" />
+                  <SelectValue placeholder="Selectați cabinetul (opțional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">All rooms</SelectItem>
+                  <SelectItem value="none">Toate cabinetele</SelectItem>
                   {Array.from({ length: roomCount }, (_, i) => (
                     <SelectItem key={i + 1} value={(i + 1).toString()}>
-                      Room {i + 1}
+                      Cabinet {i + 1}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -276,7 +276,7 @@ export default function DayOverrideModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UserX className="h-4 w-4 text-red-500" />
-              <Label htmlFor="unavailable">Mark as Unavailable</Label>
+              <Label htmlFor="unavailable">Marchează ca indisponibil</Label>
             </div>
             <Switch
               id="unavailable"
@@ -290,12 +290,12 @@ export default function DayOverrideModal({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-600">
                 <Clock className="h-4 w-4" />
-                <span className="font-medium">Custom Working Hours</span>
+                <span className="font-medium">Program de lucru personalizat</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start-time">Start Time</Label>
+                  <Label htmlFor="start-time">Ora de început</Label>
                   <Input
                     id="start-time"
                     type="time"
@@ -304,7 +304,7 @@ export default function DayOverrideModal({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end-time">End Time</Label>
+                  <Label htmlFor="end-time">Ora de sfârșit</Label>
                   <Input
                     id="end-time"
                     type="time"
@@ -319,7 +319,7 @@ export default function DayOverrideModal({
           {/* Reason */}
           <div>
             <Label htmlFor="reason">
-              Reason {isUnavailable ? '(Required for unavailability)' : '(Optional)'}
+              Motiv {isUnavailable ? '(obligatoriu pentru indisponibilitate)' : '(opțional)'}
             </Label>
             <Textarea
               id="reason"
@@ -327,8 +327,8 @@ export default function DayOverrideModal({
               onChange={(e) => setReason(e.target.value)}
               placeholder={
                 isUnavailable
-                  ? "Why is this practitioner/room unavailable? (e.g., vacation, training, maintenance)"
-                  : "Why are custom times needed? (e.g., special appointment, half day)"
+                  ? "De ce este practicianul/cabinetul indisponibil? (ex.: concediu, instruire, mentenanță)"
+                  : "De ce sunt necesare ore personalizate? (ex.: programare specială, jumătate de zi)"
               }
               className="resize-none"
               rows={3}
@@ -338,7 +338,7 @@ export default function DayOverrideModal({
           {/* Buttons */}
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
-              Cancel
+              Anulare
             </Button>
             <Button
               onClick={handleSubmit}
@@ -346,11 +346,11 @@ export default function DayOverrideModal({
               className="flex-1"
             >
               {loading ? (
-                'Saving...'
+                'Se salvează...'
               ) : isUnavailable ? (
-                'Mark Unavailable'
+                'Marchează indisponibil'
               ) : (
-                'Set Custom Times'
+                'Setează ore personalizate'
               )}
             </Button>
           </div>
@@ -358,4 +358,4 @@ export default function DayOverrideModal({
       </DialogContent>
     </Dialog>
   )
-} 
+}

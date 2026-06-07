@@ -10,7 +10,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { id } = params;
@@ -76,7 +76,7 @@ export async function GET(
     });
 
     if (!board) {
-      return NextResponse.json({ error: 'Board not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Panoul nu a fost găsit' }, { status: 404 });
     }
 
     return NextResponse.json(board);
@@ -84,7 +84,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching board:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch board' },
+      { error: 'Încărcarea panoului a eșuat' },
       { status: 500 }
     );
   }

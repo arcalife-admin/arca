@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { motion } from 'framer-motion'
 
 const surgicalHistorySchema = z.object({
-  previousSurgeries: z.string().min(1, 'Previous surgical history is required'),
+  previousSurgeries: z.string().min(1, 'Istoricul chirurgical anterior este obligatoriu'),
   currentConcerns: z.object({
     aesthetic: z.enum(['Yes', 'No']),
     functional: z.enum(['Yes', 'No']),
@@ -17,10 +17,10 @@ const surgicalHistorySchema = z.object({
     dissatisfaction: z.enum(['Yes', 'No']),
   }),
   medicalHistory: z.object({
-    allergies: z.string().min(1, 'Allergy information is required'),
-    medications: z.string().min(1, 'Current medications are required'),
-    smoking: z.string().min(1, 'Smoking status is required'),
-    previousAnesthesia: z.string().min(1, 'Previous anesthesia history is required'),
+    allergies: z.string().min(1, 'Informațiile despre alergii sunt obligatorii'),
+    medications: z.string().min(1, 'Medicația curentă este obligatorie'),
+    smoking: z.string().min(1, 'Statusul privind fumatul este obligatoriu'),
+    previousAnesthesia: z.string().min(1, 'Istoricul anesteziei este obligatoriu'),
   }),
 })
 
@@ -37,7 +37,7 @@ interface SurgicalHistoryFormProps {
 export default function SurgicalHistoryForm({
   onSubmit,
   isSubmitting = false,
-  buttonText = 'Save'
+  buttonText = 'Salvează'
 }: SurgicalHistoryFormProps) {
   const {
     register,
@@ -51,18 +51,18 @@ export default function SurgicalHistoryForm({
     <div className="space-y-8">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Surgical History</h3>
+          <h3 className="text-lg font-medium text-gray-900">Istoric chirurgical</h3>
 
           {/* Previous Surgeries */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Previous Surgeries & Procedures
+              Intervenții chirurgicale și proceduri anterioare
             </label>
             <textarea
               {...register('previousSurgeries')}
               rows={3}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="Describe any previous surgical procedures, cosmetic treatments, or medical interventions"
+              placeholder="Descrieți orice intervenții chirurgicale, tratamente estetice sau intervenții medicale anterioare"
             />
             {errors.previousSurgeries && (
               <p className="mt-1 text-sm text-red-600">{errors.previousSurgeries.message}</p>
@@ -71,15 +71,15 @@ export default function SurgicalHistoryForm({
 
           {/* Current Concerns */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-4">Current Concerns</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-4">Preocupări actuale</h4>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {[
-                { id: 'aesthetic' as CurrentConcernField, label: 'Aesthetic concerns' },
-                { id: 'functional' as CurrentConcernField, label: 'Functional issues' },
-                { id: 'pain' as CurrentConcernField, label: 'Pain or discomfort' },
-                { id: 'scarring' as CurrentConcernField, label: 'Scarring concerns' },
-                { id: 'asymmetry' as CurrentConcernField, label: 'Asymmetry' },
-                { id: 'dissatisfaction' as CurrentConcernField, label: 'Dissatisfaction with appearance' },
+                { id: 'aesthetic' as CurrentConcernField, label: 'Preocupări estetice' },
+                { id: 'functional' as CurrentConcernField, label: 'Probleme funcționale' },
+                { id: 'pain' as CurrentConcernField, label: 'Durere sau disconfort' },
+                { id: 'scarring' as CurrentConcernField, label: 'Preocupări legate de cicatrici' },
+                { id: 'asymmetry' as CurrentConcernField, label: 'Asimetrie' },
+                { id: 'dissatisfaction' as CurrentConcernField, label: 'Nemulțumire față de aspect' },
               ].map(({ id, label }) => (
                 <div key={id}>
                   <label className="block text-sm font-medium text-gray-700">
@@ -95,7 +95,7 @@ export default function SurgicalHistoryForm({
                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <label htmlFor={`${id}Yes`} className="ml-3 block text-sm text-gray-700">
-                        Yes
+                        Da
                       </label>
                     </div>
                     <div className="flex items-center">
@@ -107,7 +107,7 @@ export default function SurgicalHistoryForm({
                         className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <label htmlFor={`${id}No`} className="ml-3 block text-sm text-gray-700">
-                        No
+                        Nu
                       </label>
                     </div>
                   </div>
@@ -118,17 +118,17 @@ export default function SurgicalHistoryForm({
 
           {/* Medical History */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-4">Medical History</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-4">Istoric medical</h4>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Allergies
+                  Alergii
                 </label>
                 <input
                   type="text"
                   {...register('medicalHistory.allergies')}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="e.g., Latex, Penicillin, None"
+                  placeholder="ex. Latex, Penicillin, Niciuna"
                 />
                 {errors.medicalHistory?.allergies && (
                   <p className="mt-1 text-sm text-red-600">{errors.medicalHistory.allergies.message}</p>
@@ -137,13 +137,13 @@ export default function SurgicalHistoryForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Current Medications
+                  Medicație curentă
                 </label>
                 <input
                   type="text"
                   {...register('medicalHistory.medications')}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="e.g., Blood thinners, None"
+                  placeholder="ex. Anticoagulante, Niciuna"
                 />
                 {errors.medicalHistory?.medications && (
                   <p className="mt-1 text-sm text-red-600">{errors.medicalHistory.medications.message}</p>
@@ -152,13 +152,13 @@ export default function SurgicalHistoryForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Smoking Status
+                  Status fumat
                 </label>
                 <input
                   type="text"
                   {...register('medicalHistory.smoking')}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="e.g., Non-smoker, Former smoker, Current smoker"
+                  placeholder="ex. Nefumător, Fost fumător, Fumător activ"
                 />
                 {errors.medicalHistory?.smoking && (
                   <p className="mt-1 text-sm text-red-600">{errors.medicalHistory.smoking.message}</p>
@@ -167,13 +167,13 @@ export default function SurgicalHistoryForm({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Previous Anesthesia Experience
+                  Experiență anterioară cu anestezia
                 </label>
                 <input
                   type="text"
                   {...register('medicalHistory.previousAnesthesia')}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="e.g., No complications, Nausea, etc."
+                  placeholder="ex. Fără complicații, Greață etc."
                 />
                 {errors.medicalHistory?.previousAnesthesia && (
                   <p className="mt-1 text-sm text-red-600">{errors.medicalHistory.previousAnesthesia.message}</p>
@@ -189,11 +189,10 @@ export default function SurgicalHistoryForm({
             disabled={isSubmitting}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {isSubmitting ? 'Saving...' : buttonText}
+            {isSubmitting ? 'Se salvează...' : buttonText}
           </button>
         </div>
       </form>
     </div>
   )
 }
-

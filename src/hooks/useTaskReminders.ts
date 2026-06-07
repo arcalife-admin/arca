@@ -35,8 +35,8 @@ export function useTaskReminders(isEmbedded: boolean = false) {
 
               addNotification({
                 type: 'task_reminder',
-                title: 'Task Reminder',
-                message: reminder.message || `Reminder for task: ${task.title}`,
+                title: 'Memento sarcină',
+                message: reminder.message || `Memento pentru sarcina: ${task.title}`,
                 clickAction: {
                   type: 'navigate',
                   path: '/dashboard/tasks',

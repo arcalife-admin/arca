@@ -7,6 +7,7 @@ import { WaitingListEntry } from '@/types/waiting-list';
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, ArrowRight, Edit } from 'lucide-react';
 import { format } from 'date-fns';
+import { dateFnsLocale } from '@/lib/date-locale';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { treatmentTypes } from '@/data/treatmentTypes';
+import { useAppointmentProcedureTypes } from '@/hooks/useAppointmentProcedureTypes';
+import { resolveAppointmentType } from '@/lib/appointment-procedure-types';
 import { useRouter } from 'next/navigation';
 
 interface PatientWaitingListProps {
@@ -31,6 +33,23 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'bg-gray-100 text-gray-800'
 };
 
+const statusLabels: Record<string, string> = {
+  ACTIVE: 'Activ',
+  COMPLETED: 'Finalizat',
+  CANCELLED: 'Anulat',
+};
+
+const priorityLabels: Record<string, string> = {
+  low: 'Scăzută',
+  medium: 'Medie',
+  high: 'Ridicată',
+  urgent: 'Urgentă',
+  LOW: 'Scăzută',
+  MEDIUM: 'Medie',
+  HIGH: 'Ridicată',
+  URGENT: 'Urgentă',
+};
+
 export default function PatientWaitingList({
   patientId,
   onCreateEntry,
@@ -39,6 +58,7 @@ export default function PatientWaitingList({
 }: PatientWaitingListProps) {
   const { toast } = useToast();
   const router = useRouter();
+  const { procedureTypes } = useAppointmentProcedureTypes();
   const [entries, setEntries] = useState<WaitingListEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +70,13 @@ export default function PatientWaitingList({
     try {
       setLoading(true);
       const response = await fetch('/api/waiting-list');
-      if (!response.ok) throw new Error('Failed to fetch waiting list');
+      if (!response.ok) throw new Error('Încărcarea listei de așteptare a eșuat');
       const data: WaitingListEntry[] = await response.json();
       const filtered = data.filter((e) => e.patientId === patientId);
       setEntries(filtered.slice(0, limit));
     } catch (err) {
       console.error(err);
-      setError('Failed to load waiting list');
+      setError('Încărcarea listei de așteptare a eșuat');
     } finally {
       setLoading(false);
     }
@@ -92,19 +112,19 @@ export default function PatientWaitingList({
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to move to pending');
+      if (!response.ok) throw new Error('Mutarea la programări în așteptare a eșuat');
 
       toast({
-        title: 'Success',
-        description: 'Appointment moved to pending list',
+        title: 'Succes',
+        description: 'Programarea a fost mutată la programări în așteptare',
       });
 
       fetchEntries(); // Refresh
       setShowDetailModal(false);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to move appointment to pending',
+        title: 'Eroare',
+        description: 'Mutarea programării la programări în așteptare a eșuat',
         variant: 'destructive',
       });
     } finally {
@@ -113,7 +133,7 @@ export default function PatientWaitingList({
   };
 
   const getAppointmentColor = (typeName: string) => {
-    const type = treatmentTypes.find(t => t.name === typeName);
+    const type = resolveAppointmentType(typeName, procedureTypes);
     return type?.color || '#888888';
   };
 
@@ -121,7 +141,7 @@ export default function PatientWaitingList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Waiting List</CardTitle>
+          <CardTitle className="text-lg">Listă de așteptare</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -138,7 +158,7 @@ export default function PatientWaitingList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Waiting List</CardTitle>
+          <CardTitle className="text-lg">Listă de așteptare</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-red-600">{error}</p>
@@ -152,11 +172,11 @@ export default function PatientWaitingList({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Waiting List ({entries.length})</CardTitle>
+            <CardTitle className="text-lg">Listă de așteptare ({entries.length})</CardTitle>
             {showCreateButton && onCreateEntry && (
               <Button size="sm" onClick={onCreateEntry}>
                 <Plus className="w-4 h-4 mr-1" />
-                New Entry
+                Intrare nouă
               </Button>
             )}
           </div>
@@ -164,13 +184,7 @@ export default function PatientWaitingList({
         <CardContent>
           {entries.length === 0 ? (
             <div className="text-center py-6">
-              <p className="text-muted-foreground mb-4">No waiting list entries for this patient.</p>
-              {showCreateButton && onCreateEntry && (
-                <Button variant="outline" onClick={onCreateEntry}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Entry
-                </Button>
-              )}
+              <p className="text-muted-foreground">Nu există intrări în lista de așteptare pentru acest pacient.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -190,19 +204,19 @@ export default function PatientWaitingList({
                           />
                         )}
                         <span className="font-medium text-sm truncate">
-                          {entry.waitingAppointment ? entry.waitingAppointment.type : 'Waiting list'}
+                          {entry.waitingAppointment ? entry.waitingAppointment.type : 'Listă de așteptare'}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Badge className={statusColors[entry.status]} variant="secondary">
-                          {entry.status}
+                          {statusLabels[entry.status] || entry.status}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {entry.practitioner.firstName} {entry.practitioner.lastName}
                         </span>
                         {entry.waitingAppointment?.duration && (
                           <span className="text-xs text-muted-foreground">
-                            {entry.waitingAppointment.duration}min
+                            {entry.waitingAppointment.duration} min
                           </span>
                         )}
                       </div>
@@ -214,7 +228,7 @@ export default function PatientWaitingList({
               {entries.length >= limit && (
                 <div className="text-center pt-2">
                   <Button variant="ghost" size="sm" onClick={onCreateEntry}>
-                    View All Entries
+                    Vezi toate intrările
                   </Button>
                 </div>
               )}
@@ -230,25 +244,25 @@ export default function PatientWaitingList({
             <DialogHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <DialogTitle>Waiting List Entry</DialogTitle>
+                  <DialogTitle>Intrare listă de așteptare</DialogTitle>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleEditEntry}>
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit
+                  Editează
                 </Button>
               </div>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Status:</span>
+                <span className="text-sm font-medium">Stare:</span>
                 <Badge className={statusColors[selectedEntry.status]} variant="secondary">
-                  {selectedEntry.status}
+                  {statusLabels[selectedEntry.status] || selectedEntry.status}
                 </Badge>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Practitioner:</span>
+                <span className="text-sm font-medium">Practician:</span>
                 <span className="text-sm">
                   {selectedEntry.practitioner.firstName} {selectedEntry.practitioner.lastName}
                 </span>
@@ -257,7 +271,7 @@ export default function PatientWaitingList({
               {selectedEntry.waitingAppointment && (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Appointment Type:</span>
+                    <span className="text-sm font-medium">Tip programare:</span>
                     <div className="flex items-center space-x-2">
                       <div
                         className="w-3 h-3 rounded-full"
@@ -268,27 +282,27 @@ export default function PatientWaitingList({
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Duration:</span>
-                    <span className="text-sm">{selectedEntry.waitingAppointment.duration} minutes</span>
+                    <span className="text-sm font-medium">Durată:</span>
+                    <span className="text-sm">{selectedEntry.waitingAppointment.duration} minute</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Priority:</span>
-                    <Badge variant="outline">{selectedEntry.waitingAppointment.priority}</Badge>
+                    <span className="text-sm font-medium">Prioritate:</span>
+                    <Badge variant="outline">{priorityLabels[selectedEntry.waitingAppointment.priority] || selectedEntry.waitingAppointment.priority}</Badge>
                   </div>
 
                   {selectedEntry.waitingAppointment.startTime && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Preferred Time:</span>
+                      <span className="text-sm font-medium">Oră preferată:</span>
                       <span className="text-sm">
-                        {format(new Date(selectedEntry.waitingAppointment.startTime), 'MMM dd, yyyy HH:mm')}
+                        {format(new Date(selectedEntry.waitingAppointment.startTime), 'd MMM yyyy HH:mm', { locale: dateFnsLocale })}
                       </span>
                     </div>
                   )}
 
                   {selectedEntry.waitingAppointment.notes && (
                     <div>
-                      <span className="text-sm font-medium">Appointment Notes:</span>
+                      <span className="text-sm font-medium">Notițe programare:</span>
                       <p className="text-sm text-muted-foreground mt-1">
                         {selectedEntry.waitingAppointment.notes}
                       </p>
@@ -299,22 +313,22 @@ export default function PatientWaitingList({
 
               {selectedEntry.notes && (
                 <div>
-                  <span className="text-sm font-medium">Entry Notes:</span>
+                  <span className="text-sm font-medium">Notițe intrare:</span>
                   <p className="text-sm text-muted-foreground mt-1">{selectedEntry.notes}</p>
                 </div>
               )}
 
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Created:</span>
+                <span className="text-sm font-medium">Creat:</span>
                 <span className="text-sm text-muted-foreground">
-                  {format(new Date(selectedEntry.createdAt), 'MMM dd, yyyy')}
+                  {format(new Date(selectedEntry.createdAt), 'd MMM yyyy', { locale: dateFnsLocale })}
                 </span>
               </div>
             </div>
 
             <DialogFooter className="flex justify-between">
               <Button variant="outline" onClick={() => setShowDetailModal(false)}>
-                Close
+                Închide
               </Button>
               {selectedEntry.waitingAppointment && selectedEntry.status === 'ACTIVE' && (
                 <Button
@@ -323,7 +337,7 @@ export default function PatientWaitingList({
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <ArrowRight className="w-4 h-4 mr-2" />
-                  {movingToPending ? 'Moving...' : 'Move to Pending'}
+                  {movingToPending ? 'Se mută...' : 'Mută la programări în așteptare'}
                 </Button>
               )}
             </DialogFooter>

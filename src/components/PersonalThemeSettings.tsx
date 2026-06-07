@@ -50,11 +50,11 @@ function ColorInput({
 function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType> }) {
   return (
     <div className="space-y-6 sticky top-4">
-      <h4 className="font-semibold text-lg text-gray-800">Live Preview</h4>
+      <h4 className="font-semibold text-lg text-gray-800">Previzualizare live</h4>
 
       {/* Buttons Preview */}
       <div className="border rounded-lg p-4 space-y-3 bg-white shadow-sm">
-        <h5 className="font-medium text-sm text-gray-600">Buttons</h5>
+        <h5 className="font-medium text-sm text-gray-600">Butoane</h5>
         <div className="space-y-3">
           <button
             className="w-full px-4 py-2 rounded text-white font-medium"
@@ -64,7 +64,7 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
               borderRadius: `${formData.borderRadius || '6'}px`,
             }}
           >
-            Primary Button
+            Buton principal
           </button>
           <button
             className="w-full px-4 py-2 rounded border font-medium"
@@ -75,14 +75,14 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
               borderRadius: `${formData.borderRadius || '6'}px`,
             }}
           >
-            Secondary Button
+            Buton secundar
           </button>
         </div>
       </div>
 
       {/* Typography Preview */}
       <div className="border rounded-lg p-4 space-y-3 bg-white shadow-sm">
-        <h5 className="font-medium text-sm text-gray-600">Typography</h5>
+        <h5 className="font-medium text-sm text-gray-600">Tipografie</h5>
         <div
           className="p-4 rounded border space-y-3"
           style={{
@@ -101,7 +101,7 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
               lineHeight: formData.lineHeight || '1.5',
             }}
           >
-            Large Heading
+            Titlu mare
           </h2>
           <h4
             style={{
@@ -113,7 +113,7 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
               lineHeight: formData.lineHeight || '1.5',
             }}
           >
-            Subheading Style
+            Subtitlu
           </h4>
           <p
             style={{
@@ -124,7 +124,7 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
               margin: 0,
             }}
           >
-            This is body text showing how paragraphs look with your selected font family.
+            Acesta este textul corpului, care arată cum arată paragrafele cu familia de fonturi selectată.
           </p>
           <p
             style={{
@@ -135,38 +135,38 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
               margin: 0,
             }}
           >
-            Small muted text for captions.
+            Text estompat mic pentru subtitluri.
           </p>
         </div>
       </div>
 
       {/* Status Colors Preview */}
       <div className="border rounded-lg p-4 space-y-3 bg-white shadow-sm">
-        <h5 className="font-medium text-sm text-gray-600">Status Colors</h5>
+        <h5 className="font-medium text-sm text-gray-600">Culori de stare</h5>
         <div className="space-y-2">
           <Badge
             className="w-full justify-center"
             style={{ backgroundColor: formData.successColor || '#10b981', color: '#ffffff' }}
           >
-            Success
+            Succes
           </Badge>
           <Badge
             className="w-full justify-center"
             style={{ backgroundColor: formData.warningColor || '#f59e0b', color: '#ffffff' }}
           >
-            Warning
+            Avertisment
           </Badge>
           <Badge
             className="w-full justify-center"
             style={{ backgroundColor: formData.errorColor || '#ef4444', color: '#ffffff' }}
           >
-            Error
+            Eroare
           </Badge>
           <Badge
             className="w-full justify-center"
             style={{ backgroundColor: formData.infoColor || '#3b82f6', color: '#ffffff' }}
           >
-            Info
+            Informare
           </Badge>
         </div>
       </div>
@@ -237,22 +237,22 @@ export default function PersonalThemeSettings() {
         setHasChanges(false)
 
         toast({
-          title: 'Success',
-          description: 'Your personal theme settings have been saved successfully',
+          title: 'Succes',
+          description: 'Setările temei personale au fost salvate cu succes',
         })
       } else {
         const error = await response.json()
         toast({
-          title: 'Error',
-          description: error.message || 'Failed to save theme settings',
+          title: 'Eroare',
+          description: error.message || 'Nu s-au putut salva setările temei',
           variant: 'destructive',
         })
       }
     } catch (error) {
       console.error('Failed to save theme:', error)
       toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
+        title: 'Eroare',
+        description: 'A apărut o eroare neașteptată',
         variant: 'destructive',
       })
     } finally {
@@ -278,13 +278,13 @@ export default function PersonalThemeSettings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Personal Theme Settings</h2>
-          <p className="text-gray-600">Customize your personal interface appearance</p>
+          <h2 className="text-2xl font-bold text-gray-900">Setări temă personală</h2>
+          <p className="text-gray-600">Personalizați aspectul interfeței dvs.</p>
         </div>
         <div className="flex space-x-3">
           {hasChanges && (
             <Button variant="outline" onClick={handleReset}>
-              Reset
+              Resetează
             </Button>
           )}
           <Button
@@ -292,7 +292,7 @@ export default function PersonalThemeSettings() {
             disabled={!hasChanges || isSaving}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? 'Se salvează...' : 'Salvează modificările'}
           </Button>
         </div>
       </div>
@@ -303,117 +303,117 @@ export default function PersonalThemeSettings() {
         <div className="flex-[2]">
           <Tabs defaultValue="colors" className="w-full">
             <TabsList className="grid grid-cols-3 w-full max-w-md">
-              <TabsTrigger value="colors">Colors</TabsTrigger>
-              <TabsTrigger value="typography">Typography</TabsTrigger>
-              <TabsTrigger value="layout">Layout</TabsTrigger>
+              <TabsTrigger value="colors">Culori</TabsTrigger>
+              <TabsTrigger value="typography">Tipografie</TabsTrigger>
+              <TabsTrigger value="layout">Aspect</TabsTrigger>
             </TabsList>
 
             <TabsContent value="colors" className="mt-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Color Settings</h3>
+                <h3 className="text-lg font-semibold mb-4">Setări culori</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   {/* Primary Colors */}
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">Primary Colors</h4>
+                    <h4 className="font-medium text-gray-800">Culori principale</h4>
                     <ColorInput
-                      label="Primary Color"
+                      label="Culoare principală"
                       value={formData.primaryColor || '#3b82f6'}
                       onChange={(value) => handleInputChange('primaryColor', value)}
-                      description="Main brand color"
+                      description="Culoarea principală a brandului"
                     />
                     <ColorInput
-                      label="Primary Foreground"
+                      label="Text pe principal"
                       value={formData.primaryForeground || '#ffffff'}
                       onChange={(value) => handleInputChange('primaryForeground', value)}
-                      description="Text on primary"
+                      description="Text pe culoarea principală"
                     />
                     <ColorInput
-                      label="Secondary Color"
+                      label="Culoare secundară"
                       value={formData.secondaryColor || '#f1f5f9'}
                       onChange={(value) => handleInputChange('secondaryColor', value)}
-                      description="Secondary buttons"
+                      description="Butoane secundare"
                     />
                     <ColorInput
-                      label="Secondary Foreground"
+                      label="Text pe secundar"
                       value={formData.secondaryForeground || '#0f172a'}
                       onChange={(value) => handleInputChange('secondaryForeground', value)}
-                      description="Text on secondary"
+                      description="Text pe culoarea secundară"
                     />
                     <ColorInput
-                      label="Accent Color"
+                      label="Culoare de accent"
                       value={formData.accentColor || '#10b981'}
                       onChange={(value) => handleInputChange('accentColor', value)}
-                      description="Highlights"
+                      description="Evidențieri"
                     />
                   </div>
 
                   {/* Background Colors */}
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">Background Colors</h4>
+                    <h4 className="font-medium text-gray-800">Culori de fundal</h4>
                     <ColorInput
-                      label="Background"
+                      label="Fundal"
                       value={formData.backgroundColor || '#ffffff'}
                       onChange={(value) => handleInputChange('backgroundColor', value)}
-                      description="Main background"
+                      description="Fundal principal"
                     />
                     <ColorInput
-                      label="Surface Color"
+                      label="Culoare suprafață"
                       value={formData.surfaceColor || '#f8fafc'}
                       onChange={(value) => handleInputChange('surfaceColor', value)}
-                      description="Cards and panels"
+                      description="Carduri și panouri"
                     />
                     <ColorInput
-                      label="Border Color"
+                      label="Culoare bordură"
                       value={formData.borderColor || '#e2e8f0'}
                       onChange={(value) => handleInputChange('borderColor', value)}
-                      description="Borders"
+                      description="Borduri"
                     />
                   </div>
 
                   {/* Text Colors */}
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">Text Colors</h4>
+                    <h4 className="font-medium text-gray-800">Culori text</h4>
                     <ColorInput
-                      label="Primary Text"
+                      label="Text principal"
                       value={formData.textPrimary || '#0f172a'}
                       onChange={(value) => handleInputChange('textPrimary', value)}
-                      description="Main text"
+                      description="Text principal"
                     />
                     <ColorInput
-                      label="Secondary Text"
+                      label="Text secundar"
                       value={formData.textSecondary || '#64748b'}
                       onChange={(value) => handleInputChange('textSecondary', value)}
-                      description="Secondary info"
+                      description="Informații secundare"
                     />
                     <ColorInput
-                      label="Muted Text"
+                      label="Text estompat"
                       value={formData.textMuted || '#94a3b8'}
                       onChange={(value) => handleInputChange('textMuted', value)}
-                      description="Disabled text"
+                      description="Text dezactivat"
                     />
                   </div>
 
                   {/* Status Colors */}
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">Status Colors</h4>
+                    <h4 className="font-medium text-gray-800">Culori de stare</h4>
                     <ColorInput
-                      label="Success"
+                      label="Succes"
                       value={formData.successColor || '#10b981'}
                       onChange={(value) => handleInputChange('successColor', value)}
                     />
                     <ColorInput
-                      label="Warning"
+                      label="Avertisment"
                       value={formData.warningColor || '#f59e0b'}
                       onChange={(value) => handleInputChange('warningColor', value)}
                     />
                     <ColorInput
-                      label="Error"
+                      label="Eroare"
                       value={formData.errorColor || '#ef4444'}
                       onChange={(value) => handleInputChange('errorColor', value)}
                     />
                     <ColorInput
-                      label="Info"
+                      label="Informare"
                       value={formData.infoColor || '#3b82f6'}
                       onChange={(value) => handleInputChange('infoColor', value)}
                     />
@@ -425,19 +425,19 @@ export default function PersonalThemeSettings() {
 
             <TabsContent value="typography" className="mt-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Typography Settings</h3>
+                <h3 className="text-lg font-semibold mb-4">Setări tipografie</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   <div className="space-y-4">
                     <div>
-                      <Label>Font Family</Label>
+                      <Label>Familie font</Label>
                       <select
                         value={formData.fontFamily || 'Inter'}
                         onChange={(e) => handleInputChange('fontFamily', e.target.value)}
                         className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
                       >
-                        <optgroup label="Sans-Serif">
-                          <option value="Inter">Inter (Default)</option>
+                        <optgroup label="Fără serif">
+                          <option value="Inter">Inter (implicit)</option>
                           <option value="Arial">Arial</option>
                           <option value="Helvetica">Helvetica</option>
                           <option value="Roboto">Roboto</option>
@@ -446,7 +446,7 @@ export default function PersonalThemeSettings() {
                           <option value="Montserrat">Montserrat</option>
                           <option value="Poppins">Poppins</option>
                         </optgroup>
-                        <optgroup label="Serif">
+                        <optgroup label="Cu serif">
                           <option value="Georgia">Georgia</option>
                           <option value="Times New Roman">Times New Roman</option>
                           <option value="Merriweather">Merriweather</option>
@@ -455,7 +455,7 @@ export default function PersonalThemeSettings() {
                     </div>
 
                     <div>
-                      <Label>Base Font Size (px)</Label>
+                      <Label>Dimensiune font de bază (px)</Label>
                       <Input
                         type="number"
                         value={formData.fontSize || '14'}
@@ -469,7 +469,7 @@ export default function PersonalThemeSettings() {
 
                   <div className="space-y-4">
                     <div>
-                      <Label>Line Height</Label>
+                      <Label>Înălțime rând</Label>
                       <Input
                         type="number"
                         step={0.1}
@@ -482,7 +482,7 @@ export default function PersonalThemeSettings() {
                     </div>
 
                     <div>
-                      <Label>Border Radius (px)</Label>
+                      <Label>Rază colțuri (px)</Label>
                       <Input
                         type="number"
                         value={formData.borderRadius || '6'}
@@ -500,55 +500,55 @@ export default function PersonalThemeSettings() {
 
             <TabsContent value="layout" className="mt-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Layout Settings</h3>
+                <h3 className="text-lg font-semibold mb-4">Setări aspect</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                   <div className="space-y-4">
                     <div>
-                      <Label>Button Size</Label>
+                      <Label>Dimensiune buton</Label>
                       <select
                         value={formData.buttonSize || 'md'}
                         onChange={(e) => handleInputChange('buttonSize', e.target.value)}
                         className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
                       >
-                        <option value="sm">Small</option>
-                        <option value="md">Medium</option>
-                        <option value="lg">Large</option>
+                        <option value="sm">Mic</option>
+                        <option value="md">Mediu</option>
+                        <option value="lg">Mare</option>
                       </select>
                     </div>
 
                     <div>
-                      <Label>Input Size</Label>
+                      <Label>Dimensiune câmp</Label>
                       <select
                         value={formData.inputSize || 'md'}
                         onChange={(e) => handleInputChange('inputSize', e.target.value)}
                         className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
                       >
-                        <option value="sm">Small</option>
-                        <option value="md">Medium</option>
-                        <option value="lg">Large</option>
+                        <option value="sm">Mic</option>
+                        <option value="md">Mediu</option>
+                        <option value="lg">Mare</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <Label>Shadow Level</Label>
+                      <Label>Nivel umbră</Label>
                       <select
                         value={formData.shadowLevel || 'md'}
                         onChange={(e) => handleInputChange('shadowLevel', e.target.value)}
                         className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
                       >
-                        <option value="none">None</option>
-                        <option value="sm">Small</option>
-                        <option value="md">Medium</option>
-                        <option value="lg">Large</option>
-                        <option value="xl">Extra Large</option>
+                        <option value="none">Fără</option>
+                        <option value="sm">Mic</option>
+                        <option value="md">Mediu</option>
+                        <option value="lg">Mare</option>
+                        <option value="xl">Foarte mare</option>
                       </select>
                     </div>
 
                     <div>
-                      <Label>Icon Size (px)</Label>
+                      <Label>Dimensiune pictogramă (px)</Label>
                       <Input
                         type="number"
                         value={formData.iconSize || '20'}

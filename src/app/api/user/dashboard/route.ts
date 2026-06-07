@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 401 })
       }
       if (error.message.includes('Database operations cannot be performed in the browser')) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+        return NextResponse.json({ error: 'Eroare de configurare a serverului' }, { status: 500 })
       }
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Validate quickLinks format if provided
     if (quickLinks && !Array.isArray(quickLinks)) {
       console.log('❌ POST /api/user/dashboard - Invalid quickLinks format')
-      return NextResponse.json({ error: 'quickLinks must be an array' }, { status: 400 })
+      return NextResponse.json({ error: 'quickLinks trebuie să fie un array' }, { status: 400 })
     }
 
     // Validate each quick link has required fields
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         if (!link.id || !link.title || !link.url) {
           console.log('❌ POST /api/user/dashboard - Invalid link format:', link)
           return NextResponse.json({
-            error: 'Each quick link must have id, title, and url fields'
+            error: 'Fiecare link rapid trebuie să aibă câmpurile id, title și url'
           }, { status: 400 })
         }
       }
@@ -126,10 +126,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 401 })
       }
       if (error.message.includes('Database operations cannot be performed in the browser')) {
-        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+        return NextResponse.json({ error: 'Eroare de configurare a serverului' }, { status: 500 })
       }
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

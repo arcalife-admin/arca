@@ -58,14 +58,14 @@ function NewAppointmentForm({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="patient">Patient</Label>
+        <Label htmlFor="patient">Pacient</Label>
         <div className="relative">
           {props.editingPatient ? (
             <>
               <input
                 type="text"
                 id="patient"
-                placeholder="Search patients..."
+                placeholder="Căutați pacienți..."
                 value={props.searchQuery}
                 onChange={(e) => {
                   props.setSearchQuery(e.target.value);
@@ -112,14 +112,14 @@ function NewAppointmentForm({
                 props.setSearchQuery('');
               }}
             >
-              {props.searchQuery || 'Select a patient...'}
+              {props.searchQuery || 'Selectați un pacient...'}
             </div>
           )}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="treatment-type">Treatment Type</Label>
+        <Label htmlFor="treatment-type">Tip tratament</Label>
         <div className="relative">
           <div
             className="w-full p-2 border rounded bg-white cursor-pointer flex items-center justify-between"
@@ -135,7 +135,7 @@ function NewAppointmentForm({
                   {props.selectedType.name}
                 </>
               ) : (
-                'Select treatment type'
+                'Selectați tipul de tratament'
               )}
             </span>
             <span className="text-gray-500">▼</span>
@@ -165,25 +165,25 @@ function NewAppointmentForm({
 
       {!isPendingMode && (
         <div className="space-y-2">
-          <Label htmlFor="practitioner">Practitioner</Label>
+          <Label htmlFor="practitioner">Practician</Label>
           <select
             value={props.selectedPractitioner}
             onChange={(e) => props.setSelectedPractitioner(e.target.value)}
             className="w-full p-2 border rounded"
           >
-            <option value="">Select practitioner</option>
+            <option value="">Selectați practicianul</option>
             {props.practitioners && props.practitioners.length > 0 ? props.practitioners.map((practitioner) => (
               <option key={practitioner.id} value={practitioner.id}>
                 {practitioner.firstName || ''} {practitioner.lastName || ''}
               </option>
-            )) : <option value="" disabled>No practitioners available</option>}
+            )) : <option value="" disabled>Niciun practician disponibil</option>}
           </select>
         </div>
       )}
 
       {!isPendingMode && (
         <div className="space-y-2">
-          <Label htmlFor="start-time">Start Time</Label>
+          <Label htmlFor="start-time">Ora de început</Label>
           <Input
             id="start-time"
             type="datetime-local"
@@ -194,7 +194,7 @@ function NewAppointmentForm({
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="duration">Duration (minutes)</Label>
+        <Label htmlFor="duration">Durată (minute)</Label>
         <Input
           id="duration"
           type="number"
@@ -206,10 +206,10 @@ function NewAppointmentForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">Notițe</Label>
         <textarea
           id="notes"
-          placeholder="Add any additional notes..."
+          placeholder="Adăugați notițe suplimentare..."
           value={props.notes}
           onChange={e => props.setNotes(e.target.value)}
           className="w-full p-2 border rounded"
@@ -222,14 +222,14 @@ function NewAppointmentForm({
           onClick={props.onCancel}
           className="px-4 py-2 border rounded"
         >
-          Cancel
+          Anulare
         </button>
         <button
           type="submit"
           disabled={!props.selectedType || !props.selectedPatient || (!isPendingMode && !props.selectedPractitioner)}
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
         >
-          Create Appointment
+          Creare programare
         </button>
       </div>
     </div>
@@ -256,7 +256,7 @@ const NewAppointmentWizard = () => {
   useEffect(() => {
     if (status === 'unauthenticated') {
       console.log('User not authenticated, redirecting to login');
-      toast.error('Please log in to access this page');
+      toast.error('Autentificați-vă pentru a accesa această pagină');
       router.push('/login');
     }
   }, [status, router]);
@@ -267,7 +267,7 @@ const NewAppointmentWizard = () => {
     queryFn: async () => {
       const response = await fetch('/api/patients')
       if (!response.ok) {
-        throw new Error('Failed to fetch patients')
+        throw new Error('Încărcarea pacienților a eșuat')
       }
       const data = await response.json()
       return data.map((patient: any) => ({
@@ -311,7 +311,7 @@ const NewAppointmentWizard = () => {
         return data;
       } catch (error) {
         console.error('Error in practitioners fetch:', error);
-        toast.error('Failed to load practitioners. Please make sure you are logged in.');
+        toast.error('Nu s-au putut încărca practicienii. Asigurați-vă că sunteți autentificat.');
         return [];
       }
     },
@@ -359,7 +359,7 @@ const NewAppointmentWizard = () => {
       return response.json()
     },
     onSuccess: () => {
-      toast.success('Appointment created successfully')
+      toast.success('Programare creată cu succes')
       const redirectPath = isPendingAppointment
         ? '/dashboard/appointments?tab=pending'
         : '/dashboard/appointments'
@@ -367,7 +367,7 @@ const NewAppointmentWizard = () => {
     },
     onError: (error: Error) => {
       setError(error.message)
-      toast.error('Failed to create appointment')
+      toast.error('Nu s-a putut crea programarea')
     },
   })
 
@@ -433,9 +433,9 @@ const NewAppointmentWizard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">New Appointment</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Programare nouă</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Schedule a new appointment for a patient
+          Programați o consultație nouă pentru un pacient
         </p>
       </div>
 
@@ -444,7 +444,7 @@ const NewAppointmentWizard = () => {
           <div className="flex">
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">
-                Error
+                Eroare
               </h3>
               <div className="mt-2 text-sm text-red-700">
                 {error}
@@ -462,7 +462,7 @@ const NewAppointmentWizard = () => {
             onCheckedChange={(checked) => setIsPendingAppointment(checked === true)}
           />
           <Label htmlFor="pendingAppointment">
-            Add to pending appointments (no practitioner assigned yet)
+            Adăugare la programări în așteptare (fără practician alocat)
           </Label>
         </div>
 

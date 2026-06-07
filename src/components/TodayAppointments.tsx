@@ -25,17 +25,18 @@ import { EnhancedAppointmentForm } from '@/components/appointments/EnhancedAppoi
 import { AppointmentStatusMetadata, getStatusDisplay } from '@/types/appointment-status';
 
 const daysOfWeek = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
+  'Luni',
+  'Marți',
+  'Miercuri',
+  'Joi',
+  'Vineri',
+  'Sâmbătă',
+  'Duminică',
 ];
 
-import { enUS } from 'date-fns/locale';
-const locales = { 'en-US': enUS };
+import { ro } from 'date-fns/locale';
+import { printHtmlDocument } from '@/lib/print-html';
+const locales = { ro };
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -211,7 +212,7 @@ export default function TodayAppointments() {
       // Always use the logged-in user as the sole practitioner for the day view
       if (!session?.user?.id) return;
 
-      setPractitioners([{ id: session.user.id, name: `${session.user.firstName} ${session.user.lastName}` || 'You' }]);
+      setPractitioners([{ id: session.user.id, name: `${session.user.firstName} ${session.user.lastName}` || 'Dvs.' }]);
       setAvailablePractitionerIds([session.user.id]);
 
       // Initialize practitioner schedule if empty
@@ -224,7 +225,7 @@ export default function TodayAppointments() {
         return prev;
       });
     } catch (error) {
-      toast.error('Failed to initialize practitioner information');
+      toast.error('Nu s-au putut inițializa informațiile practicianului');
     }
   };
 
@@ -234,7 +235,7 @@ export default function TodayAppointments() {
       const data = await response.json();
       setPatients(data);
     } catch (error) {
-      toast.error('Failed to fetch patients');
+      toast.error('Nu s-au putut încărca pacienții');
     }
   };
 
@@ -244,7 +245,7 @@ export default function TodayAppointments() {
       const data = await response.json();
       setPendingAppointments(data);
     } catch (error) {
-      toast.error('Failed to fetch pending appointments');
+      toast.error('Nu s-au putut încărca programările în așteptare');
     }
   };
 
@@ -254,7 +255,7 @@ export default function TodayAppointments() {
       const data = await response.json();
       setAppointments(data);
     } catch (error) {
-      toast.error('Failed to fetch appointments');
+      toast.error('Nu s-au putut încărca programările');
     }
   };
 
@@ -315,11 +316,11 @@ export default function TodayAppointments() {
       if (!response.ok) throw new Error('Failed to save appointment');
       // Always refresh appointments from the server after save
       await fetchAppointments();
-      toast.success(`Appointment ${appointment.id ? 'updated' : 'created'} successfully`);
+      toast.success(`Programare ${appointment.id ? 'actualizată' : 'creată'} cu succes`);
       setIsFormOpen(false);
       broadcastRefresh();
     } catch (error) {
-      toast.error('Failed to save appointment');
+      toast.error('Nu s-a putut salva programarea');
       fetchAppointments();
     }
   };
@@ -341,7 +342,7 @@ export default function TodayAppointments() {
       const patient = patients.find(p => p.id === appt.patientId);
       const title = patient
         ? `${patient.firstName} ${patient.lastName}`
-        : 'Unknown Patient';
+        : 'Pacient necunoscut';
 
       const type = typeof appt.type === 'object' && appt.type !== null
         ? appt.type
@@ -358,7 +359,7 @@ export default function TodayAppointments() {
         patient,
         tooltip: [
           <span key="type" style={{ color: type?.color || '#60a5fa' }}>
-            {type?.name || 'Appointment'}
+            {type?.name || 'Programare'}
           </span>,
           appt.notes && <div key="notes">{appt.notes}</div>,
           patient?.phone && <div key="phone">{patient.phone}</div>
@@ -501,14 +502,14 @@ export default function TodayAppointments() {
     try {
       const result = await convertPendingToAppointment(appointment, practitionerId);
       if (result) {
-        toast.success('Appointment assigned successfully');
+        toast.success('Programare alocată cu succes');
         fetchPendingAppointments();
         fetchAppointments();
       } else {
-        toast.error('Failed to assign appointment');
+        toast.error('Nu s-a putut aloca programarea');
       }
     } catch (error) {
-      toast.error('Error assigning appointment');
+      toast.error('Eroare la alocarea programării');
     }
   };
 
@@ -535,10 +536,10 @@ export default function TodayAppointments() {
         body: JSON.stringify({ patientId: appointment.patientId }),
       });
       if (!res.ok) throw new Error('Request failed');
-      toast.success('Confirmation email sent');
+      toast.success('Email de confirmare trimis');
     } catch (error) {
       console.error('Error sending confirmation email', error);
-      toast.error('Failed to send confirmation email');
+      toast.error('Nu s-a putut trimite emailul de confirmare');
     }
   };
 
@@ -550,31 +551,23 @@ export default function TodayAppointments() {
       const list = includeAllFuture ? patientAppointments : [appointment];
       const patient = patients.find(p => p.id === appointment.patientId);
       const html = `<!DOCTYPE html>
-        <html><head><title>Appointment Ticket</title>
+        <html><head><title>Bilet programare</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
+          @page { margin: 0; }
+          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
           h1 { font-size: 20px; margin-bottom: 10px; }
           ul { list-style: none; padding: 0; }
           li { margin-bottom: 6px; }
         </style></head><body>
-        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'} – Appointments</h1>
+        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient'} – Programări</h1>
         <ul>
           ${list.map(appt => `<li><strong>${new Date(appt.startTime).toLocaleString()}</strong> – ${appt.type}</li>`).join('')}
         </ul>
         </body></html>`;
-      const printWindow = window.open('', '_blank', 'width=600,height=800');
-      if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        printWindow.focus();
-        // Delay print slightly to ensure content is rendered
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      }
+      printHtmlDocument(html, { delay: 500 });
     } catch (error) {
       console.error('Error printing ticket', error);
-      toast.error('Failed to print ticket');
+      toast.error('Nu s-a putut tipări biletul');
     }
   };
 
@@ -643,12 +636,12 @@ export default function TodayAppointments() {
           fetchPendingAppointments()
         ]);
 
-        toast.success('Appointment moved to pending');
+        toast.success('Programare mutată în așteptare');
         broadcastRefresh();
         onClose();
       } catch (error) {
         console.error('Error creating pending appointment:', error);
-        toast.error('Failed to move appointment to pending');
+        toast.error('Nu s-a putut muta programarea în așteptare');
       }
     };
 
@@ -688,12 +681,12 @@ export default function TodayAppointments() {
           setClipboardData(null);
         }
 
-        toast.success('Appointment pasted successfully');
+        toast.success('Programare lipită cu succes');
         // Immediately fetch appointments to update the calendar
         await fetchAppointments();
         onClose();
       } catch (error) {
-        toast.error('Failed to paste appointment');
+        toast.error('Nu s-a putut lipi programarea');
       }
     };
 
@@ -707,32 +700,32 @@ export default function TodayAppointments() {
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm font-medium text-blue-600"
           onClick={handleOpenPatientCard}
         >
-          Open patient card
+          Deschidere fișă pacient
         </button>
         <button
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
           onClick={handleSendToPending}
         >
-          Send to pending
+          Mutare în așteptare
         </button>
         <button
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
           onClick={handleCopy}
         >
-          Copy
+          Copiere
         </button>
         <button
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
           onClick={handleCut}
         >
-          Cut
+          Tăiere
         </button>
         {clipboardData && (
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
             onClick={handlePaste}
           >
-            Paste
+            Lipire
           </button>
         )}
         {/* NEW OPTIONS */}
@@ -740,19 +733,19 @@ export default function TodayAppointments() {
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
           onClick={() => { handleSendConfirmationEmail(appointment); onClose(); }}
         >
-          Send confirmation email
+          Trimitere email confirmare
         </button>
         <button
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
           onClick={() => { handlePrintTicket(appointment, false); onClose(); }}
         >
-          Print ticket (selected)
+          Tipărire bilet (selectat)
         </button>
         <button
           className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
           onClick={() => { handlePrintTicket(appointment, true); onClose(); }}
         >
-          Print ticket (all future)
+          Tipărire bilet (toate viitoarele)
         </button>
       </div>
     );
@@ -875,7 +868,7 @@ export default function TodayAppointments() {
             onClose();
           }}
         >
-          Paste
+          Lipire
         </button>
       </div>
     );
@@ -886,8 +879,8 @@ export default function TodayAppointments() {
     useEffect(() => { const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { onClose(); } }; document.addEventListener('mousedown', handler); return () => document.removeEventListener('mousedown', handler); }, [onClose]);
     return (
       <div ref={ref} className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]" style={{ left: x, top: y }}>
-        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copy</button>
-        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Cut</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copiere</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Tăiere</button>
       </div>
     );
   };
@@ -1029,7 +1022,7 @@ export default function TodayAppointments() {
     <div className="flex h-full">
       {!colorLoaded ? (
         <div className="flex-1 flex items-center justify-center">
-          <div>Loading...</div>
+          <div>Se încarcă...</div>
         </div>
       ) : (
         <div
@@ -1118,7 +1111,7 @@ export default function TodayAppointments() {
                   const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
                     ? event.appointment.type
                     : treatmentTypes.find(t => t.name === String(event.appointment?.type));
-                  const typeName = type?.name || 'Appointment';
+                  const typeName = type?.name || 'Programare';
                   const typeColor = type?.color || '#60a5fa';
 
                   const tooltipContent = (
@@ -1131,15 +1124,15 @@ export default function TodayAppointments() {
                           {event.patient.firstName} {event.patient.lastName}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-600 italic">Reservation</div>
+                        <div className="text-sm text-gray-600 italic">Rezervare</div>
                       )}
                       {event.appointment?.notes && (
                         <div className="text-sm text-gray-700 max-w-[250px]">
-                          <strong>Notes:</strong> {event.appointment.notes}
+                          <strong>Notițe:</strong> {event.appointment.notes}
                         </div>
                       )}
                       <div className="text-xs text-gray-500 border-t pt-1">
-                        Duration: {event.appointment?.duration || 30} minutes
+                        Durată: {event.appointment?.duration || 30} minute
                       </div>
                     </div>
                   );
@@ -1195,7 +1188,7 @@ export default function TodayAppointments() {
                   const patientIcon = hasLinkedPatient ? (
                     <div
                       style={{ position: 'absolute', top: 2, right: 2, fontSize: '14px', cursor: 'pointer', zIndex: 300 }}
-                      title="Open patient"
+                      title="Deschidere pacient"
                       onClick={(e) => { e.stopPropagation(); window.open(`/dashboard/patients/${appt.patientId}`, '_blank'); }}
                     >👤</div>
                   ) : null;
@@ -1204,7 +1197,7 @@ export default function TodayAppointments() {
                     return (
                       <>
                         {patientIcon}
-                        <div style={{ padding: '4px', fontSize: '12px', color: textColor, fontWeight: 'bold' }}>{appt?.notes || 'Reservation'}</div>
+                        <div style={{ padding: '4px', fontSize: '12px', color: textColor, fontWeight: 'bold' }}>{appt?.notes || 'Rezervare'}</div>
                       </>
                     );
                   }
@@ -1212,7 +1205,7 @@ export default function TodayAppointments() {
                   if (isReservation) {
                     return (
                       <div style={{ fontSize: '12px', color: textColor, fontWeight: 'bold', padding: '4px' }}>
-                        {appt?.notes || 'Reservation'}
+                        {appt?.notes || 'Rezervare'}
                       </div>
                     );
                   }
@@ -1292,7 +1285,7 @@ export default function TodayAppointments() {
 
                   return {
                     id: pending.id,
-                    title: pending.patient?.name || 'Unknown patient',
+                    title: pending.patient?.name || 'Pacient necunoscut',
                     start: new Date(),
                     end: new Date(Date.now() + duration * 60000),
                     resourceId: null,
@@ -1418,12 +1411,12 @@ export default function TodayAppointments() {
         <DialogContent className="sm:max-w-[425px] bg-background">
           <DialogHeader>
             <DialogTitle>
-              {selectedAppointment ? 'Edit Appointment' : 'New Appointment'}
+              {selectedAppointment ? 'Editare programare' : 'Programare nouă'}
             </DialogTitle>
             <DialogDescription>
               {selectedAppointment
-                ? 'Edit the details of your appointment.'
-                : 'Fill in the details to create a new appointment.'}
+                ? 'Modificați detaliile programării.'
+                : 'Completați detaliile pentru a crea o programare nouă.'}
             </DialogDescription>
           </DialogHeader>
           <EnhancedAppointmentForm
@@ -1431,7 +1424,6 @@ export default function TodayAppointments() {
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
             patients={patients as any}
-            familyGroups={[]}
             selectedDate={selectedDate}
             initialPractitionerId={selectedPractitionerId}
             practitioners={selectedDate ? getAvailablePractitioners(selectedDate) : practitioners}
@@ -1448,11 +1440,11 @@ export default function TodayAppointments() {
                         method: 'DELETE',
                       });
                       if (!response.ok) throw new Error('Failed to delete appointment');
-                      toast.success('Appointment deleted successfully');
+                      toast.success('Programare ștearsă cu succes');
                       setIsFormOpen(false);
                       await fetchAppointments();
                     } catch (error) {
-                      toast.error('Failed to delete appointment');
+                      toast.error('Nu s-a putut șterge programarea');
                     }
                   }}
                 >

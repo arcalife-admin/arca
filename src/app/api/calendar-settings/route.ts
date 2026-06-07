@@ -9,7 +9,7 @@ export async function GET() {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       );
     }
@@ -47,7 +47,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching schedule rules:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     );
   }
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       );
     }
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating schedule rule:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     );
   }
@@ -112,7 +112,7 @@ export async function PUT(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       );
     }
@@ -153,7 +153,7 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error('Error updating schedule rule:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     );
   }
@@ -165,7 +165,7 @@ export async function DELETE(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       );
     }
@@ -175,7 +175,7 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { message: 'Schedule rule ID is required' },
+        { message: 'ID-ul regulii de program este obligatoriu' },
         { status: 400 }
       );
     }
@@ -190,7 +190,7 @@ export async function DELETE(request: Request) {
 
     if (!existingRule) {
       return NextResponse.json(
-        { message: 'Schedule rule not found or unauthorized' },
+        { message: 'Regula de program nu a fost găsită sau acces neautorizat' },
         { status: 404 }
       );
     }
@@ -200,11 +200,11 @@ export async function DELETE(request: Request) {
       where: { id },
     });
 
-    return NextResponse.json({ message: 'Schedule rule deleted successfully' });
+    return NextResponse.json({ message: 'Regula de program a fost ștearsă cu succes' });
   } catch (error) {
     console.error('Error deleting schedule rule:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     );
   }

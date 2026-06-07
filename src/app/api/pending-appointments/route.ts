@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching pending appointments:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch pending appointments' },
+      { error: 'Încărcarea programărilor în așteptare a eșuat' },
       { status: 500 }
     );
   }
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating pending appointment:', error);
     return NextResponse.json(
-      { error: 'Failed to create pending appointment' },
+      { error: 'Crearea programării în așteptare a eșuat' },
       { status: 500 }
     );
   }
@@ -79,7 +79,7 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error('Error updating pending appointment:', error);
     return NextResponse.json(
-      { error: 'Failed to update pending appointment' },
+      { error: 'Actualizarea programării în așteptare a eșuat' },
       { status: 500 }
     );
   }
@@ -92,7 +92,7 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Pending Appointment ID is required' },
+        { error: 'ID-ul programării în așteptare este obligatoriu' },
         { status: 400 }
       );
     }
@@ -105,7 +105,7 @@ export async function DELETE(request: Request) {
   } catch (error) {
     console.error('Error deleting pending appointment:', error);
     return NextResponse.json(
-      { error: 'Failed to delete pending appointment' },
+      { error: 'Ștergerea programării în așteptare a eșuat' },
       { status: 500 }
     );
   }

@@ -1,0 +1,31 @@
+{
+  "brand": "Arca Life",
+  "nav": {
+    "calendar": "Calendar",
+    "patients": "Pacienți",
+    "pharmaGuide": "Ghid farmaceutic",
+    "chat": "Chat",
+    "instructions": "Instrucțiuni",
+    "tasks": "Sarcini",
+    "calls": "Apeluri",
+    "orders": "Comenzi",
+    "imaging": "Imagistică",
+    "finance": "Finanțe",
+    "families": "Familii",
+    "manager": "Manager",
+    "analytics": "Analize",
+    "workspace": "Spațiu de lucru",
+    "leaveRequests": "Cereri de concediu",
+    "fileManagement": "Gestionare fișiere",
+    "repairSettings": "Setări reparații",
+    "calendarSettings": "Setări calendar",
+    "patientForms": "Formulare pacienți"
+  },
+  "workspaceView": "Vizualizare spațiu de lucru",
+  "myProfile": "Profilul meu",
+  "organizationSettings": "Setări organizație",
+  "managerDashboard": "Panou manager",
+  "leaveRequests": "Cereri de concediu",
+  "openMenu": "Deschide meniul",
+  "closeMenu": "Închide meniul"
+}

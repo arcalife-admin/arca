@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user is manager or organization owner
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!user || !['MANAGER', 'ORGANIZATION_OWNER'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     // Get or create personal notes record
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching personal notes:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch personal notes' },
+      { error: 'Încărcarea notițelor personale a eșuat' },
       { status: 500 }
     )
   }
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user is manager or organization owner
@@ -84,7 +84,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!user || !['MANAGER', 'ORGANIZATION_OWNER'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
 
       if (!linkId || !title?.trim() || !url?.trim()) {
         return NextResponse.json(
-          { error: 'Link ID, title, and URL are required' },
+          { error: 'ID-ul linkului, titlul și URL-ul sunt obligatorii' },
           { status: 400 }
         )
       }
@@ -130,7 +130,7 @@ export async function PUT(request: NextRequest) {
 
       if (typeof notes !== 'string') {
         return NextResponse.json(
-          { error: 'Notes must be a string' },
+          { error: 'Notițele trebuie să fie un șir de caractere' },
           { status: 400 }
         )
       }
@@ -167,7 +167,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating personal notes:', error)
     return NextResponse.json(
-      { error: 'Failed to update personal notes' },
+      { error: 'Actualizarea notițelor personale a eșuat' },
       { status: 500 }
     )
   }
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user is manager or organization owner
@@ -189,14 +189,14 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user || !['MANAGER', 'ORGANIZATION_OWNER'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     const { action, title, url } = await request.json()
 
     if (action !== 'addLink' || !title?.trim() || !url?.trim()) {
       return NextResponse.json(
-        { error: 'Title and URL are required for adding a link' },
+        { error: 'Titlul și URL-ul sunt obligatorii pentru adăugarea unui link' },
         { status: 400 }
       )
     }
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error adding personal link:', error)
     return NextResponse.json(
-      { error: 'Failed to add personal link' },
+      { error: 'Adăugarea linkului personal a eșuat' },
       { status: 500 }
     )
   }
@@ -252,7 +252,7 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check if user is manager or organization owner
@@ -262,14 +262,14 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (!user || !['MANAGER', 'ORGANIZATION_OWNER'].includes(user.role)) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     const { linkId } = await request.json()
 
     if (!linkId) {
       return NextResponse.json(
-        { error: 'Link ID is required' },
+        { error: 'ID-ul linkului este obligatoriu' },
         { status: 400 }
       )
     }
@@ -290,7 +290,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error deleting personal link:', error)
     return NextResponse.json(
-      { error: 'Failed to delete personal link' },
+      { error: 'Ștergerea linkului personal a eșuat' },
       { status: 500 }
     )
   }

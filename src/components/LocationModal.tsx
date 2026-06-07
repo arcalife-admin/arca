@@ -57,13 +57,13 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch travel time')
+        throw new Error(errorData.error || 'Nu s-a putut obține timpul de deplasare')
       }
 
       const data = await response.json()
       setTravelTime(data)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unable to calculate travel time'
+      const errorMessage = err instanceof Error ? err.message : 'Nu s-a putut calcula timpul de deplasare'
       setError(errorMessage)
       console.error('Error fetching travel time:', err)
     } finally {
@@ -72,17 +72,17 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
   }
 
   const formatDuration = (minutes: number | null) => {
-    if (minutes === null) return 'N/A'
+    if (minutes === null) return '—'
     if (minutes < 60) return `${Math.round(minutes)} min`
     const hours = Math.floor(minutes / 60)
     const mins = Math.round(minutes % 60)
-    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`
+    return mins > 0 ? `${hours} h ${mins} min` : `${hours} h`
   }
 
   const formatDistance = (meters: number | null) => {
-    if (meters === null) return 'N/A'
-    if (meters < 1000) return `${Math.round(meters)}m`
-    return `${(meters / 1000).toFixed(1)}km`
+    if (meters === null) return '—'
+    if (meters < 1000) return `${Math.round(meters)} m`
+    return `${(meters / 1000).toFixed(1)} km`
   }
 
   const openInMaps = () => {
@@ -96,23 +96,23 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-blue-600" />
-            Patient Address
+            Adresa pacientului
           </DialogTitle>
           <DialogDescription>
-            View patient address and travel times to the clinic
+            Vizualizați adresa pacientului și timpii de deplasare către clinică
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Address */}
           <Card className="p-4">
-            <h3 className="font-medium text-gray-900 mb-2">Address</h3>
+            <h3 className="font-medium text-gray-900 mb-2">Adresă</h3>
             <p className="text-sm text-gray-600">{address.display_name}</p>
           </Card>
 
           {/* Travel Times */}
           <Card className="p-4">
-            <h3 className="font-medium text-gray-900 mb-3">Travel Time to {clinicLocation.name}</h3>
+            <h3 className="font-medium text-gray-900 mb-3">Timp de deplasare către {clinicLocation.name}</h3>
 
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
@@ -127,7 +127,7 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Car className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium">By Car</span>
+                      <span className="text-sm font-medium">Cu mașina</span>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-medium">
@@ -145,7 +145,7 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Bike className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium">By Bike</span>
+                      <span className="text-sm font-medium">Cu bicicleta</span>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-medium">
@@ -160,12 +160,12 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
 
                 {!travelTime.driving && !travelTime.cycling && (
                   <p className="text-sm text-gray-500 text-center py-2">
-                    No travel time data available
+                    Nu sunt disponibile date despre timpul de deplasare
                   </p>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No travel time data available</p>
+              <p className="text-sm text-gray-500">Nu sunt disponibile date despre timpul de deplasare</p>
             )}
           </Card>
 
@@ -175,7 +175,7 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
             className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Navigation className="w-4 h-4" />
-            Open in Maps
+            Deschide în hărți
           </button>
         </div>
       </DialogContent>

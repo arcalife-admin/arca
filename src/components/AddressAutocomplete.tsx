@@ -25,7 +25,7 @@ interface AddressAutocompleteProps {
 export default function AddressAutocomplete({
   onSelect,
   className = '',
-  placeholder = 'Enter address...',
+  placeholder = 'Introduceți adresa...',
   value,
 }: AddressAutocompleteProps) {
   const [query, setQuery] = useState(value || '');
@@ -64,7 +64,7 @@ export default function AddressAutocomplete({
         `/api/geocode?q=${encodeURIComponent(searchQuery)}`
       );
       if (!response.ok) {
-        throw new Error('Failed to fetch addresses');
+        throw new Error('Încărcarea adreselor a eșuat');
       }
       const data = await response.json();
       setResults(data);

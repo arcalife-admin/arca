@@ -18,7 +18,7 @@ export async function POST(
 
     if (!session) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -37,7 +37,7 @@ export async function POST(
 
     if (!patient) {
       return NextResponse.json(
-        { message: 'Patient not found' },
+        { message: 'Pacientul nu a fost găsit' },
         { status: 404 }
       )
     }
@@ -76,14 +76,14 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error updating patient status:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -98,7 +98,7 @@ export async function GET(
 
     if (!session) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -126,7 +126,7 @@ export async function GET(
     if (statusHistory.length > 0 &&
       statusHistory[0].patient.organizationId !== (session.user as unknown as { organizationId: string }).organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -135,7 +135,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching patient status history:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

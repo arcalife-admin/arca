@@ -52,11 +52,17 @@ interface HealthAssessmentProps {
   onSave: (type: 'asa' | 'pps' | 'recall', data: any) => Promise<void>
 }
 
+const TREATMENT_LABELS: Record<string, string> = {
+  NONE: 'Fără tratament',
+  PREVENTIVE: 'Tratament preventiv',
+  PERIODONTAL: 'Tratament parodontal',
+}
+
 const ASA_DESCRIPTIONS = {
-  1: 'A normal healthy patient',
-  2: 'A patient with mild systemic disease',
-  3: 'A patient with severe systemic disease',
-  4: 'A patient with severe systemic disease that is a constant threat to life'
+  1: 'Pacient sănătos, fără afecțiuni sistemice',
+  2: 'Pacient cu boală sistemică ușoară',
+  3: 'Pacient cu boală sistemică severă',
+  4: 'Pacient cu boală sistemică severă, amenințare constantă pentru viață'
 }
 
 export default function HealthAssessment({
@@ -119,17 +125,17 @@ export default function HealthAssessment({
       <Card className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-lg font-medium">ASA Physical Status</h3>
+            <h3 className="text-lg font-medium">Status fizic ASA</h3>
             <p className="text-sm text-gray-500">{ASA_DESCRIPTIONS[asaScore]}</p>
           </div>
           <div className="flex space-x-2">
             <Dialog open={showAsaHistory} onOpenChange={setShowAsaHistory}>
               <DialogTrigger asChild>
-                <Button variant="outline">History</Button>
+                <Button variant="outline">Istoric</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>ASA Score History</DialogTitle>
+                  <DialogTitle>Istoric scor ASA</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                   {initialData.asaHistory.map((record) => (
@@ -155,7 +161,7 @@ export default function HealthAssessment({
 
         <div className="space-y-4">
           <div>
-            <Label>Score</Label>
+            <Label>Scor</Label>
             <Select value={asaScore.toString()} onValueChange={(v) => setAsaScore(parseInt(v))}>
               <SelectTrigger>
                 <SelectValue />
@@ -170,25 +176,25 @@ export default function HealthAssessment({
             </Select>
           </div>
           <div>
-            <Label>Notes</Label>
+            <Label>Note</Label>
             <Textarea value={asaNotes} onChange={(e) => setAsaNotes(e.target.value)} />
           </div>
-          <Button onClick={handleAsaSave}>Save ASA Score</Button>
+          <Button onClick={handleAsaSave}>Salvează scorul ASA</Button>
         </div>
       </Card>
 
       {/* PPS Scores Section */}
       <Card className="p-6">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-medium">PPS Scores</h3>
+          <h3 className="text-lg font-medium">Scoruri PPS</h3>
           <div className="flex space-x-2">
             <Dialog open={showPpsHistory} onOpenChange={setShowPpsHistory}>
               <DialogTrigger asChild>
-                <Button variant="outline">History</Button>
+                <Button variant="outline">Istoric</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>PPS History</DialogTitle>
+                  <DialogTitle>Istoric PPS</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                   {initialData.ppsHistory.map((record) => (
@@ -200,7 +206,7 @@ export default function HealthAssessment({
                           <p>Q3: {record.quadrant3}</p>
                           <p>Q4: {record.quadrant4}</p>
                         </div>
-                        <p className="text-sm">Treatment: {record.treatment}</p>
+                        <p className="text-sm">Tratament: {TREATMENT_LABELS[record.treatment] || record.treatment}</p>
                         {record.notes && (
                           <p className="text-sm text-gray-600">{record.notes}</p>
                         )}
@@ -220,7 +226,7 @@ export default function HealthAssessment({
           <div className="grid grid-cols-2 gap-4">
             {Object.entries(ppsScores).map(([quadrant, score]) => (
               <div key={quadrant}>
-                <Label>Quadrant {quadrant.slice(-1)}</Label>
+                <Label>Cadran {quadrant.slice(-1)}</Label>
                 <Select
                   value={score.toString()}
                   onValueChange={(v) =>
@@ -234,54 +240,54 @@ export default function HealthAssessment({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 - Healthy</SelectItem>
-                    <SelectItem value="2">2 - Mild</SelectItem>
-                    <SelectItem value="3">3 - Severe</SelectItem>
+                    <SelectItem value="1">1 - Sănătos</SelectItem>
+                    <SelectItem value="2">2 - Ușor</SelectItem>
+                    <SelectItem value="3">3 - Sever</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             ))}
           </div>
           <div>
-            <Label>Treatment</Label>
+            <Label>Tratament</Label>
             <Select value={ppsTreatment} onValueChange={(v: any) => setPpsTreatment(v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="NONE">No Treatment</SelectItem>
-                <SelectItem value="PREVENTIVE">Preventive Treatment</SelectItem>
-                <SelectItem value="PERIODONTAL">Periodontal Treatment</SelectItem>
+                <SelectItem value="NONE">Fără tratament</SelectItem>
+                <SelectItem value="PREVENTIVE">Tratament preventiv</SelectItem>
+                <SelectItem value="PERIODONTAL">Tratament parodontal</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Notes</Label>
+            <Label>Note</Label>
             <Textarea value={ppsNotes} onChange={(e) => setPpsNotes(e.target.value)} />
           </div>
-          <Button onClick={handlePpsSave}>Save PPS Scores</Button>
+          <Button onClick={handlePpsSave}>Salvează scorurile PPS</Button>
         </div>
       </Card>
 
       {/* Recall Terms Section */}
       <Card className="p-6">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-medium">Recall Terms</h3>
+          <h3 className="text-lg font-medium">Termeni de recall</h3>
           <div className="flex space-x-2">
             <Dialog open={showRecallHistory} onOpenChange={setShowRecallHistory}>
               <DialogTrigger asChild>
-                <Button variant="outline">History</Button>
+                <Button variant="outline">Istoric</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Recall Terms History</DialogTitle>
+                  <DialogTitle>Istoric termeni recall</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                   {initialData.recallHistory.map((record) => (
                     <Card key={record.id} className="p-4">
                       <div className="space-y-2">
-                        <p>Screening: {record.screeningMonths} months</p>
-                        <p>Cleaning: {record.cleaningMonths} months</p>
+                        <p>Screening: {record.screeningMonths} luni</p>
+                        <p>Detartraj: {record.cleaningMonths} luni</p>
                         {record.notes && (
                           <p className="text-sm text-gray-600">{record.notes}</p>
                         )}
@@ -300,7 +306,7 @@ export default function HealthAssessment({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Screening Recall (months)</Label>
+              <Label>Recall screening (luni)</Label>
               <Input
                 type="number"
                 min={1}
@@ -315,7 +321,7 @@ export default function HealthAssessment({
               />
             </div>
             <div>
-              <Label>Cleaning Recall (months)</Label>
+              <Label>Recall detartraj (luni)</Label>
               <Input
                 type="number"
                 min={1}
@@ -331,10 +337,10 @@ export default function HealthAssessment({
             </div>
           </div>
           <div>
-            <Label>Notes</Label>
+            <Label>Note</Label>
             <Textarea value={recallNotes} onChange={(e) => setRecallNotes(e.target.value)} />
           </div>
-          <Button onClick={handleRecallSave}>Save Recall Terms</Button>
+          <Button onClick={handleRecallSave}>Salvează termenii de recall</Button>
         </div>
       </Card>
     </div>

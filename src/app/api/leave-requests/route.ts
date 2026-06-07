@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -162,13 +162,12 @@ export async function GET(request: NextRequest) {
           id: { in: userIds },
           role: {
             in: [
-              'DENTIST',
-              'HYGIENIST',
-              'ORTHODONTIST',
-              'PERIODONTOLOGIST',
-              'IMPLANTOLOGIST',
-              'ENDODONTIST',
+              'PLASTIC_SURGEON',
+              'SURGEON',
+              'NURSE',
               'ANESTHESIOLOGIST',
+              'AESTHETIC_NURSE',
+              'MEDICAL_ASSISTANT',
             ]
           }
         },
@@ -195,7 +194,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching leave requests:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -204,7 +203,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -213,7 +212,7 @@ export async function POST(request: NextRequest) {
     // Validate dates
     if (validatedData.startDate > validatedData.endDate) {
       return NextResponse.json(
-        { error: 'Start date cannot be after end date' },
+        { error: 'Data de început nu poate fi după data de sfârșit' },
         { status: 400 }
       )
     }
@@ -251,7 +250,7 @@ export async function POST(request: NextRequest) {
 
     if (overlappingRequest) {
       return NextResponse.json(
-        { error: 'You already have a leave request for overlapping dates' },
+        { error: 'Aveți deja o cerere de concediu pentru date suprapuse' },
         { status: 400 }
       )
     }
@@ -300,12 +299,12 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 }
 
@@ -314,14 +313,14 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id || !session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const body = await request.json()
     const { leaveRequestId, type, ...actionData } = body
 
     if (!leaveRequestId) {
-      return NextResponse.json({ error: 'Leave request ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'ID-ul cererii de concediu este obligatoriu' }, { status: 400 })
     }
 
     // Find the leave request
@@ -343,7 +342,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!leaveRequest) {
-      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Cererea de concediu nu a fost găsită' }, { status: 404 })
     }
 
     if (type === 'review') {
@@ -356,7 +355,7 @@ export async function PUT(request: NextRequest) {
       );
 
       if (!isSelfApprovalForPersonalBlock && !hasManagerPermissions(session.user.role)) {
-        return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+        return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
       }
 
       const validatedData = reviewLeaveRequestSchema.parse(actionData)
@@ -379,7 +378,7 @@ export async function PUT(request: NextRequest) {
         case 'PROPOSE_ALTERNATIVE':
           if (!validatedData.alternativeStartDate || !validatedData.alternativeEndDate) {
             return NextResponse.json(
-              { error: 'Alternative dates are required when proposing alternative' },
+              { error: 'Datele alternative sunt obligatorii la propunerea unei alternative' },
               { status: 400 }
             )
           }
@@ -419,11 +418,11 @@ export async function PUT(request: NextRequest) {
     } else if (type === 'respond_alternative') {
       // User responding to alternative proposal
       if (leaveRequest.userId !== session.user.id) {
-        return NextResponse.json({ error: 'Can only respond to your own leave requests' }, { status: 403 })
+        return NextResponse.json({ error: 'Puteți răspunde doar la propriile cereri de concediu' }, { status: 403 })
       }
 
       if (leaveRequest.status !== 'ALTERNATIVE_PROPOSED') {
-        return NextResponse.json({ error: 'No alternative proposal to respond to' }, { status: 400 })
+        return NextResponse.json({ error: 'Nu există o propunere alternativă la care să răspundeți' }, { status: 400 })
       }
 
       const validatedData = respondToAlternativeSchema.parse(actionData)
@@ -462,11 +461,11 @@ export async function PUT(request: NextRequest) {
     } else if (type === 'cancel') {
       // User cancelling their own request
       if (leaveRequest.userId !== session.user.id) {
-        return NextResponse.json({ error: 'Can only cancel your own leave requests' }, { status: 403 })
+        return NextResponse.json({ error: 'Puteți anula doar propriile cereri de concediu' }, { status: 403 })
       }
 
       if (!['PENDING', 'ALTERNATIVE_PROPOSED'].includes(leaveRequest.status)) {
-        return NextResponse.json({ error: 'Cannot cancel this leave request' }, { status: 400 })
+        return NextResponse.json({ error: 'Nu se poate anula această cerere de concediu' }, { status: 400 })
       }
 
       const updatedRequest = await prisma.leaveRequest.update({
@@ -495,17 +494,17 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(updatedRequest)
     }
 
-    return NextResponse.json({ error: 'Invalid action type' }, { status: 400 })
+    return NextResponse.json({ error: 'Tip de acțiune invalid' }, { status: 400 })
   } catch (error) {
     console.error('Error updating leave request:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

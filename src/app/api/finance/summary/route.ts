@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
       })
 
       monthlyTrends.push({
-        month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        month: date.toLocaleDateString('ro-RO', { month: 'short', year: 'numeric' }),
         income: monthIncome._sum.amount || 0,
         expenses: monthExpenses._sum.amount || 0,
         net: (monthIncome._sum.amount || 0) - (monthExpenses._sum.amount || 0)
@@ -154,6 +154,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(summary)
   } catch (error) {
     console.error('Error generating financial summary:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

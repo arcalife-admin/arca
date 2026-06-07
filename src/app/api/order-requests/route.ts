@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching order requests:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch order requests' },
+      { error: 'Încărcarea cererilor de comandă a eșuat' },
       { status: 500 }
     );
   }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     if (!itemName) {
       return NextResponse.json(
-        { error: 'Item name is required' },
+        { error: 'Numele articolului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating order request:', error);
     return NextResponse.json(
-      { error: 'Failed to create order request' },
+      { error: 'Crearea cererii de comandă a eșuat' },
       { status: 500 }
     );
   }
@@ -127,7 +127,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -135,7 +135,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id || !status) {
       return NextResponse.json(
-        { error: 'Request ID and status are required' },
+        { error: 'ID-ul cererii și statusul sunt obligatorii' },
         { status: 400 }
       );
     }
@@ -150,7 +150,7 @@ export async function PUT(request: NextRequest) {
 
     if (!existingRequest) {
       return NextResponse.json(
-        { error: 'Request not found' },
+        { error: 'Cererea nu a fost găsită' },
         { status: 404 }
       );
     }
@@ -191,7 +191,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating order request:', error);
     return NextResponse.json(
-      { error: 'Failed to update order request' },
+      { error: 'Actualizarea cererii de comandă a eșuat' },
       { status: 500 }
     );
   }

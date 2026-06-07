@@ -25,7 +25,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
   const [isLoading, setIsLoading] = useState(false)
 
   // Form state (matching LeaveRequestForm)
-  const [title, setTitle] = useState('Blocked Time')
+  const [title, setTitle] = useState('Timp blocat')
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -40,30 +40,30 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
     const newErrors: { [key: string]: string } = {}
 
     if (!title.trim()) {
-      newErrors.title = 'Title is required'
+      newErrors.title = 'Titlul este obligatoriu'
     }
 
     if (!startDate) {
-      newErrors.startDate = 'Start date is required'
+      newErrors.startDate = 'Data de început este obligatorie'
     }
 
     if (!endDate) {
-      newErrors.endDate = 'End date is required'
+      newErrors.endDate = 'Data de sfârșit este obligatorie'
     }
 
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      newErrors.endDate = 'End date must be after start date'
+      newErrors.endDate = 'Data de sfârșit trebuie să fie după data de început'
     }
 
     if (isPartialDay) {
       if (!startTime) {
-        newErrors.startTime = 'Start time is required for partial days'
+        newErrors.startTime = 'Ora de început este obligatorie pentru zile parțiale'
       }
       if (!endTime) {
-        newErrors.endTime = 'End time is required for partial days'
+        newErrors.endTime = 'Ora de sfârșit este obligatorie pentru zile parțiale'
       }
       if (startTime && endTime && startTime >= endTime) {
-        newErrors.endTime = 'End time must be after start time'
+        newErrors.endTime = 'Ora de sfârșit trebuie să fie după ora de început'
       }
     }
 
@@ -114,7 +114,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
         },
         body: JSON.stringify({
           title: title.trim(),
-          description: description.trim() || 'Personal blocked time',
+          description: description.trim() || 'Timp personal blocat',
           leaveType: 'PERSONAL', // Use PERSONAL type for blocked times
           startDate,
           endDate,
@@ -126,7 +126,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to create blocked time')
+        throw new Error(error.error || 'Crearea timpului blocat a eșuat')
       }
 
       const leaveRequest = await response.json()
@@ -141,7 +141,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
           leaveRequestId: leaveRequest.id,
           type: 'review',
           action: 'APPROVE',
-          reviewComments: 'Auto-approved personal blocked time',
+          reviewComments: 'Timp personal blocat aprobat automat',
         }),
       })
 
@@ -151,12 +151,12 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
       }
 
       toast({
-        title: 'Success',
-        description: 'Blocked time added successfully.',
+        title: 'Succes',
+        description: 'Timpul blocat a fost adăugat cu succes.',
       })
 
       // Reset form
-      setTitle('Blocked Time')
+      setTitle('Timp blocat')
       setDescription('')
       setStartDate('')
       setEndDate('')
@@ -177,8 +177,8 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
     } catch (error) {
       console.error('Error creating blocked time:', error)
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create blocked time. Please try again.',
+        title: 'Eroare',
+        description: error instanceof Error ? error.message : 'Crearea timpului blocat a eșuat. Încercați din nou.',
         variant: 'destructive',
       })
     } finally {
@@ -187,7 +187,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
   }
 
   const resetForm = () => {
-    setTitle('Blocked Time')
+    setTitle('Timp blocat')
     setDescription('')
     setStartDate('')
     setEndDate('')
@@ -207,22 +207,22 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
       <DialogTrigger asChild>
         <Button className="w-full">
           <Plus className="h-4 w-4 mr-2" />
-          Add Blocked Time
+          Adaugă timp blocat
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Personal Blocked Time</DialogTitle>
+          <DialogTitle>Adaugă timp personal blocat</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">Titlu *</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Personal appointment, Doctor visit, etc."
+              placeholder="ex.: Programare personală, consult medical etc."
               className={errors.title ? 'border-red-500' : ''}
             />
             {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
@@ -230,12 +230,12 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
+            <Label htmlFor="description">Descriere (opțional)</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Additional details about this blocked time..."
+              placeholder="Detalii suplimentare despre acest timp blocat..."
               rows={3}
             />
           </div>
@@ -243,7 +243,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date *</Label>
+              <Label htmlFor="startDate">Data de început *</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -260,7 +260,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date *</Label>
+              <Label htmlFor="endDate">Data de sfârșit *</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -281,7 +281,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
               onCheckedChange={(checked) => setIsPartialDay(checked === true)}
             />
             <Label htmlFor="isPartialDay" className="text-sm">
-              This is a partial day (specify time range)
+              Zi parțială (specificați intervalul orar)
             </Label>
           </div>
 
@@ -289,7 +289,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
           {isPartialDay && (
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Start Time *</Label>
+                <Label htmlFor="startTime">Ora de început *</Label>
                 <Input
                   id="startTime"
                   type="time"
@@ -301,7 +301,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endTime">End Time *</Label>
+                <Label htmlFor="endTime">Ora de sfârșit *</Label>
                 <Input
                   id="endTime"
                   type="time"
@@ -319,7 +319,7 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
             <div className="p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center text-sm text-blue-700">
                 <Calendar className="h-4 w-4 mr-2" />
-                Duration: {calculateDays()} day{calculateDays() !== 1 ? 's' : ''}
+                Durată: {calculateDays()} {calculateDays() === 1 ? 'zi' : 'zile'}
                 {isPartialDay && startTime && endTime && (
                   <>
                     <Clock className="h-4 w-4 ml-4 mr-2" />
@@ -337,18 +337,18 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
               onClick={() => setOpen(false)}
               disabled={isLoading}
             >
-              Cancel
+              Anulare
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating...
+                  Se creează...
                 </>
               ) : (
                 <>
                   <Check className="h-4 w-4 mr-2" />
-                  Add Blocked Time
+                  Adaugă timp blocat
                 </>
               )}
             </Button>
@@ -357,4 +357,4 @@ export default function PersonalReservationForm({ onSubmit }: PersonalReservatio
       </DialogContent>
     </Dialog>
   )
-} 
+}

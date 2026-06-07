@@ -11,7 +11,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const productId = params.id;
@@ -20,14 +20,14 @@ export async function PUT(
 
     if (!name || defaultPrice === undefined || defaultPrice === null) {
       return NextResponse.json(
-        { error: 'Name and default price are required' },
+        { error: 'Numele și prețul implicit sunt obligatorii' },
         { status: 400 }
       );
     }
 
     if (defaultPrice < 0) {
       return NextResponse.json(
-        { error: 'Default price must be non-negative' },
+        { error: 'Prețul implicit trebuie să fie nenegativ' },
         { status: 400 }
       );
     }
@@ -42,7 +42,7 @@ export async function PUT(
 
     if (!existingProduct) {
       return NextResponse.json(
-        { error: 'Product not found' },
+        { error: 'Produsul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -62,7 +62,7 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating product:', error);
     return NextResponse.json(
-      { error: 'Failed to update product' },
+      { error: 'Actualizarea produsului a eșuat' },
       { status: 500 }
     );
   }
@@ -76,7 +76,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const productId = params.id;
@@ -96,7 +96,7 @@ export async function DELETE(
 
     if (!existingProduct) {
       return NextResponse.json(
-        { error: 'Product not found' },
+        { error: 'Produsul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -104,7 +104,7 @@ export async function DELETE(
     // Check if product has any purchases
     if (existingProduct.purchases.length > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete product with existing purchases. Consider deactivating instead.' },
+        { error: 'Nu se poate șterge produsul cu achiziții existente. Considerați dezactivarea.' },
         { status: 400 }
       );
     }
@@ -113,11 +113,11 @@ export async function DELETE(
       where: { id: productId },
     });
 
-    return NextResponse.json({ message: 'Product deleted successfully' });
+    return NextResponse.json({ message: 'Produsul a fost șters cu succes' });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json(
-      { error: 'Failed to delete product' },
+      { error: 'Ștergerea produsului a eșuat' },
       { status: 500 }
     );
   }

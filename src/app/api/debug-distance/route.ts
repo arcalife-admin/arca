@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const toLon = searchParams.get('toLon')
 
   if (!fromLat || !fromLon || !toLat || !toLon) {
-    return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 })
+    return NextResponse.json({ error: 'Coordonatele lipsesc' }, { status: 400 })
   }
 
   const fromLatNum = parseFloat(fromLat)

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
+import { apiErrors } from '@/lib/api-errors'
 
 export interface OrganizationThemeSettings {
   id: string
@@ -197,7 +198,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // Update theme settings
   const updateTheme = async (updates: Partial<OrganizationThemeSettings>) => {
     if (!session?.user?.organizationId || session.user.role !== 'ORGANIZATION_OWNER') {
-      throw new Error('Unauthorized - Only organization owners can update themes')
+      throw new Error('Neautorizat — Doar proprietarii organizației pot actualiza tema')
     }
 
     try {
@@ -211,7 +212,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Failed to update theme')
+        throw new Error(error.message || apiErrors.failedToUpdate)
       }
 
       const updatedSettings = await response.json()

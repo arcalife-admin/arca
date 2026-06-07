@@ -10,7 +10,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const orderId = params.id;
     const events = await prisma.orderTimelineEvent.findMany({
@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json(events);
   } catch (error) {
     console.error('Error fetching timeline events:', error);
-    return NextResponse.json({ error: 'Failed to fetch timeline events' }, { status: 500 });
+    return NextResponse.json({ error: 'Încărcarea evenimentelor din cronologie a eșuat' }, { status: 500 });
   }
 }
 
@@ -35,7 +35,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const orderId = params.id;
     const body = await request.json();
@@ -56,6 +56,6 @@ export async function POST(
     return NextResponse.json(event, { status: 201 });
   } catch (error) {
     console.error('Error creating timeline event:', error);
-    return NextResponse.json({ error: 'Failed to create timeline event' }, { status: 500 });
+    return NextResponse.json({ error: 'Crearea evenimentului din cronologie a eșuat' }, { status: 500 });
   }
 } 

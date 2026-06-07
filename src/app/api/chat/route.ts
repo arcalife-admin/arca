@@ -104,7 +104,7 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 });
   }
 }
 
@@ -116,7 +116,7 @@ export async function POST(req) {
     const { name, participantIds, type = 'PRIVATE' } = body;
 
     if (!participantIds || !Array.isArray(participantIds) || participantIds.length < 1) {
-      return NextResponse.json({ error: 'At least one participant required' }, { status: 400 });
+      return NextResponse.json({ error: 'Cel puțin un participant este obligatoriu' }, { status: 400 });
     }
 
     // Ensure all participants are in the same organization
@@ -131,7 +131,7 @@ export async function POST(req) {
     });
 
     if (users.length !== participantIds.length) {
-      return NextResponse.json({ error: 'Invalid participants' }, { status: 400 });
+      return NextResponse.json({ error: 'Participanți invalizi' }, { status: 400 });
     }
 
     // Always include the current user as a participant
@@ -187,6 +187,6 @@ export async function POST(req) {
       }
     }
 
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 });
   }
 } 

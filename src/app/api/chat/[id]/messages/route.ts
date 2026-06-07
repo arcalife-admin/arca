@@ -7,18 +7,18 @@ export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const chatRoomId = params.id;
     if (!chatRoomId) {
-      return NextResponse.json({ error: 'Missing chat room id' }, { status: 400 });
+      return NextResponse.json({ error: 'ID-ul camerei de chat lipsește' }, { status: 400 });
     }
     // Check if user is a participant
     const isParticipant = await prisma.chatParticipant.findFirst({
       where: { chatRoomId, userId: session.user.id }
     });
     if (!isParticipant) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
     }
     const messages = await prisma.message.findMany({
       where: { chatRoomId },
@@ -48,7 +48,7 @@ export async function GET(req, { params }) {
     return NextResponse.json(formatted);
   } catch (error) {
     console.error('Error fetching messages:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 });
   }
 }
 
@@ -56,18 +56,18 @@ export async function POST(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const chatRoomId = params.id;
     if (!chatRoomId) {
-      return NextResponse.json({ error: 'Missing chat room id' }, { status: 400 });
+      return NextResponse.json({ error: 'ID-ul camerei de chat lipsește' }, { status: 400 });
     }
     // Check if user is a participant
     const isParticipant = await prisma.chatParticipant.findFirst({
       where: { chatRoomId, userId: session.user.id }
     });
     if (!isParticipant) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
     }
     const body = await req.json();
     const { content, type = 'text', fileUrl, fileName } = body;
@@ -107,6 +107,6 @@ export async function POST(req, { params }) {
     });
   } catch (error) {
     console.error('Error sending message:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 });
   }
 } 

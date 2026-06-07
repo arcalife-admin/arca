@@ -1,3 +1,5 @@
+import { printHtmlDocument } from '@/lib/print-html'
+
 interface InvoiceData {
   invoiceNumber: string;
   patientName: string;
@@ -25,9 +27,14 @@ export function generateInvoiceHTML(invoiceData: InvoiceData): string {
       <meta charset="utf-8">
       <title>Invoice ${invoiceData.invoiceNumber}</title>
       <style>
+        @page {
+          margin: 0;
+          size: A4;
+        }
         body { 
           font-family: Arial, sans-serif; 
-          margin: 20px; 
+          margin: 0;
+          padding: 20px;
           color: #333;
         }
         .header { 
@@ -157,20 +164,7 @@ export function generateInvoiceHTML(invoiceData: InvoiceData): string {
 }
 
 export function printInvoice(invoiceData: InvoiceData): void {
-  const invoiceHTML = generateInvoiceHTML(invoiceData);
-
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(invoiceHTML);
-    printWindow.document.close();
-
-    // Wait for content to load, then print and close
-    printWindow.onload = () => {
-      printWindow.print();
-      printWindow.close();
-    };
-  }
+  printHtmlDocument(generateInvoiceHTML(invoiceData));
 }
 
 export function downloadInvoiceHTML(invoiceData: InvoiceData): void {

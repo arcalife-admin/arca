@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const query = searchParams.get('q')
 
   if (!query) {
-    return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 })
+    return NextResponse.json({ error: 'Parametrul query este obligatoriu' }, { status: 400 })
   }
 
   try {
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching from Nominatim:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch address data' },
+      { error: 'Încărcarea datelor adresei a eșuat' },
       { status: 500 }
     )
   }

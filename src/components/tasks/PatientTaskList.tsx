@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Calendar, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import { dateFnsLocale } from '@/lib/date-locale';
 import TaskDetailModal from './TaskDetailModal';
 import { useSession } from 'next-auth/react';
 
@@ -23,6 +24,20 @@ const statusColors = {
   [TaskStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-800',
   [TaskStatus.COMPLETED]: 'bg-green-100 text-green-800',
   [TaskStatus.CANCELLED]: 'bg-gray-100 text-gray-800'
+};
+
+const statusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.PENDING]: 'În așteptare',
+  [TaskStatus.IN_PROGRESS]: 'În desfășurare',
+  [TaskStatus.COMPLETED]: 'Finalizat',
+  [TaskStatus.CANCELLED]: 'Anulat',
+};
+
+const priorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.LOW]: 'Scăzută',
+  [TaskPriority.MEDIUM]: 'Medie',
+  [TaskPriority.HIGH]: 'Ridicată',
+  [TaskPriority.URGENT]: 'Urgentă',
 };
 
 const priorityColors = {
@@ -57,13 +72,13 @@ export default function PatientTaskList({
       });
 
       const response = await fetch(`/api/tasks?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch tasks');
+      if (!response.ok) throw new Error('Încărcarea sarcinilor a eșuat');
 
       const data = await response.json();
       setTasks(data.tasks);
     } catch (error) {
       console.error('Error fetching patient tasks:', error);
-      setError('Failed to load tasks');
+      setError('Încărcarea sarcinilor a eșuat');
     } finally {
       setLoading(false);
     }
@@ -93,7 +108,7 @@ export default function PatientTaskList({
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) throw new Error('Failed to update task');
+      if (!response.ok) throw new Error('Actualizarea sarcinii a eșuat');
 
       // Refresh tasks
       fetchTasks();
@@ -107,7 +122,7 @@ export default function PatientTaskList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Patient Tasks</CardTitle>
+          <CardTitle className="text-lg">Sarcini pacient</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -124,7 +139,7 @@ export default function PatientTaskList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Patient Tasks</CardTitle>
+          <CardTitle className="text-lg">Sarcini pacient</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-red-600">{error}</p>
@@ -138,11 +153,11 @@ export default function PatientTaskList({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Patient Tasks ({tasks.length})</CardTitle>
+            <CardTitle className="text-lg">Sarcini pacient ({tasks.length})</CardTitle>
             {showCreateButton && onCreateTask && (
               <Button size="sm" onClick={onCreateTask}>
                 <Plus className="w-4 h-4 mr-1" />
-                New Task
+                Sarcină nouă
               </Button>
             )}
           </div>
@@ -150,13 +165,7 @@ export default function PatientTaskList({
         <CardContent>
           {tasks.length === 0 ? (
             <div className="text-center py-6">
-              <p className="text-muted-foreground mb-4">No tasks found for this patient.</p>
-              {showCreateButton && onCreateTask && (
-                <Button variant="outline" onClick={onCreateTask}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Task
-                </Button>
-              )}
+              <p className="text-muted-foreground">Nu există sarcini pentru acest pacient.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -171,14 +180,14 @@ export default function PatientTaskList({
                       <h4 className="font-medium text-sm truncate">{task.title}</h4>
                       <div className="flex items-center space-x-2 mt-1">
                         <Badge className={statusColors[task.status]} variant="secondary">
-                          {task.status.replace('_', ' ')}
+                          {statusLabels[task.status]}
                         </Badge>
                         <Badge className={priorityColors[task.priority]} variant="outline">
-                          {task.priority}
+                          {priorityLabels[task.priority]}
                         </Badge>
                         {task.deadline && (
                           <span className="text-xs text-muted-foreground">
-                            Due: {format(new Date(task.deadline), 'MMM dd')}
+                            Termen: {format(new Date(task.deadline), 'd MMM', { locale: dateFnsLocale })}
                           </span>
                         )}
                       </div>
@@ -190,7 +199,7 @@ export default function PatientTaskList({
               {tasks.length >= limit && (
                 <div className="text-center pt-2">
                   <Button variant="ghost" size="sm" onClick={onCreateTask}>
-                    View All Tasks
+                    Vezi toate sarcinile
                   </Button>
                 </div>
               )}

@@ -12,6 +12,14 @@ cloudinary.config({
 
 // Function to convert YouTube URLs to embed format
 function convertToEmbedUrl(url: string): string {
+  if (
+    url.startsWith('/') ||
+    /\.(mp4|webm|mov)(\?|$)/i.test(url) ||
+    url.includes('cloudinary.com')
+  ) {
+    return url;
+  }
+
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
@@ -48,7 +56,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching instructions:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch instructions' },
+      { error: 'Încărcarea instrucțiunilor a eșuat' },
       { status: 500 }
     );
   }
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
 
       if (!title || !file) {
         return NextResponse.json(
-          { error: 'Title and file are required' },
+          { error: 'Titlul și fișierul sunt obligatorii' },
           { status: 400 }
         );
       }
@@ -94,7 +102,7 @@ export async function POST(request: NextRequest) {
 
       if (!title || !url) {
         return NextResponse.json(
-          { error: 'Title and URL are required' },
+          { error: 'Titlul și URL-ul sunt obligatorii' },
           { status: 400 }
         );
       }
@@ -117,7 +125,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error adding instruction:', error);
     return NextResponse.json(
-      { error: 'Failed to add instruction' },
+      { error: 'Adăugarea instrucțiunii a eșuat' },
       { status: 500 }
     );
   }

@@ -19,7 +19,7 @@ function InnerContent({ children }: { children: ReactNode }) {
 // This wrapper ensures useSearchParams is called within a Suspense boundary
 export function SafeSearchParams({ children }: { children: ReactNode }) {
   return (
-    <Suspense fallback={<div>Loading parameters...</div>}>
+    <Suspense fallback={<div>Se încarcă parametrii...</div>}>
       <InnerContent children={children} />
     </Suspense>
   );

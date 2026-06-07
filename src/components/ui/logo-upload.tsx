@@ -41,8 +41,8 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
 
     if (imageFiles.length === 0) {
       toast({
-        title: 'Invalid file type',
-        description: 'Please drop an image file',
+        title: 'Tip de fișier invalid',
+        description: 'Plasați un fișier imagine',
         variant: 'destructive',
       })
       return
@@ -50,8 +50,8 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
 
     if (imageFiles.length > 1) {
       toast({
-        title: 'Multiple files',
-        description: 'Please drop only one image file',
+        title: 'Fișiere multiple',
+        description: 'Plasați un singur fișier imagine',
         variant: 'destructive',
       })
       return
@@ -72,8 +72,8 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
       toast({
-        title: 'File too large',
-        description: 'Please select an image smaller than 5MB',
+        title: 'Fișier prea mare',
+        description: 'Selectați o imagine mai mică de 5 MB',
         variant: 'destructive',
       })
       return
@@ -82,8 +82,8 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
-        title: 'Invalid file type',
-        description: 'Please select an image file',
+        title: 'Tip de fișier invalid',
+        description: 'Selectați un fișier imagine',
         variant: 'destructive',
       })
       return
@@ -106,16 +106,16 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
         setPreviewUrl(data.logoUrl)
         onLogoUpdate(data.logoUrl)
         toast({
-          title: 'Success',
-          description: 'Logo uploaded successfully',
+          title: 'Succes',
+          description: 'Logo-ul a fost încărcat cu succes',
         })
       } else {
-        throw new Error(data.message || 'Failed to upload logo')
+        throw new Error(data.message || 'Nu s-a putut încărca logo-ul')
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to upload logo',
+        title: 'Eroare',
+        description: error instanceof Error ? error.message : 'Nu s-a putut încărca logo-ul',
         variant: 'destructive',
       })
     } finally {
@@ -137,16 +137,16 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
         setPreviewUrl(null)
         onLogoUpdate(null)
         toast({
-          title: 'Success',
-          description: 'Logo removed successfully',
+          title: 'Succes',
+          description: 'Logo-ul a fost eliminat cu succes',
         })
       } else {
-        throw new Error(data.message || 'Failed to remove logo')
+        throw new Error(data.message || 'Nu s-a putut elimina logo-ul')
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to remove logo',
+        title: 'Eroare',
+        description: error instanceof Error ? error.message : 'Nu s-a putut elimina logo-ul',
         variant: 'destructive',
       })
     } finally {
@@ -166,7 +166,7 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
       {previewUrl && (
         <div className="relative">
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-700">Current Logo</label>
+            <label className="block text-sm font-medium text-gray-700">Logo curent</label>
             {!disabled && (
               <Button
                 variant="ghost"
@@ -176,14 +176,14 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <X className="h-4 w-4 mr-1" />
-                Remove
+                Elimină
               </Button>
             )}
           </div>
           <div className="relative w-32 h-32 border border-gray-200 rounded-lg overflow-hidden bg-white flex items-center justify-center">
             <img
               src={previewUrl}
-              alt="Organization Logo"
+              alt="Logo organizație"
               className="max-w-full max-h-full object-contain"
             />
           </div>
@@ -194,7 +194,7 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
       {!disabled && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {previewUrl ? 'Replace Logo' : 'Upload Logo'}
+            {previewUrl ? 'Înlocuiește logo-ul' : 'Încarcă logo'}
           </label>
           <div
             className={`
@@ -223,16 +223,16 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
               {isUploading ? (
                 <>
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                  <p className="text-sm text-gray-600">Uploading...</p>
+                  <p className="text-sm text-gray-600">Se încarcă...</p>
                 </>
               ) : (
                 <>
                   <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
                   <p className="text-sm text-gray-600 mb-1">
-                    Drag and drop your logo here, or click to browse
+                    Trageți și plasați logo-ul aici sau faceți clic pentru a selecta
                   </p>
                   <p className="text-xs text-gray-500">
-                    PNG, JPG, GIF up to 5MB
+                    PNG, JPG, GIF până la 5 MB
                   </p>
                 </>
               )}
@@ -242,7 +242,7 @@ export function LogoUpload({ currentLogoUrl, onLogoUpdate, disabled = false }: L
       )}
 
       {disabled && !previewUrl && (
-        <p className="text-sm text-gray-500 italic">No logo uploaded</p>
+        <p className="text-sm text-gray-500 italic">Niciun logo încărcat</p>
       )}
     </div>
   )

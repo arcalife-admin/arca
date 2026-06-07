@@ -11,7 +11,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const patientId = params.id;
@@ -38,7 +38,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching shop purchases:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch shop purchases' },
+      { error: 'Încărcarea achizițiilor din magazin a eșuat' },
       { status: 500 }
     );
   }
@@ -52,7 +52,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const patientId = params.id;
@@ -61,7 +61,7 @@ export async function POST(
 
     if (!purchases || !Array.isArray(purchases) || purchases.length === 0) {
       return NextResponse.json(
-        { error: 'Purchases array is required' },
+        { error: 'Array-ul de achiziții este obligatoriu' },
         { status: 400 }
       );
     }
@@ -76,7 +76,7 @@ export async function POST(
 
     if (!patient) {
       return NextResponse.json(
-        { error: 'Patient not found' },
+        { error: 'Pacientul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -93,7 +93,7 @@ export async function POST(
 
     if (products.length !== productIds.length) {
       return NextResponse.json(
-        { error: 'One or more products not found or inactive' },
+        { error: 'Unul sau mai multe produse nu au fost găsite sau sunt inactive' },
         { status: 400 }
       );
     }
@@ -128,7 +128,7 @@ export async function POST(
   } catch (error) {
     console.error('Error creating shop purchases:', error);
     return NextResponse.json(
-      { error: 'Failed to create shop purchases' },
+      { error: 'Crearea achizițiilor din magazin a eșuat' },
       { status: 500 }
     );
   }

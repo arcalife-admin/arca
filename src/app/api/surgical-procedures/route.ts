@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!patientId || !codeId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Câmpuri obligatorii lipsă' },
         { status: 400 }
       );
     }
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     if (!surgicalCode) {
       return NextResponse.json(
-        { error: 'Invalid surgical procedure code' },
+        { error: 'Cod de procedură chirurgicală invalid' },
         { status: 400 }
       );
     }
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating surgical procedure:', error);
     return NextResponse.json(
-      { error: 'Failed to create surgical procedure' },
+      { error: 'Crearea procedurii chirurgicale a eșuat' },
       { status: 500 }
     );
   }
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
 
     if (!patientId) {
       return NextResponse.json(
-        { error: 'Patient ID is required' },
+        { error: 'ID-ul pacientului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching surgical procedures:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch surgical procedures' },
+      { error: 'Încărcarea procedurilor chirurgicale a eșuat' },
       { status: 500 }
     );
   }

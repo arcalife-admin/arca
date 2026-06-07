@@ -39,7 +39,7 @@ export async function GET() {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -137,7 +137,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching clinic schedules:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     const userRole = session.user.role
     if (userRole !== 'ORGANIZATION_OWNER' && userRole !== 'MANAGER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners and managers can create schedules' },
+        { message: 'Neautorizat — doar proprietarii și managerii pot crea programe' },
         { status: 403 }
       )
     }
@@ -292,14 +292,14 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error creating clinic schedule:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -311,7 +311,7 @@ export async function PUT(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -320,7 +320,7 @@ export async function PUT(request: Request) {
     const userRole = session.user.role
     if (userRole !== 'ORGANIZATION_OWNER' && userRole !== 'MANAGER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners and managers can update schedules' },
+        { message: 'Neautorizat — doar proprietarii și managerii pot actualiza programe' },
         { status: 403 }
       )
     }
@@ -331,7 +331,7 @@ export async function PUT(request: Request) {
 
     if (!scheduleId) {
       return NextResponse.json(
-        { message: 'Schedule ID is required' },
+        { message: 'ID-ul programului este obligatoriu' },
         { status: 400 }
       )
     }
@@ -385,14 +385,14 @@ export async function PUT(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error updating clinic schedule:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

@@ -14,6 +14,6 @@ export async function GET() {
     return NextResponse.json(organization)
   } catch (error) {
     console.error('Error fetching organizations:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ message: 'Eroare internă de server' }, { status: 500 })
   }
 } 

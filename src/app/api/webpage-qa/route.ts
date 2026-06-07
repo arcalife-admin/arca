@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Webpage QA error:', error)
     return new Response(
-      JSON.stringify({ error: 'Failed to process the webpage' }),
+      JSON.stringify({ error: 'Procesarea paginii web a eșuat' }),
       { status: 500 }
     )
   }

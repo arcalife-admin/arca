@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const dayOfWeek = searchParams.get('dayOfWeek')
 
     if (!scheduleId) {
-      return NextResponse.json({ error: 'scheduleId is required' }, { status: 400 })
+      return NextResponse.json({ error: 'scheduleId este obligatoriu' }, { status: 400 })
     }
 
     // Build where clause
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching room shifts:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch room shifts' },
+      { error: 'Încărcarea turelor sălii a eșuat' },
       { status: 500 }
     )
   }
@@ -117,13 +117,13 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check permissions
     const userRole = session.user.role
     if (!['ORGANIZATION_OWNER', 'MANAGER'].includes(userRole)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     // Validation: Either date OR dayOfWeek must be set, but not both
     if ((validatedData.date && validatedData.dayOfWeek) || (!validatedData.date && !validatedData.dayOfWeek)) {
       return NextResponse.json(
-        { error: 'Either date or dayOfWeek must be specified, but not both' },
+        { error: 'Trebuie specificată fie data, fie ziua săptămânii, dar nu ambele' },
         { status: 400 }
       )
     }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     // Validate time range
     if (validatedData.startTime >= validatedData.endTime) {
       return NextResponse.json(
-        { error: 'Start time must be before end time' },
+        { error: 'Ora de început trebuie să fie înainte de ora de sfârșit' },
         { status: 400 }
       )
     }
@@ -152,11 +152,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (!schedule) {
-      return NextResponse.json({ error: 'Schedule not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Programul nu a fost găsit' }, { status: 404 })
     }
 
     if (schedule.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     // Helper function to convert time string to minutes
@@ -256,14 +256,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error creating room shift:', error)
     return NextResponse.json(
-      { error: 'Failed to create room shift' },
+      { error: 'Crearea turei sălii a eșuat' },
       { status: 500 }
     )
   }
@@ -274,13 +274,13 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check permissions
     const userRole = session.user.role
     if (!['ORGANIZATION_OWNER', 'MANAGER'].includes(userRole)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -297,18 +297,18 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!existingShift) {
-      return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Tura nu a fost găsită' }, { status: 404 })
     }
 
     if (existingShift.schedule.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     // Validation for time range
     if (validatedData.startTime && validatedData.endTime) {
       if (validatedData.startTime >= validatedData.endTime) {
         return NextResponse.json(
-          { error: 'Start time must be before end time' },
+          { error: 'Ora de început trebuie să fie înainte de ora de sfârșit' },
           { status: 400 }
         )
       }
@@ -317,7 +317,7 @@ export async function PUT(request: NextRequest) {
     // Validation: Either date OR dayOfWeek, but not both
     if (validatedData.date && validatedData.dayOfWeek) {
       return NextResponse.json(
-        { error: 'Cannot specify both date and dayOfWeek' },
+        { error: 'Nu se pot specifica simultan data și ziua săptămânii' },
         { status: 400 }
       )
     }
@@ -368,14 +368,14 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error updating room shift:', error)
     return NextResponse.json(
-      { error: 'Failed to update room shift' },
+      { error: 'Actualizarea turei sălii a eșuat' },
       { status: 500 }
     )
   }
@@ -386,20 +386,20 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     // Check permissions
     const userRole = session.user.role
     if (!['ORGANIZATION_OWNER', 'MANAGER'].includes(userRole)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
     const shiftId = searchParams.get('id')
 
     if (!shiftId) {
-      return NextResponse.json({ error: 'Shift ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'ID-ul turei este obligatoriu' }, { status: 400 })
     }
 
     // Check if shift exists and user has access
@@ -413,11 +413,11 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (!existingShift) {
-      return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Tura nu a fost găsită' }, { status: 404 })
     }
 
     if (existingShift.schedule.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return NextResponse.json({ error: 'Acces refuzat' }, { status: 403 })
     }
 
     // Delete the shift
@@ -425,11 +425,11 @@ export async function DELETE(request: NextRequest) {
       where: { id: shiftId }
     })
 
-    return NextResponse.json({ message: 'Shift deleted successfully' })
+    return NextResponse.json({ message: 'Tura a fost ștearsă cu succes' })
   } catch (error) {
     console.error('Error deleting room shift:', error)
     return NextResponse.json(
-      { error: 'Failed to delete room shift' },
+      { error: 'Ștergerea turei sălii a eșuat' },
       { status: 500 }
     )
   }

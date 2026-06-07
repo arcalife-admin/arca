@@ -21,8 +21,8 @@ export function ConfirmationModal({
   onOpenChange,
   title,
   description,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = 'Confirmă',
+  cancelText = 'Anulează',
   variant = 'default',
   icon = 'warning',
   onConfirm,
@@ -74,7 +74,7 @@ export function ConfirmationModal({
             onClick={handleConfirm}
             disabled={loading}
           >
-            {loading ? 'Processing...' : confirmText}
+            {loading ? 'Se procesează...' : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

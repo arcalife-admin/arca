@@ -48,9 +48,9 @@ export default function EmailModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Send Email</DialogTitle>
+          <DialogTitle>Trimite e-mail</DialogTitle>
           <DialogDescription>
-            Compose and send an email to the patient or other recipients
+            Compuneți și trimiteți un e-mail pacientului sau altor destinatari
           </DialogDescription>
         </DialogHeader>
 
@@ -63,11 +63,11 @@ export default function EmailModal({
                 onClick={() => setShowTemplateModal(true)}
                 className="w-full justify-center"
               >
-                📝 Browse Quick Templates
+                📝 Modele rapide
               </Button>
             </div>
             <div>
-              <Label>To</Label>
+              <Label>Către</Label>
               <div className="mt-1 space-y-2">
                 <div className="flex flex-wrap gap-1 min-h-[2.5rem] p-2 border rounded bg-white items-center">
                   {emailFormData.recipients.map((email) => (
@@ -87,7 +87,7 @@ export default function EmailModal({
                     value={emailInput}
                     onChange={handleEmailInputChange}
                     onKeyDown={handleEmailInputKeyDown}
-                    placeholder={emailFormData.recipients.length === 0 ? "Type email address..." : ""}
+                    placeholder={emailFormData.recipients.length === 0 ? "Introduceți adresa de e-mail..." : ""}
                     className="flex-1 min-w-[200px] outline-none bg-transparent text-sm py-1 rounded-lg"
                   />
                   <Button
@@ -116,7 +116,7 @@ export default function EmailModal({
                       onClick={addPatientEmail}
                       className="text-xs"
                     >
-                      + Add Patient Email
+                      + Adaugă e-mailul pacientului
                     </Button>
                   )}
                 </div>
@@ -124,21 +124,21 @@ export default function EmailModal({
             </div>
 
             <div>
-              <Label>Subject</Label>
+              <Label>Subiect</Label>
               <Input
                 value={emailFormData.subject}
                 onChange={(e) => setEmailFormData(prev => ({ ...prev, subject: e.target.value }))}
-                placeholder="Enter email subject..."
+                placeholder="Introduceți subiectul e-mailului..."
                 className="mt-1"
               />
             </div>
 
             <div>
-              <Label>Message</Label>
+              <Label>Mesaj</Label>
               <Textarea
                 value={emailFormData.content}
                 onChange={(e) => setEmailFormData(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Enter your message..."
+                placeholder="Introduceți mesajul..."
                 rows={12}
                 className="mt-1"
               />
@@ -148,7 +148,7 @@ export default function EmailModal({
 
         <DialogFooter className="flex gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Anulează
           </Button>
           <Button
             onClick={onSend}
@@ -156,7 +156,7 @@ export default function EmailModal({
             className="flex items-center gap-2"
           >
             <Mail className="w-4 h-4" />
-            Send Email
+            Trimite e-mail
           </Button>
         </DialogFooter>
       </DialogContent>

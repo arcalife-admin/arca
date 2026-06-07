@@ -6,14 +6,14 @@ import { db } from '@/lib/db'
 import crypto from 'crypto'
 
 const patientSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string().min(1, 'Prenumele este obligatoriu'),
+  lastName: z.string().min(1, 'Numele este obligatoriu'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   gender: z.enum(['MALE', 'FEMALE']),
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string().email('Adresă de e-mail invalidă').optional(),
   phone: z.string().optional(),
   address: z.object({
-    display_name: z.string().min(1, 'Address is required'),
+    display_name: z.string().min(1, 'Adresa este obligatorie'),
     lat: z.string(),
     lon: z.string(),
   }),
@@ -191,7 +191,7 @@ export async function GET() {
       console.error('Error stack:', error.stack)
     }
     return NextResponse.json(
-      { message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: 'Eroare internă de server', error: error instanceof Error ? error.message : 'Eroare necunoscută' },
       { status: 500 }
     )
   }
@@ -272,7 +272,7 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
@@ -287,7 +287,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

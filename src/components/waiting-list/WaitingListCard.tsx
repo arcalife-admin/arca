@@ -29,14 +29,14 @@ export default function WaitingListCard({ stats, onClick }: WaitingListCardProps
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">Patients waiting</span>
+            <span className="text-sm text-gray-600">Pacienți în așteptare</span>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-blue-600">
               {stats.patientCount}
             </div>
             <div className="text-xs text-gray-500">
-              {stats.patientCount === 1 ? 'patient' : 'patients'}
+              {stats.patientCount === 1 ? 'pacient' : 'pacienți'}
             </div>
           </div>
         </div>

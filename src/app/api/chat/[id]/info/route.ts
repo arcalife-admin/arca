@@ -7,18 +7,18 @@ export async function GET(req, { params }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     const chatRoomId = params.id;
     if (!chatRoomId) {
-      return NextResponse.json({ error: 'Missing chat room id' }, { status: 400 });
+      return NextResponse.json({ error: 'ID-ul camerei de chat lipsește' }, { status: 400 });
     }
     // Check if user is a participant
     const isParticipant = await prisma.chatParticipant.findFirst({
       where: { chatRoomId, userId: session.user.id }
     });
     if (!isParticipant) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: 'Acces interzis' }, { status: 403 });
     }
     // Fetch chat room info
     const chatRoom = await prisma.chatRoom.findUnique({
@@ -39,7 +39,7 @@ export async function GET(req, { params }) {
       }
     });
     if (!chatRoom) {
-      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Chat-ul nu a fost găsit' }, { status: 404 });
     }
     // Message stats
     const messages = await prisma.message.findMany({
@@ -83,6 +83,6 @@ export async function GET(req, { params }) {
     });
   } catch (error) {
     console.error('Error fetching group info:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 });
   }
 } 

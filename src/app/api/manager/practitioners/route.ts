@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       );
     }
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     // Check if user has manager permissions
     if (!hasManagerPermissions(session.user.role)) {
       return NextResponse.json(
-        { message: 'Insufficient permissions' },
+        { message: 'Permisiuni insuficiente' },
         { status: 403 }
       );
     }
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
             appointments: true,
             createdTasks: true,
             completedTasks: true,
-            dentalProcedures: true,
+            surgicalProcedures: true,
             leaveRequests: true,
           },
         },
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching practitioners for manager:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     );
   }

@@ -16,7 +16,6 @@ const filesToFix = [
   'src/app/api/patients/[id]/files/route.ts',
   'src/app/api/patients/[id]/images/[imageId]/annotations/route.ts',
   'src/app/api/patients/[id]/images/route.ts',
-  'src/app/api/patients/[id]/care-plan/route.ts',
   'src/app/api/chat/[id]/messages/route.ts',
   'src/app/api/chat/[id]/info/route.ts',
   'src/app/api/chat/route.ts',

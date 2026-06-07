@@ -78,7 +78,7 @@ const medicalHistorySchema = z.object({
     details: z.string().optional(),
   }),
   consent: z.boolean().refine((val) => val === true, {
-    message: 'You must agree to the terms',
+    message: 'Trebuie să acceptați termenii',
   }),
 })
 
@@ -93,7 +93,7 @@ interface MedicalHistoryFormProps {
 export default function MedicalHistoryForm({
   onSubmit,
   isSubmitting = false,
-  buttonText = 'Next'
+  buttonText = 'Următorul'
 }: MedicalHistoryFormProps) {
   const {
     register,
@@ -130,16 +130,16 @@ export default function MedicalHistoryForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* General Health */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">General Health</h3>
+          <h3 className="text-lg font-medium text-gray-900">Stare generală de sănătate</h3>
           <p className="text-sm text-gray-500">
-            Have you ever had or been diagnosed with:
+            Ați avut sau vi s-a diagnosticat vreodată:
           </p>
 
           <div className="space-y-4">
             {/* Heart Conditions */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Heart conditions, high/low blood pressure, stroke, rheumatic fever?
+                Afecțiuni cardiace, tensiune arterială ridicată/scăzută, accident vascular cerebral, febră reumatică?
               </label>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center">
@@ -151,7 +151,7 @@ export default function MedicalHistoryForm({
                     className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="heartConditionsYes" className="ml-3 block text-sm text-gray-700">
-                    Yes
+                    Da
                   </label>
                 </div>
                 <div className="flex items-center">
@@ -163,7 +163,7 @@ export default function MedicalHistoryForm({
                     className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="heartConditionsNo" className="ml-3 block text-sm text-gray-700">
-                    No
+                    Nu
                   </label>
                 </div>
               </div>
@@ -171,7 +171,7 @@ export default function MedicalHistoryForm({
                 <div className="mt-2">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Blood Pressure
+                      Tensiune arterială
                     </label>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center">
@@ -183,7 +183,7 @@ export default function MedicalHistoryForm({
                           className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <label htmlFor="bloodPressureHigh" className="ml-2 text-sm text-gray-700">
-                          High
+                          Ridicată
                         </label>
                       </div>
                       <div className="flex items-center">
@@ -195,7 +195,7 @@ export default function MedicalHistoryForm({
                           className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <label htmlFor="bloodPressureLow" className="ml-2 text-sm text-gray-700">
-                          Low
+                          Scăzută
                         </label>
                       </div>
                       <div className="flex items-center">
@@ -207,14 +207,14 @@ export default function MedicalHistoryForm({
                           className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <label htmlFor="bloodPressureNone" className="ml-2 text-sm text-gray-700">
-                          None
+                          Nune
                         </label>
                       </div>
                     </div>
                   </div>
                   <textarea
                     {...register('generalHealth.heartConditionsDetails')}
-                    placeholder="Please explain"
+                    placeholder="Vă rugăm să explicați"
                     rows={2}
                     className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
@@ -226,47 +226,47 @@ export default function MedicalHistoryForm({
             {[
               {
                 id: 'lungConditions' as const,
-                label: 'Asthma, bronchitis, chronic lung disease, TB?',
+                label: 'Astm, bronșită, boală pulmonară cronică, tuberculoză?',
               },
               {
                 id: 'diabetes' as const,
-                label: 'Diabetes, thyroid disorder, or hormone issues?',
+                label: 'Diabet, afecțiuni tiroidiene sau hormonale?',
               },
               {
                 id: 'kidneyLiver' as const,
-                label: 'Kidney or liver disease, hepatitis?',
+                label: 'Boli renale sau hepatice, hepatită?',
               },
               {
                 id: 'bloodDisorders' as const,
-                label: 'Blood disorders (e.g., anemia, hemophilia)?',
+                label: 'Afecțiuni hematologice (ex. anemie, hemofilie)?',
               },
               {
                 id: 'cancer' as const,
-                label: 'Cancer, chemotherapy or radiation therapy?',
+                label: 'Cancer, chimioterapie sau radioterapie?',
               },
               {
                 id: 'boneIssues' as const,
-                label: 'Osteoporosis, joint replacement, bone issues?',
+                label: 'Osteoporoză, înlocuire articulară, afecțiuni osoase?',
               },
               {
                 id: 'neurological' as const,
-                label: 'Seizures, epilepsy, neurological conditions?',
+                label: 'Convulsii, epilepsie, afecțiuni neurologice?',
               },
               {
                 id: 'psychiatric' as const,
-                label: 'Psychiatric or mental health disorders?',
+                label: 'Afecțiuni psihiatrice sau de sănătate mintală?',
               },
               {
                 id: 'digestive' as const,
-                label: 'Stomach or digestive problems (ulcers, reflux)?',
+                label: 'Probleme stomacale sau digestive (ulcer, reflux)?',
               },
               {
                 id: 'immune' as const,
-                label: 'Immune disorders, HIV/AIDS, or frequent infections?',
+                label: 'Afecțiuni imunitare, HIV/SIDA sau infecții frecvente?',
               },
               {
                 id: 'bleeding' as const,
-                label: 'Excessive bleeding or bruising tendency?',
+                label: 'Sângerări excesive sau tendință la vânătăi?',
               },
             ].map((condition) => (
               <div key={condition.id}>
@@ -283,7 +283,7 @@ export default function MedicalHistoryForm({
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor={`${condition.id}Yes`} className="ml-3 block text-sm text-gray-700">
-                      Yes
+                      Da
                     </label>
                   </div>
                   <div className="flex items-center">
@@ -295,7 +295,7 @@ export default function MedicalHistoryForm({
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor={`${condition.id}No`} className="ml-3 block text-sm text-gray-700">
-                      No
+                      Nu
                     </label>
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export default function MedicalHistoryForm({
                   <div className="mt-2">
                     <textarea
                       {...register(`generalHealth.${condition.id}Details`)}
-                      placeholder="Please explain"
+                      placeholder="Vă rugăm să explicați"
                       rows={2}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                     />
@@ -316,10 +316,10 @@ export default function MedicalHistoryForm({
 
         {/* Hospitalization */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Hospitalization</h3>
+          <h3 className="text-lg font-medium text-gray-900">Spitalizare</h3>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Have you been hospitalized or had surgery in the past 5 years?
+              Ați fost spitalizat sau ați avut intervenții chirurgicale în ultimii 5 ani?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -331,7 +331,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="hospitalizationYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -343,7 +343,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="hospitalizationNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function MedicalHistoryForm({
               <div className="mt-2">
                 <textarea
                   {...register('hospitalizationDetails')}
-                  placeholder="Please explain"
+                  placeholder="Vă rugăm să explicați"
                   rows={2}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
@@ -362,10 +362,10 @@ export default function MedicalHistoryForm({
 
         {/* Bisphosphonates */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Bisphosphonates</h3>
+          <h3 className="text-lg font-medium text-gray-900">Bifosfonați</h3>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Have you ever used bisphosphonates (e.g., Fosamax, Aclasta)?
+              Ați folosit vreodată bifosfonați (ex. Fosamax, Aclasta)?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -377,7 +377,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="bisphosphonatesYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -389,7 +389,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="bisphosphonatesNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -397,7 +397,7 @@ export default function MedicalHistoryForm({
               <div className="mt-2">
                 <textarea
                   {...register('bisphosphonatesDetails')}
-                  placeholder="Medication name and duration"
+                  placeholder="Denumirea medicamentului și durata"
                   rows={2}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
@@ -408,12 +408,12 @@ export default function MedicalHistoryForm({
 
         {/* Medications & Lifestyle */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Medications & Lifestyle</h3>
+          <h3 className="text-lg font-medium text-gray-900">Medicație și stil de viață</h3>
 
           {/* Current Medications */}
           <div>
             <label htmlFor="medications" className="block text-sm font-medium text-gray-700">
-              List all current medications (including supplements):
+              Enumerați toate medicamentele curente (inclusiv suplimentele):
             </label>
             <textarea
               id="medications"
@@ -426,7 +426,7 @@ export default function MedicalHistoryForm({
           {/* Blood Thinners */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Do you take blood thinners (e.g., aspirin, warfarin)?
+              Luați anticoagulante (ex. aspirină, warfarină)?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -438,7 +438,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="bloodThinnersYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -450,7 +450,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="bloodThinnersNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -459,7 +459,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('bloodThinnersDetails')}
-                  placeholder="Name"
+                  placeholder="Denumire"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -469,7 +469,7 @@ export default function MedicalHistoryForm({
           {/* Hormonal Therapy */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Are you on hormonal therapy or birth control?
+              Urmați terapie hormonală sau contracepție?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -481,7 +481,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="hormonalTherapyYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -493,7 +493,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="hormonalTherapyNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -502,7 +502,7 @@ export default function MedicalHistoryForm({
           {/* Smoking */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Do you smoke or vape?
+              Fumați sau folosiți dispozitive de vaping?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -514,7 +514,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="smokingYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -526,7 +526,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="smokingNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -535,7 +535,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('smokingDetails')}
-                  placeholder="How often"
+                  placeholder="Cât de des"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -545,7 +545,7 @@ export default function MedicalHistoryForm({
           {/* Quit Smoking */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Did you quit smoking?
+              Ați renunțat la fumat?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -557,7 +557,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="quitSmokingYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -569,7 +569,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="quitSmokingNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -578,7 +578,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('quitSmokingDetails')}
-                  placeholder="When"
+                  placeholder="Când"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -588,7 +588,7 @@ export default function MedicalHistoryForm({
           {/* Alcohol */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Do you drink alcohol?
+              Consumați alcool?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -600,7 +600,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="alcoholYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -612,7 +612,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="alcoholNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -621,7 +621,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('alcoholDetails')}
-                  placeholder="How many per week"
+                  placeholder="Câte pe săptămână"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -631,7 +631,7 @@ export default function MedicalHistoryForm({
           {/* Recreational Drugs */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Use recreational drugs?
+              Folosiți droguri recreaționale?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -643,7 +643,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="recreationalDrugsYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -655,7 +655,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="recreationalDrugsNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -664,7 +664,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('recreationalDrugsDetails')}
-                  placeholder="Which"
+                  placeholder="Care"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -674,32 +674,32 @@ export default function MedicalHistoryForm({
 
         {/* Allergies */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Allergies & Reactions</h3>
+          <h3 className="text-lg font-medium text-gray-900">Alergii și reacții</h3>
           <p className="text-sm text-gray-500">
-            Are you allergic to or have had reactions from:
+            Sunteți alergic sau ați avut reacții la:
           </p>
 
           <div className="space-y-4">
             {[
               {
                 id: 'antibiotics' as const,
-                label: 'Antibiotics (e.g., penicillin)?',
+                label: 'Antibiotice (ex. penicilină)?',
               },
               {
                 id: 'anesthetics' as const,
-                label: 'Local anesthetics (e.g., lidocaine)?',
+                label: 'Anestezice locale (ex. lidocaină)?',
               },
               {
                 id: 'painkillers' as const,
-                label: 'Aspirin, ibuprofen, or narcotics?',
+                label: 'Aspirină, ibuprofen sau narcotice?',
               },
               {
                 id: 'materials' as const,
-                label: 'Latex, metals, acrylics, iodine?',
+                label: 'Latex, metale, acrilice, iod?',
               },
               {
                 id: 'other' as const,
-                label: 'Foods, animals, pollen, other?',
+                label: 'Alimente, animale, polen, altele?',
               },
             ].map((allergy) => (
               <div key={allergy.id}>
@@ -716,7 +716,7 @@ export default function MedicalHistoryForm({
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor={`${allergy.id}Yes`} className="ml-3 block text-sm text-gray-700">
-                      Yes
+                      Da
                     </label>
                   </div>
                   <div className="flex items-center">
@@ -728,7 +728,7 @@ export default function MedicalHistoryForm({
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor={`${allergy.id}No`} className="ml-3 block text-sm text-gray-700">
-                      No
+                      Nu
                     </label>
                   </div>
                 </div>
@@ -736,7 +736,7 @@ export default function MedicalHistoryForm({
                   <div className="mt-2">
                     <textarea
                       {...register(`allergies.${allergy.id}Details`)}
-                      placeholder="Please explain"
+                      placeholder="Vă rugăm să explicați"
                       rows={2}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                     />
@@ -749,12 +749,12 @@ export default function MedicalHistoryForm({
 
         {/* Special Considerations */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Special Considerations</h3>
+          <h3 className="text-lg font-medium text-gray-900">Considerații speciale</h3>
 
           {/* Pregnancy */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Are you currently pregnant or breastfeeding?
+              Sunteți în prezent însărcinată sau alăptați?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -766,7 +766,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="pregnancyPregnant" className="ml-3 block text-sm text-gray-700">
-                  Pregnant
+                  Însărcinată
                 </label>
               </div>
               <div className="flex items-center">
@@ -778,7 +778,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="pregnancyBreastfeeding" className="ml-3 block text-sm text-gray-700">
-                  Breastfeeding
+                  Alăptare
                 </label>
               </div>
               <div className="flex items-center">
@@ -790,7 +790,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="pregnancyNone" className="ml-3 block text-sm text-gray-700">
-                  None
+                  Niciuna
                 </label>
               </div>
             </div>
@@ -799,7 +799,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('pregnancyDetails')}
-                  placeholder="Week"
+                  placeholder="Săptămână"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -809,7 +809,7 @@ export default function MedicalHistoryForm({
           {/* Immunocompromised */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Are you immunocompromised or on immune-suppressing medication?
+              Aveți imunodeficiență sau luați medicamente imunosupresoare?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -821,7 +821,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="immunocompromisedYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -833,7 +833,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="immunocompromisedNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -841,7 +841,7 @@ export default function MedicalHistoryForm({
               <div className="mt-2">
                 <textarea
                   {...register('immunocompromisedDetails')}
-                  placeholder="Please explain"
+                  placeholder="Vă rugăm să explicați"
                   rows={2}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
@@ -852,7 +852,7 @@ export default function MedicalHistoryForm({
           {/* Premedication */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Do you have a condition requiring antibiotic premedication before dental treatment (e.g., artificial heart valve)?
+              Aveți o afecțiune care necesită premedicație antibiotică înainte de tratamentul dentar (ex. valvă cardiacă artificială)?
             </label>
             <div className="mt-2 space-y-2">
               <div className="flex items-center">
@@ -864,7 +864,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="premedicationYes" className="ml-3 block text-sm text-gray-700">
-                  Yes
+                  Da
                 </label>
               </div>
               <div className="flex items-center">
@@ -876,7 +876,7 @@ export default function MedicalHistoryForm({
                   className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="premedicationNo" className="ml-3 block text-sm text-gray-700">
-                  No
+                  Nu
                 </label>
               </div>
             </div>
@@ -885,7 +885,7 @@ export default function MedicalHistoryForm({
                 <input
                   type="text"
                   {...register('premedicationDetails')}
-                  placeholder="Prescriber & dose"
+                  placeholder="Prescriptor și doză"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 />
               </div>
@@ -895,36 +895,36 @@ export default function MedicalHistoryForm({
 
         {/* Family History */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Family Medical History</h3>
+          <h3 className="text-lg font-medium text-gray-900">Istoric medical familial</h3>
           <p className="text-sm text-gray-500">
-            Do your close relatives (parents/siblings) have a history of:
+            Rudele apropiate (părinți/frate/soră) au istoric de:
           </p>
 
           <div className="space-y-4">
             {[
               {
                 id: 'heartDisease' as const,
-                label: 'Heart disease, stroke',
+                label: 'Boli cardiace, accident vascular cerebral',
               },
               {
                 id: 'diabetes' as const,
-                label: 'Diabetes or thyroid disease',
+                label: 'Diabet sau afecțiuni tiroidiene',
               },
               {
                 id: 'bleedingDisorders' as const,
-                label: 'Bleeding/clotting disorders',
+                label: 'Afecțiuni de sângerare/coagulare',
               },
               {
                 id: 'osteoporosis' as const,
-                label: 'Osteoporosis',
+                label: 'Osteoporoză',
               },
               {
                 id: 'psychiatric' as const,
-                label: 'Psychiatric illness',
+                label: 'Afecțiuni psihiatrice',
               },
               {
                 id: 'dentalIssues' as const,
-                label: 'Jaw/dental abnormalities or orthodontic treatment',
+                label: 'Anomalii maxilo-dentare sau tratament ortodontic',
               },
             ].map((condition) => (
               <div key={condition.id}>
@@ -941,7 +941,7 @@ export default function MedicalHistoryForm({
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor={`${condition.id}Yes`} className="ml-3 block text-sm text-gray-700">
-                      Yes
+                      Da
                     </label>
                   </div>
                   <div className="flex items-center">
@@ -953,7 +953,7 @@ export default function MedicalHistoryForm({
                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <label htmlFor={`${condition.id}No`} className="ml-3 block text-sm text-gray-700">
-                      No
+                      Nu
                     </label>
                   </div>
                 </div>
@@ -963,7 +963,7 @@ export default function MedicalHistoryForm({
 
           <div>
             <label htmlFor="familyHistoryDetails" className="block text-sm font-medium text-gray-700">
-              Additional details about family history:
+              Detalii suplimentare despre istoricul familial:
             </label>
             <textarea
               id="familyHistoryDetails"
@@ -976,9 +976,9 @@ export default function MedicalHistoryForm({
 
         {/* Consent */}
         <div className="space-y-6">
-          <h3 className="text-lg font-medium text-gray-900">Consent & Declaration</h3>
+          <h3 className="text-lg font-medium text-gray-900">Consimțământ și declarație</h3>
           <p className="text-sm text-gray-700">
-            I confirm the above information is accurate and complete to the best of my knowledge. I agree to inform the dental office of any changes in my health or medications. I authorize my dentist to contact my physician or specialist if needed for safe treatment.
+            Confirm că informațiile de mai sus sunt corecte și complete, conform cunoștințelor mele. Mă angajez să informez cabinetul dentar despre orice modificare a stării de sănătate sau a medicației. Îmi dau acordul ca medicul dentist să contacteze medicul de familie sau specialistul, dacă este necesar pentru un tratament în siguranță.
           </p>
           <div className="flex items-start">
             <div className="flex items-center h-5">
@@ -991,7 +991,7 @@ export default function MedicalHistoryForm({
             </div>
             <div className="ml-3 text-sm">
               <label htmlFor="consent" className="font-medium text-gray-700">
-                I agree to the above terms
+                Accept termenii de mai sus
               </label>
               {errors.consent && (
                 <p className="mt-1 text-sm text-red-600">{errors.consent.message}</p>
@@ -1006,7 +1006,7 @@ export default function MedicalHistoryForm({
             disabled={isSubmitting}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {isSubmitting ? 'Saving...' : buttonText}
+            {isSubmitting ? 'Se salvează...' : buttonText}
           </button>
         </div>
       </form>

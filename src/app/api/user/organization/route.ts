@@ -44,7 +44,7 @@ export async function GET() {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -55,7 +55,7 @@ export async function GET() {
     })
 
     if (!user?.organization) {
-      return NextResponse.json({ error: 'User not associated with an organization' }, { status: 404 })
+      return NextResponse.json({ error: 'Utilizatorul nu este asociat cu o organizație' }, { status: 404 })
     }
 
     let { latitude, longitude } = user.organization
@@ -92,6 +92,6 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error fetching organization:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: 'Eroare internă de server' }, { status: 500 })
   }
 } 

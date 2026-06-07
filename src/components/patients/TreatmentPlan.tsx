@@ -4,23 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-import { Edit, Trash2, Plus, Calendar, Euro, ChevronDown, ChevronUp, CreditCard, FileText } from 'lucide-react';
+import { Edit, Trash2, Plus, Calendar, ChevronDown, ChevronUp, CreditCard, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { TreatmentModal } from '@/components/dental/TreatmentModal'
+import SurgicalProcedureForm from '@/components/surgical/SurgicalProcedureForm'
 import { PaymentModal } from '@/components/patients/PaymentModal'
 import { BudgetModal } from '@/components/patients/BudgetModal'
+import { ProcedurePriceDisplay } from '@/components/ProcedurePriceDisplay'
+import { formatLei, toLei } from '@/lib/procedure-currency'
+import { useEurToRonRate } from '@/hooks/useEurToRonRate'
 
-interface DentalCode {
+interface SurgicalProcedureCode {
   id: string;
   code: string;
   description: string;
-  points: number | null;
-  rate: number | null;
+  price: number | null;
+  currency?: string;
   category: string;
 }
 
-interface DentalProcedure {
+interface SurgicalProcedure {
   id: string;
   patientId: string;
   codeId: string;
@@ -29,13 +32,15 @@ interface DentalProcedure {
   status: string;
   createdAt: string;
   updatedAt: string;
-  code: DentalCode;
+  code: SurgicalProcedureCode;
   practitioner?: {
     id: string;
     firstName: string;
     lastName: string;
   };
-  toothNumber?: number;
+  bodyArea?: string | null;
+  procedureType?: string | null;
+  anesthesiaType?: string | null;
   quantity?: number;
   // Payment fields
   isPaid?: boolean;
@@ -91,7 +96,7 @@ interface Organization {
 
 interface TreatmentPlanProps {
   patientId: string;
-  procedures: DentalProcedure[];
+  procedures: SurgicalProcedure[];
   onProcedureAdded: () => void;
   onProcedureUpdated: () => void;
   onProcedureDeleted: () => void;
@@ -128,25 +133,22 @@ export function TreatmentPlan({
   onOpenScreeningRecallModal,
   onRefresh
 }: TreatmentPlanProps) {
+  const rate = useEurToRonRate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProcedure, setSelectedProcedure] = useState<DentalProcedure | null>(null);
+  const [selectedProcedure, setSelectedProcedure] = useState<SurgicalProcedure | null>(null);
   const [selectedProcedures, setSelectedProcedures] = useState<string[]>([]);
-  const [availableCodes, setAvailableCodes] = useState<DentalCode[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [proceduresToPay, setProceduresToPay] = useState<DentalProcedure[]>([]);
+  const [proceduresToPay, setProceduresToPay] = useState<SurgicalProcedure[]>([]);
 
   // Undo stack to support Ctrl+Z restore
-  const [undoStack, setUndoStack] = useState<DentalProcedure[][]>([]);
+  const [undoStack, setUndoStack] = useState<SurgicalProcedure[][]>([]);
 
   // State for tracking expanded procedure groups
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-
-  // State for tracking disabled teeth dropdown expansion
-  const [disabledTeethExpanded, setDisabledTeethExpanded] = useState(false);
 
   // Shop purchases state
   const [shopPurchases, setShopPurchases] = useState<ShopPurchase[]>([]);
@@ -154,21 +156,6 @@ export function TreatmentPlan({
   // Budget modal state
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [buttonClicked, setButtonClicked] = useState(false);
-
-  // Fetch available dental codes
-  useEffect(() => {
-    const fetchCodes = async () => {
-      try {
-        const response = await fetch('/api/dental-codes');
-        const data = await response.json();
-        setAvailableCodes(data);
-      } catch (error) {
-        console.error('Failed to load dental codes:', error);
-        toast.error('Failed to load dental codes');
-      }
-    };
-    fetchCodes();
-  }, []);
 
   // Load shop purchases
   useEffect(() => {
@@ -190,17 +177,11 @@ export function TreatmentPlan({
   }, [patientId, procedures]);
 
   // Helper: visible procedures based on active tab
-  const visibleProcedures = activeTab === 'history' ?
-    procedures.filter(p => p.status === 'COMPLETED' || p.code.code === 'DISABLED') :
-    activeTab === 'current' ?
-      procedures.filter(p => p.status === 'IN_PROGRESS' && p.code.code !== 'DISABLED') :
-      procedures.filter(p => p.status === 'PENDING' && p.code.code !== 'DISABLED');
-
-  // Separate disabled teeth procedures for history tab
-  const disabledTeethProcedures = activeTab === 'history' ?
-    visibleProcedures.filter(p => p.code.code === 'DISABLED') : [];
-  const regularProcedures = activeTab === 'history' ?
-    visibleProcedures.filter(p => p.code.code !== 'DISABLED') : visibleProcedures;
+  const visibleProcedures = activeTab === 'history'
+    ? procedures.filter(p => p.status === 'COMPLETED')
+    : activeTab === 'current'
+      ? procedures.filter(p => p.status === 'IN_PROGRESS')
+      : procedures.filter(p => p.status === 'PENDING');
 
   // Shop purchases are shown in current tab (paid purchases)
   const visibleShopPurchases: ShopPurchase[] = [];
@@ -208,7 +189,7 @@ export function TreatmentPlan({
 
   // Helper function to get all related procedures for a given procedure
   const getRelatedProcedureIds = (procedureId: string): string[] => {
-    const procedureGroups = groupProcedures(visibleProcedures, activeTab);
+    const procedureGroups = groupProcedures(visibleProcedures);
 
     for (const group of procedureGroups) {
       if (group.isGroup) {
@@ -227,7 +208,7 @@ export function TreatmentPlan({
 
   // Helper function to check if a procedure is a main procedure in a group
   const isMainProcedureInGroup = (procedureId: string): boolean => {
-    const procedureGroups = groupProcedures(visibleProcedures, activeTab);
+    const procedureGroups = groupProcedures(visibleProcedures);
     return procedureGroups.some(group =>
       group.isGroup && group.mainProcedure.id === procedureId
     );
@@ -266,14 +247,33 @@ export function TreatmentPlan({
 
   const clearSelection = () => setSelectedProcedures([]);
 
+  const getProcedureCost = (procedure: SurgicalProcedure) => {
+    if (typeof procedure.cost === 'number') {
+      return procedure.cost;
+    }
+    return (procedure.code.price || 0) * (procedure.quantity || 1);
+  };
+
+  const getProcedureCostLei = (procedure: SurgicalProcedure) => {
+    const amount = getProcedureCost(procedure);
+    const currency = procedure.code?.currency ?? 'EUR';
+    return toLei(amount, currency, rate);
+  };
+
+  const calculateTotalCostLei = (status: 'COMPLETED' | 'PENDING' | 'IN_PROGRESS' | 'CANCELLED') => {
+    return procedures
+      .filter((p) => p.status === status && !p.isPaid)
+      .reduce((total, procedure) => total + getProcedureCostLei(procedure), 0);
+  };
+
   // Payment functions
   const handlePaySelected = () => {
     const selected = visibleProcedures.filter(p =>
-      selectedProcedures.includes(p.id) && !p.isPaid && p.code.rate && p.code.rate > 0
+      selectedProcedures.includes(p.id) && !p.isPaid && getProcedureCost(p) > 0
     );
 
     if (selected.length === 0) {
-      toast.error('Please select unpaid procedures with valid pricing');
+      toast.error('Selectați proceduri neplătite cu prețuri valide');
       return;
     }
 
@@ -290,8 +290,8 @@ export function TreatmentPlan({
   };
 
   // Helper function to check if a procedure can be paid
-  const canBePaid = (procedure: DentalProcedure) => {
-    return !procedure.isPaid && procedure.code.rate && procedure.code.rate > 0;
+  const canBePaid = (procedure: SurgicalProcedure) => {
+    return !procedure.isPaid && getProcedureCost(procedure) > 0;
   };
 
   // Get selected procedures that can be paid
@@ -299,8 +299,9 @@ export function TreatmentPlan({
     selectedProcedures.includes(p.id) && canBePaid(p)
   );
 
-  const selectedPayableAmount = selectedPayableProcedures.reduce((sum, proc) =>
-    sum + ((proc.code.rate || 0) * (proc.quantity || 1)), 0
+  const selectedPayableAmount = selectedPayableProcedures.reduce(
+    (sum, proc) => sum + getProcedureCostLei(proc),
+    0
   );
 
   // Select-all logic for current tab - considers all procedures including grouped ones
@@ -353,76 +354,7 @@ export function TreatmentPlan({
     }
   }, [pendingProcedureId, procedures, activeTab]);
 
-  // Handle saving new treatment
-  const handleSaveNewTreatment = async (treatmentData: any) => {
-    try {
-      const response = await fetch(`/api/patients/${patientId}/dental-procedures`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId,
-          codeId: treatmentData.codeId,
-          toothNumber: treatmentData.toothNumber,
-          jaw: treatmentData.jaw,
-          surface: treatmentData.surface,
-          quadrant: treatmentData.quadrant,
-          timeMultiplier: treatmentData.timeMultiplier,
-          surfaces: treatmentData.surfaces,
-          roots: treatmentData.roots,
-          elements: treatmentData.elements,
-          sessions: treatmentData.sessions,
-          jawHalf: treatmentData.jawHalf,
-          sextant: treatmentData.sextant,
-          technicalCosts: treatmentData.technicalCosts,
-          materialCosts: treatmentData.materialCosts,
-          cost: treatmentData.cost,
-          notes: treatmentData.notes,
-          status: activeTab === 'history' ? 'COMPLETED' : activeTab === 'current' ? 'IN_PROGRESS' : 'PENDING',
-          date: new Date().toISOString().split('T')[0]
-        }),
-      });
-
-      const result = await response.json();
-      if (result && result.procedure && result.procedure.id) {
-        setUndoStack(prev => [...prev, [result.procedure]]);
-      }
-
-      onProcedureAdded();
-    } catch (error) {
-      console.error('Error saving treatment:', error);
-      throw error;
-    }
-  };
-
-  // Handle updating existing treatment
-  const handleUpdateTreatment = async (treatmentData: any) => {
-    if (!selectedProcedure) return;
-
-    try {
-      const response = await fetch(`/api/patients/${patientId}/dental-procedures/${selectedProcedure.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...treatmentData,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update treatment');
-
-      const result = await response.json();
-      if (result && result.id) {
-        setUndoStack(prev => [...prev, [result]]);
-      }
-
-      setSelectedProcedure(null);
-      onProcedureUpdated();
-    } catch (error) {
-      console.error('Error updating treatment:', error);
-      throw error;
-    }
-  };
-
-  const performDelete = async (proceduresToDelete: DentalProcedure[]) => {
+  const performDelete = async (proceduresToDelete: SurgicalProcedure[]) => {
     if (proceduresToDelete.length === 0) return;
 
     // Push to undo stack
@@ -431,323 +363,10 @@ export function TreatmentPlan({
     try {
       // Delete procedures from database
       await Promise.all(
-        proceduresToDelete.map(p => fetch(`/api/patients/${patientId}/dental-procedures/${p.id}`, { method: 'DELETE' }))
+        proceduresToDelete.map(p => fetch(`/api/patients/${patientId}/surgical-procedures/${p.id}`, { method: 'DELETE' }))
       );
 
-      // Clean up dental chart visual data for procedures that have tooth/surface information
-      const proceduresWithToothData = proceduresToDelete.filter(p =>
-        p.toothNumber && (
-          p.code?.code === 'DISABLED' || // Disabled procedures
-          p.notes?.includes('surface') ||
-          p.code?.code?.startsWith('V') ||
-          p.code?.code?.startsWith('R') || // All crown/bridge codes
-          p.code?.code?.startsWith('H') || // All extraction codes (H11, H35, H33, H34, H21, H26)
-          p.code?.code?.startsWith('T') || // All scaling codes (T021, T022)
-          p.notes?.includes('crown') ||
-          p.notes?.includes('bridge') ||
-          p.notes?.includes('abutment') ||
-          p.notes?.includes('pontic') ||
-          p.notes?.includes('extraction') ||
-          p.notes?.includes('Trekken') ||
-          p.notes?.includes('Moeizaam') ||
-          p.notes?.includes('Hemisectie') ||
-          p.notes?.includes('Vrijleggen') ||
-          p.notes?.includes('scaling')
-        )
-      );
-
-      if (proceduresWithToothData.length > 0) {
-        try {
-          // Get current dental data
-          const dentalResponse = await fetch(`/api/patients/${patientId}/dental`);
-          if (dentalResponse.ok) {
-            const dentalData = await dentalResponse.json();
-            const currentChart = dentalData.dentalChart || { teeth: {}, toothTypes: {} };
-
-            // Clean up visual data for deleted procedures
-            const updatedChart = { ...currentChart };
-
-            proceduresWithToothData.forEach(procedure => {
-              const toothNumber = procedure.toothNumber;
-              if (toothNumber && updatedChart.teeth[toothNumber]) {
-                const toothData = updatedChart.teeth[toothNumber];
-                // Remove procedures from the tooth's procedure list
-                if (toothData.procedures) {
-                  toothData.procedures = toothData.procedures.filter(proc => {
-                    // Remove procedures that match the deleted procedure type (filling variants)
-                    if (procedure.code?.code?.startsWith('V')) {
-                      return !(proc.type && proc.type.startsWith('filling'));
-                    }
-                    return true;
-                  });
-                }
-                // Clean up surface and zone data for filling procedures
-                if (procedure.code?.code?.startsWith('V')) {
-                  let surfacesToRemove = [];
-                  // Extract surfaces from notes (e.g., (mesial, distal, occlusal))
-                  const surfaceMatch = procedure.notes?.match(/\(([^)]+)\)/);
-                  if (surfaceMatch) {
-                    surfacesToRemove = surfaceMatch[1].split(',').map(s => s.trim().toLowerCase());
-                  } else {
-                    // Fallback: look for common surface names in notes
-                    const surfaceWords = ['mesial', 'distal', 'occlusal', 'buccal', 'lingual', 'palatal', 'incisal'];
-                    surfaceWords.forEach(surface => {
-                      if (procedure.notes?.toLowerCase().includes(surface)) {
-                        surfacesToRemove.push(surface);
-                      }
-                    });
-                  }
-                  // Remove from both surfaces and zones
-                  surfacesToRemove.forEach(surface => {
-                    const surfaceVariations = [surface, surface.charAt(0)];
-                    surfaceVariations.forEach(variant => {
-                      if (toothData.surfaces && toothData.surfaces[variant] &&
-                        typeof toothData.surfaces[variant] === 'string' &&
-                        toothData.surfaces[variant].startsWith('filling')) {
-                        delete toothData.surfaces[variant];
-                      }
-                      if (toothData.zones && toothData.zones[variant] &&
-                        typeof toothData.zones[variant] === 'string' &&
-                        toothData.zones[variant].startsWith('filling')) {
-                        delete toothData.zones[variant];
-                      }
-                    });
-                  });
-                }
-                // Clean up crown and bridge procedures (wholeTooth data)
-                if ((procedure.code?.code?.startsWith('R') ||
-                  procedure.notes?.includes('crown') ||
-                  procedure.notes?.includes('bridge') ||
-                  procedure.notes?.includes('abutment') ||
-                  procedure.notes?.includes('pontic')) && toothData.wholeTooth) {
-
-                  // If this is a bridge procedure, check if we need to clean up the entire bridge
-                  if (procedure.notes?.includes('bridge')) {
-                    const bridgeIdMatch = procedure.notes?.match(/bridge[- ]([^\s]+)/i);
-                    if (bridgeIdMatch) {
-                      const bridgeId = bridgeIdMatch[1];
-
-                      // Clean up all teeth in the same bridge
-                      Object.entries(updatedChart.teeth).forEach(([fdi, status]) => {
-                        if ((status as any)?.wholeTooth?.bridgeId === bridgeId) {
-                          const wasPontic = (status as any)?.wholeTooth?.role === 'pontic';
-                          const originalState = (status as any)?.wholeTooth?.originalState;
-
-                          // Remove bridge data
-                          delete (status as any).wholeTooth;
-
-                          // For pontics, restore the original state
-                          if (wasPontic) {
-                            if (originalState === 'disabled') {
-                              (status as any).isDisabled = true;
-                            } else if (originalState === 'extraction') {
-                              (status as any).wholeTooth = 'extraction';
-                            }
-                            // If originalState was 'missing', just leave it empty
-                          }
-
-                          // Clean up empty tooth data
-                          if ((!(status as any).procedures || (status as any).procedures.length === 0) &&
-                            (!(status as any).surfaces || Object.keys((status as any).surfaces || {}).length === 0) &&
-                            !(status as any).wholeTooth &&
-                            !(status as any).isDisabled) {
-                            delete updatedChart.teeth[parseInt(fdi)];
-                          }
-                        }
-                      });
-                    }
-                  } else if (typeof toothData.wholeTooth === 'object' && toothData.wholeTooth.type === 'crown') {
-                    // Single crown procedure removal
-                    delete toothData.wholeTooth;
-                  }
-                }
-
-                // Clean up extraction procedures (wholeTooth data)
-                if ((procedure.code?.code?.startsWith('H') ||
-                  procedure.notes?.includes('extraction') ||
-                  procedure.notes?.includes('Trekken') ||
-                  procedure.notes?.includes('Moeizaam') ||
-                  procedure.notes?.includes('Hemisectie') ||
-                  procedure.notes?.includes('Vrijleggen')) && toothData.wholeTooth === 'extraction') {
-
-                  // Remove extraction marking from tooth
-                  delete toothData.wholeTooth;
-                }
-
-                // Clean up disabled procedures
-                if (procedure.code?.code === 'DISABLED') {
-                  // Remove disabled state and all disabled zones
-                  delete toothData.isDisabled;
-                  if (toothData.zones) {
-                    Object.keys(toothData.zones).forEach(zone => {
-                      if (toothData.zones[zone] === 'disabled') {
-                        delete toothData.zones[zone];
-                      }
-                    });
-                  }
-                }
-
-                // Clean up sealing procedures (occlusal surface data)
-                if ((procedure.code?.code === 'V30' || procedure.code?.code === 'V35' ||
-                  procedure.notes?.includes('Fissuurlak') ||
-                  procedure.notes?.includes('fissuurlak')) && toothData.surfaces) {
-
-                  // Remove sealing from occlusal surface (handles both old 'sealing' and new 'sealing-status' formats)
-                  if (toothData.surfaces['occlusal'] === 'sealing' ||
-                    (typeof toothData.surfaces['occlusal'] === 'string' && toothData.surfaces['occlusal'].startsWith('sealing'))) {
-                    delete toothData.surfaces['occlusal'];
-                  }
-                }
-
-                // Remove tooth data if no procedures, surfaces, zones, wholeTooth, or isDisabled remain
-                if (
-                  (!toothData.procedures || toothData.procedures.length === 0) &&
-                  (!toothData.surfaces || Object.keys(toothData.surfaces).length === 0) &&
-                  (!toothData.zones || Object.keys(toothData.zones).length === 0) &&
-                  !toothData.wholeTooth &&
-                  !toothData.isDisabled
-                ) {
-                  delete updatedChart.teeth[toothNumber];
-                }
-              }
-            });
-
-            // Update dental chart data
-            await fetch(`/api/patients/${patientId}/dental`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ dentalChart: updatedChart })
-            });
-
-            // COMPREHENSIVE CLEANUP: Remove ALL visual bridge/crown data for teeth with no procedures
-            // Fetch the updated procedures list to see what's actually left in the database
-            const updatedProceduresResponse = await fetch(`/api/patients/${patientId}/dental-procedures`);
-            if (updatedProceduresResponse.ok) {
-              const remainingProcedures = await updatedProceduresResponse.json();
-
-              // For each tooth that has bridge/crown visual data, check if there are actual procedures
-              Object.entries(updatedChart.teeth).forEach(([fdi, toothData]) => {
-                const toothNumber = parseInt(fdi);
-                const toothStatus = toothData as any;
-
-                // If this tooth has crown/bridge visual data
-                if (toothStatus?.wholeTooth?.type === 'crown') {
-                  // Check if there are any remaining procedures for this tooth that justify the crown/bridge
-                  const hasRemainingCrownProcedures = remainingProcedures.some((proc: any) =>
-                    proc.toothNumber === toothNumber && (
-                      proc.code?.code?.startsWith('R') ||
-                      proc.notes?.includes('crown') ||
-                      proc.notes?.includes('bridge') ||
-                      proc.notes?.includes('abutment') ||
-                      proc.notes?.includes('pontic')
-                    )
-                  );
-
-                  // If no procedures justify this crown/bridge, remove it and restore original state
-                  if (!hasRemainingCrownProcedures) {
-                    const wasPontic = toothStatus.wholeTooth.role === 'pontic';
-                    const originalState = toothStatus.wholeTooth.originalState;
-
-                    // Remove the crown/bridge visual data
-                    delete toothStatus.wholeTooth;
-
-                    // Restore original state for pontics
-                    if (wasPontic) {
-                      if (originalState === 'disabled') {
-                        toothStatus.isDisabled = true;
-                      } else if (originalState === 'extraction') {
-                        toothStatus.wholeTooth = 'extraction';
-                      }
-                      // If originalState was 'missing', just leave it empty
-                    }
-
-                    // Clean up empty tooth data
-                    if ((!toothStatus.procedures || toothStatus.procedures.length === 0) &&
-                      (!toothStatus.surfaces || Object.keys(toothStatus.surfaces).length === 0) &&
-                      !toothStatus.wholeTooth &&
-                      !toothStatus.isDisabled) {
-                      delete updatedChart.teeth[toothNumber];
-                    }
-                  }
-                }
-
-                // If this tooth has extraction visual data
-                if (toothStatus?.wholeTooth === 'extraction') {
-                  // Check if there are any remaining extraction procedures for this tooth
-                  const hasRemainingExtractionProcedures = remainingProcedures.some((proc: any) =>
-                    proc.toothNumber === toothNumber && (
-                      proc.code?.code?.startsWith('H') ||
-                      proc.notes?.includes('extraction') ||
-                      proc.notes?.includes('Trekken') ||
-                      proc.notes?.includes('Moeizaam') ||
-                      proc.notes?.includes('Hemisectie') ||
-                      proc.notes?.includes('Vrijleggen')
-                    )
-                  );
-
-                  // If no procedures justify this extraction marking, remove it
-                  if (!hasRemainingExtractionProcedures) {
-                    delete toothStatus.wholeTooth;
-
-                    // Clean up empty tooth data
-                    if ((!toothStatus.procedures || toothStatus.procedures.length === 0) &&
-                      (!toothStatus.surfaces || Object.keys(toothStatus.surfaces).length === 0) &&
-                      !toothStatus.wholeTooth &&
-                      !toothStatus.isDisabled) {
-                      delete updatedChart.teeth[toothNumber];
-                    }
-                  }
-                }
-
-                // If this tooth has sealing markings (handles both old 'sealing' and new 'sealing-status' formats)
-                const occlusalSurface = toothStatus?.surfaces?.occlusal;
-                if (occlusalSurface === 'sealing' ||
-                  (typeof occlusalSurface === 'string' && occlusalSurface.startsWith('sealing'))) {
-                  // Check if there are any remaining sealing procedures for this tooth
-                  const hasRemainingSealingProcedures = remainingProcedures.some((proc: any) =>
-                    proc.toothNumber === toothNumber && (
-                      proc.code?.code === 'V30' ||
-                      proc.code?.code === 'V35' ||
-                      proc.notes?.includes('Fissuurlak') ||
-                      proc.notes?.includes('fissuurlak')
-                    )
-                  );
-
-                  // If no sealing procedures remain, remove the sealing marking
-                  if (!hasRemainingSealingProcedures) {
-                    delete toothStatus.surfaces.occlusal;
-
-                    // Clean up empty surfaces object
-                    if (Object.keys(toothStatus.surfaces || {}).length === 0) {
-                      delete toothStatus.surfaces;
-                    }
-
-                    // Clean up empty tooth data
-                    if ((!toothStatus.procedures || toothStatus.procedures.length === 0) &&
-                      (!toothStatus.surfaces || Object.keys(toothStatus.surfaces || {}).length === 0) &&
-                      !toothStatus.wholeTooth &&
-                      !toothStatus.isDisabled) {
-                      delete updatedChart.teeth[toothNumber];
-                    }
-                  }
-                }
-              });
-
-              // Save the cleaned chart again
-              await fetch(`/api/patients/${patientId}/dental`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dentalChart: updatedChart })
-              });
-            }
-          }
-        } catch (error) {
-          console.error('Error cleaning up dental chart data:', error);
-          // Don't fail the whole deletion if chart cleanup fails
-        }
-      }
-
-      toast.success(`${proceduresToDelete.length} procedure${proceduresToDelete.length > 1 ? 's' : ''} deleted`);
+      toast.success(`${proceduresToDelete.length} procedur${proceduresToDelete.length > 1 ? 'i' : 'ă'} șters${proceduresToDelete.length > 1 ? 'e' : 'ă'}`);
       clearSelection();
       onProcedureDeleted();
 
@@ -760,42 +379,15 @@ export function TreatmentPlan({
         onProcedureDeleted();
       }, 500);
     } catch (e) {
-      toast.error('Failed to delete procedure(s)');
+      toast.error('Ștergerea procedurii/procedurilor a eșuat');
     }
   };
 
-  const handleDeleteProcedure = (procedure: DentalProcedure) => {
+  const handleDeleteProcedure = (procedure: SurgicalProcedure) => {
     if (selectedProcedures.length > 1 && selectedProcedures.includes(procedure.id)) {
       const procs = procedures.filter(p => selectedProcedures.includes(p.id));
       performDelete(procs);
     } else {
-      // Check if this is a bridge procedure
-      if (procedure.notes?.includes('bridge')) {
-        // Extract bridge ID from the notes - handle multiple formats
-        const bridgeIdMatch = procedure.notes?.match(/bridge[- ]([^\s]+)/i) ||
-          procedure.notes?.match(/BRIDGE-bridge-([^\s]+)/i) ||
-          procedure.notes?.match(/BRIDGE-bridge-bridge-([^\s]+)/i);
-        if (bridgeIdMatch) {
-          const bridgeId = bridgeIdMatch[1];
-
-          // Find all procedures that belong to the same bridge
-          const bridgeProcedures = procedures.filter(p =>
-            p.notes?.includes(`bridge-${bridgeId}`) ||
-            p.notes?.includes(`bridge ${bridgeId}`) ||
-            p.notes?.includes(`BRIDGE-${bridgeId}`) ||
-            p.notes?.includes(`BRIDGE-bridge-${bridgeId}`) ||
-            p.notes?.includes(`BRIDGE-bridge-bridge-${bridgeId}`)
-          );
-
-          if (bridgeProcedures.length > 1) {
-            // Delete all bridge procedures together
-            performDelete(bridgeProcedures);
-            return;
-          }
-        }
-      }
-
-      // For non-bridge procedures or single bridge procedures, delete normally
       performDelete([procedure]);
     }
   };
@@ -810,7 +402,7 @@ export function TreatmentPlan({
           setUndoStack(prev => prev.slice(0, -1));
           Promise.all(
             last.map(p =>
-              fetch('/api/dental-procedures/undo', {
+              fetch('/api/surgical-procedures/undo', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -821,22 +413,22 @@ export function TreatmentPlan({
                   if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
                     if (err && err.code) {
-                      if (err.code === 'NO_LOG') toast.error('Nothing to undo.');
-                      else if (err.code === 'NO_BACKUP_DELETE' || err.code === 'NO_BACKUP_EDIT') toast.error('Cannot restore, backup missing.');
-                      else if (err.code === 'PROCEDURE_NOT_FOUND') toast.error('Procedure not found for undo.');
-                      else if (err.code === 'UNAUTHORIZED') toast.error('You are not authorized to undo.');
-                      else toast.error(err.error || 'Failed to undo');
+                      if (err.code === 'NO_LOG') toast.error('Nimic de anulat.');
+                      else if (err.code === 'NO_BACKUP_DELETE' || err.code === 'NO_BACKUP_EDIT') toast.error('Nu se poate restaura, copia de rezervă lipsește.');
+                      else if (err.code === 'PROCEDURE_NOT_FOUND') toast.error('Procedura nu a fost găsită pentru anulare.');
+                      else if (err.code === 'UNAUTHORIZED') toast.error('Nu aveți autorizația de a anula.');
+                      else toast.error(err.error || 'Anularea a eșuat');
                     } else {
-                      toast.error('Failed to undo');
+                      toast.error('Anularea a eșuat');
                     }
-                    throw new Error(err.error || 'Failed to undo');
+                    throw new Error(err.error || 'Anularea a eșuat');
                   }
                   return res.json();
                 })
             )
           )
             .then(() => {
-              toast.success('Undo successful');
+              toast.success('Anulare reușită');
               onProcedureAdded();
             })
             .catch((error) => {
@@ -848,7 +440,7 @@ export function TreatmentPlan({
       // CTRL+Y handler for redo
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        fetch('/api/dental-procedures/redo', {
+        fetch('/api/surgical-procedures/redo', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -858,25 +450,25 @@ export function TreatmentPlan({
             if (!res.ok) {
               const err = await res.json().catch(() => ({}));
               if (err && err.code) {
-                if (err.code === 'NO_UNDO_LOG') toast.error('Nothing to redo.');
+                if (err.code === 'NO_UNDO_LOG') toast.error('Nimic de refăcut.');
                 else if (err.code === 'ALREADY_PROCESSED') {
                   // This is expected when multiple requests arrive - just refresh the UI
-                  toast.success('Redo completed');
+                  toast.success('Refacere finalizată');
                   onProcedureAdded(); // Refresh the procedures list
                 }
-                else if (err.code === 'NO_ORIGINAL_DATA') toast.error('Cannot redo, original data missing.');
-                else if (err.code === 'PROCEDURE_NOT_FOUND') toast.error('Procedure not found for redo.');
-                else if (err.code === 'UNAUTHORIZED') toast.error('You are not authorized to redo.');
-                else toast.error(err.error || 'Failed to redo');
+                else if (err.code === 'NO_ORIGINAL_DATA') toast.error('Nu se poate reface, datele originale lipsesc.');
+                else if (err.code === 'PROCEDURE_NOT_FOUND') toast.error('Procedura nu a fost găsită pentru refacere.');
+                else if (err.code === 'UNAUTHORIZED') toast.error('Nu aveți autorizația de a reface.');
+                else toast.error(err.error || 'Refacerea a eșuat');
               } else {
-                toast.error('Failed to redo');
+                toast.error('Refacerea a eșuat');
               }
-              throw new Error(err.error || 'Failed to redo');
+              throw new Error(err.error || 'Refacerea a eșuat');
             }
             return res.json();
           })
           .then(() => {
-            toast.success('Redo successful');
+            toast.success('Refacere reușită');
             onProcedureAdded(); // Refresh the procedures list
           })
           .catch((error) => {
@@ -908,183 +500,13 @@ export function TreatmentPlan({
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  // Helper to determine cost taking into account WLZ overrides
-  const getProcedureCost = (procedure: DentalProcedure) => {
-    if (typeof (procedure as any).cost === 'number') {
-      return (procedure as any).cost;
-    }
-    return (procedure.code.rate || 0) * (procedure.quantity || 1);
-  };
-
-  const calculateTotalCost = (status: 'COMPLETED' | 'PENDING' | 'IN_PROGRESS' | 'CANCELLED') => {
-    return procedures
-      .filter(p => p.status === status && !p.isPaid) // Exclude paid procedures from total
-      .reduce((total, procedure) => total + getProcedureCost(procedure), 0);
-  };
-
-  // Group related procedures (A10 anesthesia and C022 with main procedures, and crown procedures with related codes)
-  const groupProcedures = (procedureList: DentalProcedure[], tabContext: 'history' | 'current' | 'plan') => {
-    const groups: Array<{
-      id: string;
-      mainProcedure: DentalProcedure;
-      relatedProcedures: DentalProcedure[];
-      isGroup: boolean;
-    }> = [];
-
-    const processedIds = new Set<string>();
-
-    // Sort by creation time to group procedures created together
-    const sortedProcedures = [...procedureList].sort((a, b) =>
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-
-    // First pass: Group bridge procedures and their related codes
-    const bridgeGroups = new Map<string, { main: DentalProcedure | null; others: DentalProcedure[] }>();
-
-    sortedProcedures.forEach(procedure => {
-      if (processedIds.has(procedure.id)) return;
-
-      // More robust regex to capture bridge- followed by numbers
-      const bridgeIdMatch = procedure.notes?.match(/(bridge-\d+)/i);
-      const isBridgeProcedure = bridgeIdMatch || procedure.notes?.toLowerCase().includes('bridge');
-      const bridgeId = bridgeIdMatch ? bridgeIdMatch[1] : null;
-
-      if (isBridgeProcedure && bridgeId) {
-        if (!bridgeGroups.has(bridgeId)) {
-          bridgeGroups.set(bridgeId, { main: null, others: [] });
-        }
-        const groupEntry = bridgeGroups.get(bridgeId)!;
-
-        if (procedure.notes?.startsWith('MAIN:')) {
-          // If multiple MAIN procedures for the same bridgeId, take the first one encountered
-          if (!groupEntry.main) {
-            groupEntry.main = procedure;
-          } else {
-            groupEntry.others.push(procedure); // Treat subsequent MAIN as others
-          }
-        } else {
-          groupEntry.others.push(procedure);
-        }
-        processedIds.add(procedure.id);
-      }
-    });
-
-    // Create bridge groups from the collected data and sort them by main procedure creation time
-    const bridgeGroupEntries = Array.from(bridgeGroups.entries()).map(([bridgeId, groupEntry]) => ({
-      bridgeId,
-      groupEntry,
-      mainProcedure: groupEntry.main,
-      creationTime: groupEntry.main ? new Date(groupEntry.main.createdAt).getTime() : 0
+  const groupProcedures = (procedureList: SurgicalProcedure[]) => {
+    return procedureList.map((procedure) => ({
+      id: procedure.id,
+      mainProcedure: procedure,
+      relatedProcedures: [] as SurgicalProcedure[],
+      isGroup: false,
     }));
-
-    // Sort bridge groups by their main procedure's creation time to maintain chronological order
-    bridgeGroupEntries.sort((a, b) => a.creationTime - b.creationTime);
-
-    bridgeGroupEntries.forEach(({ bridgeId, groupEntry }) => {
-      if (groupEntry.main) {
-        const mainProcedure = groupEntry.main;
-        const relatedProcedures = [...groupEntry.others]; // Start with other bridge-related procedures
-
-        // Note: Additional codes (A10, C022, R14, R49) are now included in the main procedure notes
-        // so we don't need to look for separate procedures for these codes
-
-        groups.push({
-          id: `bridge-${bridgeId}`,
-          mainProcedure,
-          relatedProcedures,
-          isGroup: true
-        });
-      } else if (groupEntry.others.length > 0) {
-        // Fallback if no explicit MAIN procedure was found for a bridge
-        const [first, ...rest] = groupEntry.others;
-        groups.push({
-          id: `bridge-${bridgeId}`,
-          mainProcedure: first,
-          relatedProcedures: rest,
-          isGroup: true
-        });
-      }
-    });
-
-    // Second pass: Group remaining procedures (non-bridge or those not grouped in first pass)
-    sortedProcedures.forEach(procedure => {
-      if (processedIds.has(procedure.id)) return;
-
-      // Check if this is a main procedure (V-codes except V35, crown codes, or other non A10/C022/R14/H21/H26 codes)
-      // V35 can be a main procedure if there's no V30 in the same tab
-      const isV35 = procedure.code.code === 'V35';
-      const isMainProcedure = !['A10', 'C022', 'R14', 'H21', 'H26'].includes(procedure.code.code) &&
-        !procedure.notes?.startsWith('BRIDGE-'); // Exclude bridge related procedures that might not have been grouped
-
-      if (isMainProcedure) {
-        const relatedProcedures: DentalProcedure[] = [];
-
-        // Find related procedures (A10, C022, R14, H21, H26, V35)
-        sortedProcedures.forEach(p => {
-          if (p.id !== procedure.id && !processedIds.has(p.id)) {
-            // Check if related by tooth number and creation time (within a small window)
-            const isRelatedByTime = Math.abs(new Date(p.createdAt).getTime() - new Date(procedure.createdAt).getTime()) < 5000; // 5 seconds
-            const isRelatedByTooth = p.toothNumber === procedure.toothNumber;
-
-            if (isRelatedByTime && isRelatedByTooth && ['A10', 'C022', 'R14', 'H21', 'H26', 'V35'].includes(p.code.code)) {
-              relatedProcedures.push(p);
-              processedIds.add(p.id);
-            }
-          }
-        });
-
-        // Special handling for V30: also group V35 procedures from the same day and same tab context
-        if (procedure.code.code === 'V30') {
-          const today = new Date(procedure.date).toISOString().split('T')[0];
-
-          sortedProcedures.forEach(p => {
-            if (p.id !== procedure.id && !processedIds.has(p.id) && p.code.code === 'V35') {
-              const procedureDate = new Date(p.date).toISOString().split('T')[0];
-              // Only group V35 procedures that are in the same tab context
-              const isSameTab = (tabContext === 'history' && p.status === 'COMPLETED') ||
-                (tabContext === 'current' && p.status === 'IN_PROGRESS') ||
-                (tabContext === 'plan' && p.status === 'PENDING');
-
-              if (procedureDate === today && isSameTab) {
-                relatedProcedures.push(p);
-                processedIds.add(p.id);
-              }
-            }
-          });
-        }
-
-        groups.push({
-          id: procedure.id,
-          mainProcedure: procedure,
-          relatedProcedures,
-          isGroup: relatedProcedures.length > 0
-        });
-        processedIds.add(procedure.id);
-      } else if (isV35) {
-        // V35 can be a main procedure if there's no V30 in the same tab
-        // Check if there's a V30 in the same tab context
-        const hasV30InSameTab = sortedProcedures.some(p =>
-          p.code.code === 'V30' &&
-          p.id !== procedure.id &&
-          ((tabContext === 'history' && p.status === 'COMPLETED') ||
-            (tabContext === 'current' && p.status === 'IN_PROGRESS') ||
-            (tabContext === 'plan' && p.status === 'PENDING'))
-        );
-
-        if (!hasV30InSameTab) {
-          // V35 can be a main procedure if no V30 exists in this tab
-          groups.push({
-            id: procedure.id,
-            mainProcedure: procedure,
-            relatedProcedures: [],
-            isGroup: false
-          });
-          processedIds.add(procedure.id);
-        }
-      }
-    });
-
-    return groups;
   };
 
   const toggleGroupExpansion = (groupId: string) => {
@@ -1100,12 +522,12 @@ export function TreatmentPlan({
   };
 
   // Helper function to check if a procedure is a filling (V-code)
-  const isFilling = (procedure: DentalProcedure) => {
+  const isFilling = (procedure: SurgicalProcedure) => {
     return procedure.code.code.startsWith('V');
   };
 
   // Get the appropriate background color based on tab and procedure type
-  const getProcedureBackgroundColor = (procedure: DentalProcedure, isSubProcedure = false) => {
+  const getProcedureBackgroundColor = (procedure: SurgicalProcedure, isSubProcedure = false) => {
     const filling = isFilling(procedure);
 
     // Paid procedures get a special muted appearance
@@ -1148,7 +570,7 @@ export function TreatmentPlan({
   };
 
   // Get the appropriate text color for procedure codes based on tab and procedure type
-  const getProcedureCodeColor = (procedure: DentalProcedure) => {
+  const getProcedureCodeColor = (procedure: SurgicalProcedure) => {
     const filling = isFilling(procedure);
 
     // Crown procedures get special color styling (R24 = porcelain, R34 = gold)
@@ -1182,7 +604,7 @@ export function TreatmentPlan({
     }
   };
 
-  const renderSingleProcedure = (procedure: DentalProcedure, isSubProcedure = false) => (
+  const renderSingleProcedure = (procedure: SurgicalProcedure, isSubProcedure = false) => (
     <div
       className={`py-2 w-full text-xs ${isSubProcedure ? 'pl-8 pr-2' : 'px-2'} ${getProcedureBackgroundColor(procedure, isSubProcedure)}`}
       onDoubleClick={() => {
@@ -1203,9 +625,8 @@ export function TreatmentPlan({
           )}
           {/* Add spacing for paid procedures to maintain alignment */}
           {procedure.isPaid && <div className="w-5 mr-1" />}
-          {/* Element Number */}
-          <span className="font-medium bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs min-w-[30px] text-center">
-            {procedure.toothNumber || '--'}
+          <span className="font-medium bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs min-w-[50px] text-center capitalize">
+            {procedure.bodyArea || '--'}
           </span>
           <span className={`font-semibold min-w-[45px] ${getProcedureCodeColor(procedure)}`}>{procedure.code.code}</span>
           <span className={`truncate max-w-[250px] ${procedure.isPaid ? 'text-gray-500' : 'text-gray-700'}`}>
@@ -1214,7 +635,7 @@ export function TreatmentPlan({
           {/* Payment status indicator */}
           {procedure.isPaid && (
             <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded font-semibold">
-              PAID
+              PLĂTIT
             </span>
           )}
         </div>
@@ -1234,12 +655,12 @@ export function TreatmentPlan({
                 {procedure.quantity || 1}
               </span>
               {getProcedureCost(procedure) > 0 && (
-                <div className="flex items-center gap-1 whitespace-nowrap">
-                  <Euro className="h-3 w-3" />
-                  <span className="text-sm font-medium">
-                    €{getProcedureCost(procedure).toFixed(2)}
-                  </span>
-                </div>
+                <ProcedurePriceDisplay
+                  amount={getProcedureCost(procedure)}
+                  currency={procedure.code?.currency ?? 'EUR'}
+                  rate={rate}
+                  className="text-sm font-medium"
+                />
               )}
             </>
           )}
@@ -1254,7 +675,7 @@ export function TreatmentPlan({
                 setSelectedProcedure(procedure);
                 setShowEditModal(true);
               }}
-              title={procedure.isPaid ? "Edit notes only" : "Edit procedure"}
+              title={procedure.isPaid ? "Editare note doar" : "Editare procedură"}
             >
               <Edit className="w-4 h-4" />
             </Button>
@@ -1268,7 +689,7 @@ export function TreatmentPlan({
                   setButtonClicked(true);
                   handleDeleteProcedure(procedure);
                 }}
-                title="Delete procedure"
+                title="Ștergere procedură"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -1286,7 +707,7 @@ export function TreatmentPlan({
   );
 
   // Get card background color based on the main procedure
-  const getCardBackgroundColor = (mainProcedure: DentalProcedure) => {
+  const getCardBackgroundColor = (mainProcedure: SurgicalProcedure) => {
     return getProcedureBackgroundColor(mainProcedure, false);
   };
 
@@ -1294,7 +715,7 @@ export function TreatmentPlan({
     if (!group.isGroup) {
       // Single procedure, render normally
       return (
-        <Card key={group.id} className={`py-0 px-0 w-full rounded-none text-xs ${getCardBackgroundColor(group.mainProcedure)} ${isSelected(group.mainProcedure.id) ? 'ring-2 ring-blue-500' : ''}`}>
+        <Card key={group.id} className={`py-0 px-0 w-full rounded-none border-0 border-b border-gray-200 shadow-none text-xs ${getCardBackgroundColor(group.mainProcedure)} ${isSelected(group.mainProcedure.id) ? 'ring-2 ring-blue-500' : ''}`}>
           {renderSingleProcedure(group.mainProcedure)}
         </Card>
       );
@@ -1303,14 +724,14 @@ export function TreatmentPlan({
     // Grouped procedures
     const isExpanded = expandedGroups.has(group.id);
     const mainSelected = isSelected(group.mainProcedure.id);
-    const hasSelectedRelated = group.relatedProcedures.some((p: DentalProcedure) => isSelected(p.id));
-    const allRelatedSelected = group.relatedProcedures.every((p: DentalProcedure) => isSelected(p.id));
+    const hasSelectedRelated = group.relatedProcedures.some((p: SurgicalProcedure) => isSelected(p.id));
+    const allRelatedSelected = group.relatedProcedures.every((p: SurgicalProcedure) => isSelected(p.id));
 
     // Show ring when main is selected OR when all procedures in group are selected
     const showSelectionRing = mainSelected || (hasSelectedRelated && allRelatedSelected);
 
     return (
-      <Card key={group.id} className={`py-0 px-0 w-full rounded-none text-xs ${getCardBackgroundColor(group.mainProcedure)} ${showSelectionRing ? 'ring-2 ring-blue-500' : ''}`}>
+      <Card key={group.id} className={`py-0 px-0 w-full rounded-none border-0 border-b border-gray-200 shadow-none text-xs ${getCardBackgroundColor(group.mainProcedure)} ${showSelectionRing ? 'ring-2 ring-blue-500' : ''}`}>
 
         {/* Main procedure with expand/collapse button */}
         <div className="flex items-center">
@@ -1332,7 +753,7 @@ export function TreatmentPlan({
         </div>
 
         {/* Related procedures (collapsed by default) */}
-        {isExpanded && group.relatedProcedures.map((procedure: DentalProcedure) => (
+        {isExpanded && group.relatedProcedures.map((procedure: SurgicalProcedure) => (
           <div key={procedure.id}>
             {renderSingleProcedure(procedure, true)}
           </div>
@@ -1341,10 +762,10 @@ export function TreatmentPlan({
         {/* Summary of collapsed procedures */}
         {!isExpanded && group.relatedProcedures.length > 0 && (
           <div className="px-2 pb-2 text-xs text-gray-500">
-            + {group.relatedProcedures.length} related procedure{group.relatedProcedures.length > 1 ? 's' : ''} ({group.relatedProcedures.map((p: DentalProcedure) => p.code.code).join(', ')})
+            + {group.relatedProcedures.length} procedur{group.relatedProcedures.length > 1 ? 'i' : 'ă'} asociat{group.relatedProcedures.length > 1 ? 'e' : 'ă'} ({group.relatedProcedures.map((p: SurgicalProcedure) => p.code.code).join(', ')})
             {hasSelectedRelated && (
               <span className="ml-2 text-blue-600 font-medium">
-                {group.relatedProcedures.filter((p: DentalProcedure) => isSelected(p.id)).length} selected
+                {group.relatedProcedures.filter((p: SurgicalProcedure) => isSelected(p.id)).length} selectat{group.relatedProcedures.filter((p: SurgicalProcedure) => isSelected(p.id)).length > 1 ? 'e' : ''}
               </span>
             )}
           </div>
@@ -1363,13 +784,13 @@ export function TreatmentPlan({
             onClick={() => onTabChange('history')}
             className={`text-gray-600 font-bold px-4 py-1 ${activeTab === 'history' ? 'bg-gray-100' : ''}`}
           >
-            History
+            Istoric
           </button>
           <button
             onClick={() => onTabChange('current')}
             className={`text-blue-600 font-bold px-4 py-1 ${activeTab === 'current' ? 'bg-blue-100' : ''}`}
           >
-            Current
+            Curent
           </button>
           <button
             onClick={() => onTabChange('plan')}
@@ -1384,74 +805,49 @@ export function TreatmentPlan({
       <div className="sticky top-8 bg-white z-19 border-b">
         <div className="flex items-center gap-2 pl-2 py-1">
           <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-          <span className="text-sm">Select All</span>
+          <span className="text-sm">Selectează tot</span>
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto rounded-b-xl custom-scrollbar"
+        className="flex-1 overflow-y-auto custom-scrollbar"
         style={{
           scrollbarWidth: 'thin',
           scrollbarColor: '#cbd5e1 transparent'
         }}
       >
-        <div className="space-y-0 rounded-b-xl">
+        <div className="space-y-0">
           {activeTab === 'history' && (
-            <>
-              {/* Disabled Teeth Dropdown */}
-              {disabledTeethProcedures.length > 0 && (
-                <Card className="rounded-none border-b">
-                  <button
-                    onClick={() => setDisabledTeethExpanded(!disabledTeethExpanded)}
-                    className="w-full p-3 text-left flex items-center justify-between hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">Disabled Teeth</span>
-                      <span className="text-sm text-gray-500">({disabledTeethProcedures.length} tooth{disabledTeethProcedures.length !== 1 ? 's' : ''})</span>
-                    </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${disabledTeethExpanded ? 'rotate-180' : ''}`} />
-                  </button>
-                  {disabledTeethExpanded && (
-                    <div className="border-t bg-gray-50">
-                      {disabledTeethProcedures.map(procedure => renderSingleProcedure(procedure))}
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {/* Regular Dental procedures */}
-              {regularProcedures.length === 0 ? (
-                <Card className="p-4 text-center text-gray-500 rounded-none">
-                  No old procedures
-                </Card>
-              ) : (
-                groupProcedures(regularProcedures, activeTab).map(renderProcedureGroup)
-              )}
-            </>
+            visibleProcedures.length === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-500">
+                Nu există proceduri finalizate
+              </p>
+            ) : (
+              groupProcedures(visibleProcedures).map(renderProcedureGroup)
+            )
           )}
 
           {activeTab === 'current' && (
             <>
-              {/* Dental procedures */}
               {visibleProcedures.length === 0 ? (
-                <Card className="p-4 text-center text-gray-500 rounded-none">
-                  No current procedures
-                </Card>
+                <p className="py-8 text-center text-sm text-gray-500">
+                  Nu există proceduri curente
+                </p>
               ) : (
-                groupProcedures(visibleProcedures, activeTab).map(renderProcedureGroup)
+                groupProcedures(visibleProcedures).map(renderProcedureGroup)
               )}
             </>
           )}
 
           {activeTab === 'plan' && (
             visibleProcedures.length === 0 ? (
-              <Card className="p-4 text-center text-gray-500 rounded-none">
-                No planned procedures
-              </Card>
+              <p className="py-8 text-center text-sm text-gray-500">
+                Nu există proceduri planificate
+              </p>
             ) : (
-              groupProcedures(visibleProcedures, activeTab).map(renderProcedureGroup)
+              groupProcedures(visibleProcedures).map(renderProcedureGroup)
             )
           )}
         </div>
@@ -1459,15 +855,17 @@ export function TreatmentPlan({
 
       {/* Sticky Footer: Cost Bar (only for current & plan) */}
       {(activeTab === 'current' || activeTab === 'plan') && (
-        <div className="sticky bottom-0 bg-white border-t z-20 rounded-b-xl">
+        <div className="sticky bottom-0 bg-white border-t z-20 shrink-0">
           <div className="p-2 space-y-2">
             {/* Cost Summary */}
             <div className="flex justify-between items-center text-sm">
               <span className="font-medium">
-                {activeTab === 'current' ? 'Total Current Cost:' : 'Total Planned Cost:'}
+                {activeTab === 'current' ? 'Cost total curent:' : 'Cost total planificat:'}
               </span>
               <span className="font-bold">
-                €{calculateTotalCost(activeTab === 'current' ? 'IN_PROGRESS' : 'PENDING').toFixed(2)}
+                {formatLei(
+                  calculateTotalCostLei(activeTab === 'current' ? 'IN_PROGRESS' : 'PENDING')
+                )}
               </span>
             </div>
 
@@ -1475,9 +873,9 @@ export function TreatmentPlan({
             {activeTab === 'current' && selectedPayableProcedures.length > 0 && (
               <div className="flex justify-between items-center pt-2 border-t">
                 <div className="text-sm">
-                  <span className="text-gray-600">Selected for payment:</span>
+                  <span className="text-gray-600">Selectate pentru plată:</span>
                   <span className="font-semibold ml-2">
-                    {selectedPayableProcedures.length} procedure{selectedPayableProcedures.length !== 1 ? 's' : ''} - €{selectedPayableAmount.toFixed(2)}
+                    {selectedPayableProcedures.length} procedur{selectedPayableProcedures.length !== 1 ? 'i' : 'ă'} - {formatLei(selectedPayableAmount)}
                   </span>
                 </div>
                 <Button
@@ -1486,7 +884,7 @@ export function TreatmentPlan({
                   size="sm"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Pay Selected
+                  Plătește selectate
                 </Button>
               </div>
             )}
@@ -1495,9 +893,9 @@ export function TreatmentPlan({
             {activeTab === 'plan' && selectedProcedures.length > 0 && patient && (
               <div className="flex justify-between items-center pt-2 border-t">
                 <div className="text-sm">
-                  <span className="text-gray-600">Selected for budget:</span>
+                  <span className="text-gray-600">Selectate pentru deviz:</span>
                   <span className="font-semibold ml-2">
-                    {selectedProcedures.length} procedure{selectedProcedures.length !== 1 ? 's' : ''}
+                    {selectedProcedures.length} procedur{selectedProcedures.length !== 1 ? 'i' : 'ă'}
                   </span>
                 </div>
                 <Button
@@ -1506,7 +904,7 @@ export function TreatmentPlan({
                   size="sm"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  Generate Budget
+                  Generează deviz
                 </Button>
               </div>
             )}
@@ -1514,48 +912,64 @@ export function TreatmentPlan({
         </div>
       )}
 
-      {/* Add Treatment Modal */}
-      <TreatmentModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleSaveNewTreatment}
-        patientAge={patientAge}
-        availableCodes={availableCodes}
-        patient={patient}
-        onOpenAsaModal={onOpenAsaModal}
-        onOpenPpsModal={onOpenPpsModal}
-        onOpenScreeningRecallModal={onOpenScreeningRecallModal}
-        onRefresh={onRefresh}
-      />
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Adăugare procedură</DialogTitle>
+            <DialogDescription>
+              Adăugați o procedură în {activeTab === 'plan' ? 'planul de tratament' : activeTab === 'current' ? 'tratamentul curent' : 'istoric'}.
+            </DialogDescription>
+          </DialogHeader>
+          <SurgicalProcedureForm
+            patientId={patientId}
+            status={
+              activeTab === 'history'
+                ? 'COMPLETED'
+                : activeTab === 'current'
+                  ? 'IN_PROGRESS'
+                  : 'PENDING'
+            }
+            onSuccess={() => {
+              setShowAddModal(false);
+              onProcedureAdded();
+            }}
+            onCancel={() => setShowAddModal(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
-      {/* Edit Treatment Modal */}
-      <TreatmentModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setSelectedProcedure(null);
-        }}
-        onSave={handleUpdateTreatment}
-        treatmentData={selectedProcedure ? {
-          id: selectedProcedure.id,
-          codeId: selectedProcedure.codeId,
-          code: selectedProcedure.code,
-          notes: selectedProcedure.notes,
-          quantity: selectedProcedure.quantity,
-          toothNumber: selectedProcedure.toothNumber,
-          cost: selectedProcedure.cost,
-          // Map existing procedure fields to treatment data format
-          // Add more mappings here as needed
-        } : null}
-        patientAge={patientAge}
-        availableCodes={availableCodes}
-        isPaid={selectedProcedure?.isPaid || false}
-        patient={patient}
-        onOpenAsaModal={onOpenAsaModal}
-        onOpenPpsModal={onOpenPpsModal}
-        onOpenScreeningRecallModal={onOpenScreeningRecallModal}
-        onRefresh={onRefresh}
-      />
+      <Dialog open={showEditModal} onOpenChange={(open) => {
+        setShowEditModal(open);
+        if (!open) setSelectedProcedure(null);
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editare procedură</DialogTitle>
+          </DialogHeader>
+          {selectedProcedure && (
+            <SurgicalProcedureForm
+              patientId={patientId}
+              procedure={selectedProcedure}
+              status={
+                activeTab === 'history'
+                  ? 'COMPLETED'
+                  : activeTab === 'current'
+                    ? 'IN_PROGRESS'
+                    : 'PENDING'
+              }
+              onSuccess={() => {
+                setShowEditModal(false);
+                setSelectedProcedure(null);
+                onProcedureUpdated();
+              }}
+              onCancel={() => {
+                setShowEditModal(false);
+                setSelectedProcedure(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Modal */}
       <PaymentModal

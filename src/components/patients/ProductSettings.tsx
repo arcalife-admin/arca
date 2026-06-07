@@ -26,12 +26,13 @@ interface ProductSettingsProps {
 }
 
 const PRODUCT_CATEGORIES = [
-  'Oral Care',
-  'Cleaning Products',
-  'Accessories',
-  'Supplements',
-  'Equipment',
-  'Other'
+  'Îngrijire postoperatorie',
+  'Îngrijire piele',
+  'Îmbrăcăminte compresivă',
+  'Accesorii',
+  'Suplimente',
+  'Consumabile medicale',
+  'Altele',
 ];
 
 export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductSettingsProps) {
@@ -61,11 +62,11 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
         const data = await response.json();
         setProducts(data);
       } else {
-        toast.error('Failed to load products');
+        toast.error('Încărcarea produselor a eșuat');
       }
     } catch (error) {
       console.error('Failed to load products:', error);
-      toast.error('Failed to load products');
+      toast.error('Încărcarea produselor a eșuat');
     } finally {
       setLoading(false);
     }
@@ -99,13 +100,13 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
 
   const handleSaveProduct = async () => {
     if (!formData.name.trim() || !formData.defaultPrice) {
-      toast.error('Product name and price are required');
+      toast.error('Numele și prețul produsului sunt obligatorii');
       return;
     }
 
     const price = parseFloat(formData.defaultPrice);
     if (isNaN(price) || price < 0) {
-      toast.error('Please enter a valid price');
+      toast.error('Introduceți un preț valid');
       return;
     }
 
@@ -138,25 +139,25 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
       }
 
       if (response.ok) {
-        toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+        toast.success(editingProduct ? 'Produsul a fost actualizat cu succes' : 'Produsul a fost creat cu succes');
         setShowAddModal(false);
         resetForm();
         loadProducts();
         onProductsChanged();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to save product');
+        toast.error(error.error || 'Salvarea produsului a eșuat');
       }
     } catch (error) {
       console.error('Failed to save product:', error);
-      toast.error('Failed to save product');
+      toast.error('Salvarea produsului a eșuat');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteProduct = async (product: Product) => {
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) {
+    if (!confirm(`Sigur doriți să ștergeți „${product.name}"?`)) {
       return;
     }
 
@@ -168,16 +169,16 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
       });
 
       if (response.ok) {
-        toast.success('Product deleted successfully');
+        toast.success('Produsul a fost șters cu succes');
         loadProducts();
         onProductsChanged();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to delete product');
+        toast.error(error.error || 'Ștergerea produsului a eșuat');
       }
     } catch (error) {
       console.error('Failed to delete product:', error);
-      toast.error('Failed to delete product');
+      toast.error('Ștergerea produsului a eșuat');
     } finally {
       setLoading(false);
     }
@@ -198,21 +199,21 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
       });
 
       if (response.ok) {
-        toast.success(product.isActive ? 'Product deactivated' : 'Product activated');
+        toast.success(product.isActive ? 'Produsul a fost dezactivat' : 'Produsul a fost activat');
         loadProducts();
         onProductsChanged();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to update product status');
+        toast.error(error.error || 'Actualizarea stării produsului a eșuat');
       }
     } catch (error) {
       console.error('Failed to update product status:', error);
-      toast.error('Failed to update product status');
+      toast.error('Actualizarea stării produsului a eșuat');
     }
   };
 
   const groupedProducts = products.reduce((acc, product) => {
-    const category = product.category || 'Uncategorized';
+    const category = product.category || 'Necategorizat';
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -227,21 +228,21 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="w-5 h-5" />
-              Product Management
+              Gestionare produse
             </DialogTitle>
             <DialogDescription>
-              Manage products available in your shop
+              Gestionați produsele disponibile în magazin
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                {products.length} total products ({products.filter(p => p.isActive).length} active)
+                {products.length} produse în total ({products.filter(p => p.isActive).length} active)
               </div>
               <Button onClick={handleAddProduct} disabled={loading}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add Product
+                Adaugă produs
               </Button>
             </div>
 
@@ -265,7 +266,7 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
                                   variant={product.isActive ? "default" : "secondary"}
                                   className="text-xs"
                                 >
-                                  {product.isActive ? 'Active' : 'Inactive'}
+                                  {product.isActive ? 'Activ' : 'Inactiv'}
                                 </Badge>
                               </div>
                               {product.description && (
@@ -292,7 +293,7 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
                                 onClick={() => toggleProductStatus(product)}
                                 className={product.isActive ? 'text-orange-600' : 'text-green-600'}
                               >
-                                {product.isActive ? 'Deactivate' : 'Activate'}
+                                {product.isActive ? 'Dezactivează' : 'Activează'}
                               </Button>
                               <Button
                                 variant="ghost"
@@ -313,8 +314,8 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
                 {products.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
                     <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No products found</p>
-                    <p className="text-sm">Add your first product to get started</p>
+                    <p>Nu au fost găsite produse</p>
+                    <p className="text-sm">Adăugați primul produs pentru a începe</p>
                   </div>
                 )}
               </div>
@@ -323,7 +324,7 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
 
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
-              Close
+              Închide
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -337,27 +338,27 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
+              {editingProduct ? 'Editare produs' : 'Adăugare produs nou'}
             </DialogTitle>
             <DialogDescription>
-              {editingProduct ? 'Update product information' : 'Add a new product to your shop'}
+              {editingProduct ? 'Actualizați informațiile produsului' : 'Adăugați un produs nou în magazin'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name">Product Name *</Label>
+              <Label htmlFor="name">Nume produs *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Electric Toothbrush"
+                placeholder="ex. Cremă pentru cicatrici"
                 className="mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="defaultPrice">Default Price (€) *</Label>
+              <Label htmlFor="defaultPrice">Preț implicit (€) *</Label>
               <Input
                 id="defaultPrice"
                 type="number"
@@ -371,13 +372,13 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
             </div>
 
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Categorie</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder="Selectați o categorie" />
                 </SelectTrigger>
                 <SelectContent>
                   {PRODUCT_CATEGORIES.map((category) => (
@@ -390,12 +391,12 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Descriere</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Optional product description..."
+                placeholder="Descriere opțională a produsului..."
                 className="mt-1"
                 rows={3}
               />
@@ -410,10 +411,10 @@ export function ProductSettings({ isOpen, onClose, onProductsChanged }: ProductS
                 resetForm();
               }}
             >
-              Cancel
+              Anulare
             </Button>
             <Button onClick={handleSaveProduct} disabled={loading}>
-              {loading ? 'Saving...' : editingProduct ? 'Update Product' : 'Add Product'}
+              {loading ? 'Se salvează...' : editingProduct ? 'Actualizează produsul' : 'Adaugă produs'}
             </Button>
           </DialogFooter>
         </DialogContent>

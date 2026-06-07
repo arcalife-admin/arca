@@ -7,7 +7,7 @@ import { z } from 'zod'
 const organizationSettingsSchema = z.object({
   roomCount: z.number().min(1).max(50).optional(),
   openingDays: z.array(z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])).optional(),
-  // Add other organization settings here as needed
+  eurToRonRate: z.number().min(0.01).max(100).optional(),
 })
 
 export async function GET() {
@@ -16,7 +16,7 @@ export async function GET() {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -31,13 +31,13 @@ export async function GET() {
         name: true,
         roomCount: true,
         openingDays: true,
-        // Add other fields as needed
+        eurToRonRate: true,
       },
     })
 
     if (!organization) {
       return NextResponse.json(
-        { message: 'Organization not found' },
+        { message: 'Organizația nu a fost găsită' },
         { status: 404 }
       )
     }
@@ -46,7 +46,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching organization settings:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }
@@ -58,7 +58,7 @@ export async function PUT(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -67,7 +67,7 @@ export async function PUT(request: Request) {
     const userRole = session.user.role
     if (userRole !== 'ORGANIZATION_OWNER' && userRole !== 'MANAGER') {
       return NextResponse.json(
-        { message: 'Unauthorized - Only organization owners and managers can update settings' },
+        { message: 'Neautorizat — doar proprietarii și managerii pot actualiza setările' },
         { status: 403 }
       )
     }
@@ -89,6 +89,7 @@ export async function PUT(request: Request) {
         name: true,
         roomCount: true,
         openingDays: true,
+        eurToRonRate: true,
       },
     })
 
@@ -96,14 +97,14 @@ export async function PUT(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { message: 'Validation error', errors: error.errors },
+        { message: 'Eroare de validare', errors: error.errors },
         { status: 400 }
       )
     }
 
     console.error('Error updating organization settings:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

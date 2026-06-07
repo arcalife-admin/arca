@@ -89,14 +89,14 @@ function ShopPaymentSimulation({ paymentMethod, amount, onComplete }: {
       {paymentMethod === 'CARD' ? (
         <>
           <CreditCard className="w-16 h-16 text-blue-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Processing Card Payment</h3>
-          <p className="text-gray-600 mb-4">Please follow the prompts on the card reader</p>
+          <h3 className="text-lg font-semibold mb-2">Procesare plată cu cardul</h3>
+          <p className="text-gray-600 mb-4">Urmați instrucțiunile de pe terminalul de plată</p>
         </>
       ) : (
         <>
           <Banknote className="w-16 h-16 text-green-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Processing Cash Payment</h3>
-          <p className="text-gray-600 mb-4">Counting cash received...</p>
+          <h3 className="text-lg font-semibold mb-2">Procesare plată numerar</h3>
+          <p className="text-gray-600 mb-4">Se numără numerarul primit...</p>
         </>
       )}
       <div className="w-full max-w-xs">
@@ -106,7 +106,7 @@ function ShopPaymentSimulation({ paymentMethod, amount, onComplete }: {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="text-sm text-gray-500 mt-2">{Math.round(progress)}% complete</p>
+        <p className="text-sm text-gray-500 mt-2">{Math.round(progress)}% finalizat</p>
       </div>
     </div>
   );
@@ -170,7 +170,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
       }
     } catch (error) {
       console.error('Failed to load products:', error);
-      toast.error('Failed to load products');
+      toast.error('Încărcarea produselor a eșuat');
     }
   };
 
@@ -194,18 +194,18 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
   const addToCart = () => {
     if (!selectedProduct) {
-      toast.error('Please select a product');
+      toast.error('Selectați un produs');
       return;
     }
 
     if (quantity <= 0) {
-      toast.error('Quantity must be greater than 0');
+      toast.error('Cantitatea trebuie să fie mai mare decât 0');
       return;
     }
 
     const price = customPrice ? parseFloat(customPrice) : selectedProduct.defaultPrice;
     if (isNaN(price) || price <= 0) {
-      toast.error('Invalid price');
+      toast.error('Preț invalid');
       return;
     }
 
@@ -232,7 +232,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
     setCustomPrice('');
     setNotes('');
     setSearchQuery('');
-    toast.success(`Added ${selectedProduct.name} to cart`);
+    toast.success(`${selectedProduct.name} a fost adăugat în coș`);
   };
 
   const updateCartItem = (productId: string, quantity: number) => {
@@ -271,7 +271,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
       }]);
     }
 
-    toast.success(`Added ${quantityToAdd}x ${purchase.product.name} to cart`);
+    toast.success(`${quantityToAdd}x ${purchase.product.name} a fost adăugat în coș`);
   };
 
   const repeatMultiplePurchases = (purchases: ShopPurchase[]) => {
@@ -297,7 +297,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
       addedCount++;
     });
 
-    toast.success(`Added ${addedCount} items from previous order to cart`);
+    toast.success(`${addedCount} articole din comanda anterioară au fost adăugate în coș`);
   };
 
   const quickAddToCart = (product: Product, quantity: number = 1) => {
@@ -318,7 +318,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
       }]);
     }
 
-    toast.success(`Quick added ${quantity}x ${product.name} to cart`);
+    toast.success(`${quantity}x ${product.name} a fost adăugat rapid în coș`);
   };
 
   // Group recent purchases by date for better organization
@@ -376,7 +376,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
   const handleProceedToPayment = async () => {
     if (cart.length === 0) {
-      toast.error('Cart is empty');
+      toast.error('Coșul este gol');
       return;
     }
 
@@ -397,7 +397,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create shop purchases');
+        throw new Error('Crearea achizițiilor a eșuat');
       }
 
       const result = await response.json();
@@ -406,7 +406,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
     } catch (error) {
       console.error('Failed to create shop purchases:', error);
-      toast.error('Failed to create shop purchases');
+      toast.error('Crearea achizițiilor a eșuat');
     }
   };
 
@@ -440,14 +440,14 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Payment failed');
+        throw new Error(error.error || 'Plata a eșuat');
       }
 
       const result = await response.json();
       toast.success(result.message);
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error instanceof Error ? error.message : 'Payment failed');
+      toast.error(error instanceof Error ? error.message : 'Plata a eșuat');
     }
   };
 
@@ -483,10 +483,10 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
             <div>
               <DialogTitle className="flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5" />
-                Shop - Products & Supplies
+                Magazin - Produse și consumabile
               </DialogTitle>
               <DialogDescription>
-                Purchase dental products and supplies for the patient
+                Achiziționați produse și consumabile pentru pacient
               </DialogDescription>
             </div>
             <div className="flex gap-2">
@@ -511,10 +511,10 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
             {/* Left Column: Product Selection */}
             <div className="space-y-4">
               <div>
-                <Label>Search Products</Label>
+                <Label>Căutare produse</Label>
                 <div className="relative">
                   <Input
-                    placeholder="Type to search products..."
+                    placeholder="Tastați pentru a căuta produse..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => {
@@ -577,7 +577,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                   {/* Show "no products found" when search has results but no matches */}
                   {showFilteredProducts && searchQuery && filteredProducts.length === 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg p-3">
-                      <div className="text-gray-500 text-center">No products found</div>
+                      <div className="text-gray-500 text-center">Nu au fost găsite produse</div>
                     </div>
                   )}
                 </div>
@@ -598,7 +598,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Quantity</Label>
+                        <Label>Cantitate</Label>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -625,7 +625,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                       </div>
 
                       <div>
-                        <Label>Unit Price (€)</Label>
+                        <Label>Preț unitar (€)</Label>
                         <Input
                           type="number"
                           step={0.01}
@@ -637,9 +637,9 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                     </div>
 
                     <div>
-                      <Label>Notes (optional)</Label>
+                      <Label>Notițe (opțional)</Label>
                       <Input
-                        placeholder="Additional notes..."
+                        placeholder="Notițe suplimentare..."
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                       />
@@ -650,7 +650,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                         Total: €{(quantity * (customPrice ? parseFloat(customPrice) : selectedProduct.defaultPrice)).toFixed(2)}
                       </div>
                       <Button onClick={addToCart}>
-                        Add to Cart
+                        Adaugă în coș
                       </Button>
                     </div>
                   </div>
@@ -664,7 +664,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                     <Card className="p-4">
                       <h4 className="font-medium mb-3 flex items-center gap-2">
                         <ShoppingCart className="w-4 h-4" />
-                        Frequently Purchased
+                        Achiziții frecvente
                       </h4>
                       <div className="grid grid-cols-1 gap-2">
                         {frequentlyPurchased.map((item) => (
@@ -672,7 +672,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                             <div className="flex-1">
                               <div className="font-medium text-sm">{item.product.name}</div>
                               <div className="text-xs text-gray-600">
-                                Purchased {item.count} times • €{item.product.defaultPrice.toFixed(2)}
+                                Achiziționat de {item.count} ori • €{item.product.defaultPrice.toFixed(2)}
                               </div>
                             </div>
                             <div className="flex gap-1">
@@ -682,7 +682,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                                 onClick={() => quickAddToCart(item.product, 1)}
                                 className="text-xs"
                               >
-                                Quick Add
+                                Adăugare rapidă
                               </Button>
                               <Button
                                 variant="outline"
@@ -690,7 +690,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                                 onClick={() => repeatPurchase(item.lastPurchase)}
                                 className="text-xs"
                               >
-                                Repeat Last
+                                Repetă ultima
                               </Button>
                             </div>
                           </div>
@@ -704,7 +704,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium flex items-center gap-2">
                         <History className="w-4 h-4" />
-                        Recent Purchases
+                        Achiziții recente
                       </h4>
                       {Object.keys(groupedRecentPurchases).length > 0 && (
                         <Button
@@ -718,7 +718,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                           }}
                           className="text-xs"
                         >
-                          Repeat Latest Order
+                          Repetă ultima comandă
                         </Button>
                       )}
                     </div>
@@ -732,7 +732,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                               <div className="font-medium text-sm text-gray-700">{date}</div>
                               <div className="flex gap-1">
                                 <Badge variant="outline" className="text-xs">
-                                  {purchases.length} item{purchases.length > 1 ? 's' : ''}
+                                  {purchases.length} articol{purchases.length > 1 ? 'e' : ''}
                                 </Badge>
                                 <Button
                                   variant="outline"
@@ -740,7 +740,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                                   onClick={() => repeatMultiplePurchases(purchases)}
                                   className="text-xs h-6"
                                 >
-                                  Repeat All
+                                  Repetă toate
                                 </Button>
                               </div>
                             </div>
@@ -750,14 +750,14 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                                   <div className="flex-1">
                                     <div className="font-medium text-sm">{purchase.product.name}</div>
                                     <div className="text-xs text-gray-500">
-                                      Qty: {purchase.quantity} × €{purchase.unitPrice.toFixed(2)} = €{purchase.totalAmount.toFixed(2)}
+                                      Cant.: {purchase.quantity} × €{purchase.unitPrice.toFixed(2)} = €{purchase.totalAmount.toFixed(2)}
                                     </div>
                                   </div>
                                   <div className="flex gap-1">
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <Button variant="outline" size="sm" className="text-xs h-7">
-                                          Repeat ▾
+                                          Repetă ▾
                                         </Button>
                                       </PopoverTrigger>
                                       <PopoverContent className="w-48 p-2">
@@ -768,13 +768,13 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                                             onClick={() => repeatPurchase(purchase)}
                                             className="w-full justify-start text-xs"
                                           >
-                                            Same quantity ({purchase.quantity})
+                                            Aceeași cantitate ({purchase.quantity})
                                           </Button>
                                           <div className="flex gap-1">
                                             <Input
                                               type="number"
                                               min="1"
-                                              placeholder="Qty"
+                                              placeholder="Cant."
                                               className="h-7 text-xs"
                                               onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
@@ -799,7 +799,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                                               }}
                                               className="h-7 text-xs"
                                             >
-                                              Add
+                                              Adaugă
                                             </Button>
                                           </div>
                                         </div>
@@ -810,7 +810,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                               ))}
                               {purchases.length > 3 && (
                                 <div className="text-xs text-gray-500 text-center">
-                                  +{purchases.length - 3} more items
+                                  +{purchases.length - 3} articole în plus
                                 </div>
                               )}
                             </div>
@@ -825,15 +825,15 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
             {/* Right Column: Shopping Cart */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Shopping Cart</h3>
-                <Badge variant="outline">{cart.length} item(s)</Badge>
+                <h3 className="text-lg font-medium">Coș de cumpărături</h3>
+                <Badge variant="outline">{cart.length} articol(e)</Badge>
               </div>
 
               {cart.length === 0 ? (
                 <Card className="p-8 text-center">
                   <ShoppingCart className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500">Your cart is empty</p>
-                  <p className="text-sm text-gray-400">Add products to get started</p>
+                  <p className="text-gray-500">Coșul este gol</p>
+                  <p className="text-sm text-gray-400">Adăugați produse pentru a începe</p>
                 </Card>
               ) : (
                 <div className="space-y-4">
@@ -853,7 +853,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                             onClick={() => removeFromCart(item.product.id)}
                             className="text-red-600 hover:text-red-800"
                           >
-                            Remove
+                            Elimină
                           </Button>
                         </div>
 
@@ -892,7 +892,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-lg font-semibold">
-                      <span>Total Amount:</span>
+                      <span>Sumă totală:</span>
                       <span>€{getTotalAmount().toFixed(2)}</span>
                     </div>
                   </div>
@@ -903,12 +903,12 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={handleClose}>
-              Cancel
+              Anulare
             </Button>
             {cart.length > 0 && (
               <Button onClick={handleProceedToPayment} className="bg-green-600 hover:bg-green-700">
                 <Euro className="w-4 h-4 mr-2" />
-                Proceed to Payment (€{getTotalAmount().toFixed(2)})
+                Continuă la plată (€{getTotalAmount().toFixed(2)})
               </Button>
             )}
           </DialogFooter>
@@ -928,10 +928,10 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5" />
-              Payment for Shop Purchases
+              Plată pentru achiziții
             </DialogTitle>
             <DialogDescription>
-              Complete payment for your selected products
+              Finalizați plata pentru produsele selectate
             </DialogDescription>
           </DialogHeader>
 
@@ -945,7 +945,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
             <div className="space-y-6">
               {/* Order Summary */}
               <div className="space-y-4">
-                <h4 className="font-medium">Order Summary</h4>
+                <h4 className="font-medium">Rezumat comandă</h4>
                 {(createdPurchases || []).map((purchase) => (
                   <div key={purchase.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                     <div>
@@ -964,12 +964,12 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Subtotal:</span>
+                    <span>Sumă parțială:</span>
                     <span>€{getTotalAmount().toFixed(2)}</span>
                   </div>
                   {paymentMethod === 'CASH' && cashRounding !== 0 && (
                     <div className="flex justify-between text-sm">
-                      <span>Cash rounding:</span>
+                      <span>Rotunjire numerar:</span>
                       <span>€{cashRounding.toFixed(2)}</span>
                     </div>
                   )}
@@ -982,20 +982,20 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
               {/* Payment Method */}
               <div className="space-y-3">
-                <Label>Payment Method</Label>
+                <Label>Metodă de plată</Label>
                 <RadioGroup value={paymentMethod} onValueChange={(value: 'CASH' | 'CARD') => setPaymentMethod(value)}>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="CARD" id="card" />
                     <Label htmlFor="card" className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4" />
-                      Card Payment
+                      Plată cu cardul
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="CASH" id="cash" />
                     <Label htmlFor="cash" className="flex items-center gap-2">
                       <Banknote className="w-4 h-4" />
-                      Cash Payment
+                      Plată numerar
                     </Label>
                   </div>
                 </RadioGroup>
@@ -1003,7 +1003,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
 
               {/* Invoice Options */}
               <div className="space-y-3">
-                <Label>Invoice Options</Label>
+                <Label>Opțiuni factură</Label>
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -1013,7 +1013,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                     />
                     <Label htmlFor="email" className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      Send invoice via email
+                      Trimite factura prin e-mail
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1024,7 +1024,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                     />
                     <Label htmlFor="print" className="flex items-center gap-2">
                       <Printer className="w-4 h-4" />
-                      Print invoice
+                      Tipărește factura
                     </Label>
                   </div>
                 </div>
@@ -1035,7 +1035,7 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
           {!showPaymentSimulation && (
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setShowPaymentModal(false)}>
-                Cancel
+                Anulare
               </Button>
               <Button
                 onClick={handlePayment}
@@ -1045,12 +1045,12 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
                 {isProcessingPayment ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
+                    Se procesează...
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Process Payment (€{finalAmount.toFixed(2)})
+                    Procesează plata (€{finalAmount.toFixed(2)})
                   </>
                 )}
               </Button>
@@ -1063,14 +1063,14 @@ export function ShopModal({ isOpen, onClose, patientId, onPurchaseComplete }: Sh
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard items in cart?</AlertDialogTitle>
+            <AlertDialogTitle>Eliminați articolele din coș?</AlertDialogTitle>
           </AlertDialogHeader>
           <p className="text-sm text-gray-600">
-            You have items in your cart that will be removed if you close the shop. Are you sure you want to continue?
+            Aveți articole în coș care vor fi eliminate dacă închideți magazinul. Sigur doriți să continuați?
           </p>
           <AlertDialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowDiscardConfirm(false)}>Keep shopping</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={discardCartAndClose}>Discard & Close</Button>
+            <Button variant="outline" onClick={() => setShowDiscardConfirm(false)}>Continuă cumpărăturile</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={discardCartAndClose}>Elimină și închide</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -11,6 +11,7 @@ import { CrownBridgeOptionsProvider } from '@/contexts/CrownBridgeOptionsContext
 import { ExtractionOptionsProvider } from '@/contexts/ExtractionOptionsContext'
 import { SealingOptionsProvider } from '@/contexts/SealingOptionsContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { AppAlertProvider } from '@/components/ui/app-alert-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
@@ -25,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <CrownBridgeOptionsProvider>
                   <ExtractionOptionsProvider>
                     <SealingOptionsProvider>
-                      {children}
+                      <AppAlertProvider>{children}</AppAlertProvider>
                     </SealingOptionsProvider>
                   </ExtractionOptionsProvider>
                 </CrownBridgeOptionsProvider>

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching order analytics:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch order analytics' },
+      { error: 'Încărcarea analiticelor comenzilor a eșuat' },
       { status: 500 }
     );
   }

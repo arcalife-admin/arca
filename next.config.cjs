@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+const path = require('path')
+const { withSentryConfig } = require('@sentry/nextjs')
+
 const nextConfig = {
   // Using standalone mode for server rendering
   output: 'standalone',
@@ -19,6 +22,7 @@ const nextConfig = {
     missingSuspenseWithCSRBailout: false,
     // Skip building API routes during static generation
     skipTrailingSlashRedirect: true,
+    instrumentationHook: true,
   },
   // Configure route settings to make dashboard pages dynamic
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
@@ -90,6 +94,32 @@ const nextConfig = {
   async generateStaticParams() {
     return [];
   },
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/patient-forms',
+        destination: '/dashboard/patients/new',
+        permanent: false,
+      },
+    ];
+  },
 }
 
-module.exports = nextConfig 
+const sentryEnabled = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN)
+
+const sentryWebpackPluginOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+}
+
+const sentryBuildOptions = {
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+}
+
+module.exports = sentryEnabled
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryBuildOptions)
+  : nextConfig 

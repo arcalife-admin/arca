@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
     // Get all timeline events for all orders in the organization
     const events = await prisma.orderTimelineEvent.findMany({
@@ -25,6 +25,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(events);
   } catch (error) {
     console.error('Error fetching all timeline events:', error);
-    return NextResponse.json({ error: 'Failed to fetch timeline events' }, { status: 500 });
+    return NextResponse.json({ error: 'Încărcarea evenimentelor din cronologie a eșuat' }, { status: 500 });
   }
 } 

@@ -57,8 +57,8 @@ export default function WaitingListTable({
   const handleCallPatient = (patient: any) => {
     if (!patient.phone) {
       toast({
-        title: 'No phone number',
-        description: 'This patient does not have a phone number on file.',
+        title: 'Fără număr de telefon',
+        description: 'Acest pacient nu are un număr de telefon înregistrat.',
         variant: 'destructive',
       });
       return;
@@ -90,8 +90,8 @@ export default function WaitingListTable({
   const handleEmailPatient = (entry: WaitingListEntry) => {
     if (!entry.patient.email) {
       toast({
-        title: 'No email address',
-        description: 'This patient does not have an email address on file.',
+        title: 'Fără adresă de email',
+        description: 'Acest pacient nu are o adresă de email înregistrată.',
         variant: 'destructive',
       });
       return;
@@ -99,22 +99,22 @@ export default function WaitingListTable({
 
     // Create contextual email content
     const appointmentInfo = entry.waitingAppointment
-      ? `${entry.waitingAppointment.type} appointment (${entry.waitingAppointment.duration} minutes)`
-      : 'dental appointment';
+      ? `programare ${entry.waitingAppointment.type} (${entry.waitingAppointment.duration} minute)`
+      : 'programare stomatologică';
 
-    const subject = `Available Appointment Slot - ${practitionerName}`;
+    const subject = `Loc disponibil pentru programare - ${practitionerName}`;
 
     const content =
-      `Dear ${entry.patient.firstName} ${entry.patient.lastName},\n\n` +
-      `Great news! We have an available appointment slot for your ${appointmentInfo} with ${practitionerName}.\n\n` +
-      `📅 AVAILABLE APPOINTMENT:\n` +
-      `Date: [ENTER DATE HERE - e.g., Monday, January 15th]\n` +
-      `Time: [ENTER TIME HERE - e.g., 2:30 PM]\n\n` +
-      `If you're interested in this appointment, please reply to this email or call our office as soon as possible to confirm, as these slots fill up quickly.\n\n` +
-      `If this time doesn't work for you, please let us know and we'll keep you on our waiting list for the next available slot.\n\n` +
-      `We look forward to seeing you soon!\n\n` +
-      `Best regards,\n` +
-      `Your Dental Team`;
+      `Stimată/Stimate ${entry.patient.firstName} ${entry.patient.lastName},\n\n` +
+      `Vești bune! Avem un loc disponibil pentru ${appointmentInfo} cu ${practitionerName}.\n\n` +
+      `📅 PROGRAMARE DISPONIBILĂ:\n` +
+      `Data: [INTRODU DATA AICI - ex., luni, 15 ianuarie]\n` +
+      `Ora: [INTRODU ORA AICI - ex., 14:30]\n\n` +
+      `Dacă sunteți interesat(ă) de această programare, vă rugăm să răspundeți la acest email sau să ne sunați cât mai curând posibil pentru confirmare, deoarece locurile se ocupă rapid.\n\n` +
+      `Dacă acest interval nu vă convine, vă rugăm să ne anunțați și vă vom păstra pe lista de așteptare pentru următorul loc disponibil.\n\n` +
+      `Așteptăm cu plăcere vizita dumneavoastră!\n\n` +
+      `Cu stimă,\n` +
+      `Echipa stomatologică`;
 
     // Set up email modal with pre-filled content
     setEmailFormData({
@@ -136,7 +136,7 @@ export default function WaitingListTable({
         const textarea = document.querySelector('textarea[placeholder*="Enter your message"]') as HTMLTextAreaElement;
         if (textarea) {
           const content = textarea.value;
-          const firstPlaceholderStart = content.indexOf('[ENTER DATE HERE');
+          const firstPlaceholderStart = content.indexOf('[INTRODU DATA AICI');
           const firstPlaceholderEnd = content.indexOf(']', firstPlaceholderStart) + 1;
 
           if (firstPlaceholderStart !== -1 && firstPlaceholderEnd !== -1) {
@@ -152,8 +152,8 @@ export default function WaitingListTable({
   const handleSendEmail = async () => {
     // Simulate sending email
     toast({
-      title: 'Success',
-      description: 'Email sent successfully!',
+      title: 'Succes',
+      description: 'Emailul a fost trimis cu succes!',
     });
     setShowEmailModal(false);
     setEmailFormData({
@@ -176,10 +176,10 @@ export default function WaitingListTable({
       setEmailInputError('');
       return true;
     } else if (email && !emailRegex.test(email)) {
-      setEmailInputError('Please enter a valid email address');
+      setEmailInputError('Introduceți o adresă de email validă');
       return false;
     } else if (emailFormData.recipients.includes(email)) {
-      setEmailInputError('Email already added');
+      setEmailInputError('Emailul a fost deja adăugat');
       return false;
     }
     return false;
@@ -238,8 +238,8 @@ export default function WaitingListTable({
       if (!response.ok) throw new Error('Failed to complete entry');
 
       toast({
-        title: 'Success',
-        description: 'Patient removed from waiting list',
+        title: 'Succes',
+        description: 'Pacientul a fost eliminat din lista de așteptare',
       });
 
       onRefresh();
@@ -248,8 +248,8 @@ export default function WaitingListTable({
     } catch (error) {
       console.error('Error completing entry:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to remove patient from waiting list',
+        title: 'Eroare',
+        description: 'Eliminarea pacientului din lista de așteptare a eșuat',
         variant: 'destructive',
       });
     }
@@ -270,16 +270,16 @@ export default function WaitingListTable({
       if (!response.ok) throw new Error('Failed to move to pending');
 
       toast({
-        title: 'Success',
-        description: 'Waiting appointment moved to pending list',
+        title: 'Succes',
+        description: 'Programarea a fost mutată la programări în așteptare',
       });
 
       onRefresh();
     } catch (error) {
       console.error('Error moving to pending:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to move appointment to pending',
+        title: 'Eroare',
+        description: 'Mutarea programării la programări în așteptare a eșuat',
         variant: 'destructive',
       });
     } finally {
@@ -297,7 +297,7 @@ export default function WaitingListTable({
   };
 
   const formatTime = (dateString?: string | Date) => {
-    if (!dateString) return 'Not set';
+    if (!dateString) return 'Nesetat';
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-GB', {
       hour: '2-digit',
@@ -312,12 +312,12 @@ export default function WaitingListTable({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="w-5 h-5" />
-            <span>{practitionerName} - Waiting List</span>
+            <span>{practitionerName} - Listă de așteptare</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
-            No patients in the waiting list for this practitioner.
+            Nu există pacienți în lista de așteptare pentru acest practician.
           </div>
         </CardContent>
       </Card>
@@ -330,9 +330,9 @@ export default function WaitingListTable({
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="w-5 h-5" />
-            <span>{practitionerName} - Waiting List</span>
+            <span>{practitionerName} - Listă de așteptare</span>
             <Badge variant="secondary" className="ml-2">
-              {entries.length} patient{entries.length !== 1 ? 's' : ''}
+              {entries.length} {entries.length === 1 ? 'pacient' : 'pacienți'}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -341,11 +341,11 @@ export default function WaitingListTable({
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-2 font-medium">Patient</th>
-                  <th className="text-left py-3 px-2 font-medium">Notes</th>
-                  <th className="text-left py-3 px-2 font-medium">Date Added</th>
-                  <th className="text-left py-3 px-2 font-medium">Waiting Appointment</th>
-                  <th className="text-left py-3 px-2 font-medium">Actions</th>
+                  <th className="text-left py-3 px-2 font-medium">Pacient</th>
+                  <th className="text-left py-3 px-2 font-medium">Notițe</th>
+                  <th className="text-left py-3 px-2 font-medium">Data adăugării</th>
+                  <th className="text-left py-3 px-2 font-medium">Programare în așteptare</th>
+                  <th className="text-left py-3 px-2 font-medium">Acțiuni</th>
                 </tr>
               </thead>
               <tbody>
@@ -368,7 +368,7 @@ export default function WaitingListTable({
                             <div className="flex items-center gap-1 text-xs">
                               <span
                                 onClick={() => handleCallPatient(entry.patient)}
-                                title="Call patient"
+                                title="Sună pacientul"
                                 className="cursor-pointer"
                               >
                                 <Phone className="w-3 h-3 text-blue-600 hover:text-blue-800" />
@@ -380,7 +380,7 @@ export default function WaitingListTable({
                             <div className="flex items-center gap-1 text-xs">
                               <span
                                 onClick={() => handleEmailPatient(entry)}
-                                title="Send email to patient"
+                                title="Trimite email pacientului"
                                 className="cursor-pointer"
                               >
                                 <Mail className="w-3 h-3 text-blue-600 hover:text-blue-800" />
@@ -397,7 +397,7 @@ export default function WaitingListTable({
                       <div className="flex items-center space-x-2">
                         <FileText className="w-4 h-4 text-gray-400" />
                         <span className="text-sm">
-                          {entry.notes || 'No notes'}
+                          {entry.notes || 'Fără notițe'}
                         </span>
                       </div>
                     </td>
@@ -443,12 +443,12 @@ export default function WaitingListTable({
                             className="h-6 px-2 text-xs"
                           >
                             <ArrowRight className="w-3 h-3 mr-1" />
-                            Move to Pending
+                            Mută la programări în așteptare
                           </Button>
                         </div>
                       ) : (
                         <span className="text-xs text-gray-400 italic">
-                          No appointment
+                          Fără programare
                         </span>
                       )}
                     </td>
@@ -465,7 +465,7 @@ export default function WaitingListTable({
                         className="h-8 px-3 text-green-600 border-green-600 hover:bg-green-50"
                       >
                         <CheckCircle className="w-4 h-4 mr-1" />
-                        Complete
+                        Finalizează
                       </Button>
                     </td>
                   </tr>
@@ -480,10 +480,10 @@ export default function WaitingListTable({
       <ConfirmationModal
         open={showCompleteModal}
         onOpenChange={setShowCompleteModal}
-        title="Mark as Completed"
-        description="Are you sure you want to mark this patient as completed and remove them from the waiting list?"
-        confirmText="Mark Complete"
-        cancelText="Cancel"
+        title="Marchează ca finalizat"
+        description="Sigur doriți să marcați acest pacient ca finalizat și să îl eliminați din lista de așteptare?"
+        confirmText="Marchează finalizat"
+        cancelText="Anulează"
         variant="default"
         icon="info"
         onConfirm={handleCompleteEntry}

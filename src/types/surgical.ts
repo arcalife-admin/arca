@@ -27,6 +27,7 @@ export interface SurgicalProcedure {
     code: string;
     description: string;
     price?: number;
+    currency?: string;
     section?: string;
     subSection?: string;
     patientType?: string;
@@ -39,6 +40,7 @@ export interface SurgicalProcedureCode {
   code: string;
   description: string;
   price: number | null;
+  currency?: string;
   category: string;
   section?: string;
   subSection?: string;

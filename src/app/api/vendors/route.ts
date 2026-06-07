@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching vendors:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch vendors' },
+      { error: 'Încărcarea furnizorilor a eșuat' },
       { status: 500 }
     );
   }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json(
-        { error: 'Vendor name is required' },
+        { error: 'Numele furnizorului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating vendor:', error);
     return NextResponse.json(
-      { error: 'Failed to create vendor' },
+      { error: 'Crearea furnizorului a eșuat' },
       { status: 500 }
     );
   }
@@ -127,7 +127,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -135,7 +135,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Vendor ID is required' },
+        { error: 'ID-ul furnizorului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -150,7 +150,7 @@ export async function PUT(request: NextRequest) {
 
     if (!existingVendor) {
       return NextResponse.json(
-        { error: 'Vendor not found' },
+        { error: 'Furnizorul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -173,7 +173,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating vendor:', error);
     return NextResponse.json(
-      { error: 'Failed to update vendor' },
+      { error: 'Actualizarea furnizorului a eșuat' },
       { status: 500 }
     );
   }
@@ -184,7 +184,7 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -192,7 +192,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Vendor ID is required' },
+        { error: 'ID-ul furnizorului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -211,7 +211,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!existingVendor) {
       return NextResponse.json(
-        { error: 'Vendor not found' },
+        { error: 'Furnizorul nu a fost găsit' },
         { status: 404 }
       );
     }
@@ -219,7 +219,7 @@ export async function DELETE(request: NextRequest) {
     // Check if vendor has associated orders or requests
     if (existingVendor.orders.length > 0 || existingVendor.orderRequests.length > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete vendor with associated orders or requests' },
+        { error: 'Nu se poate șterge furnizorul cu comenzi sau cereri asociate' },
         { status: 400 }
       );
     }
@@ -228,11 +228,11 @@ export async function DELETE(request: NextRequest) {
       where: { id },
     });
 
-    return NextResponse.json({ message: 'Vendor deleted successfully' });
+    return NextResponse.json({ message: 'Furnizorul a fost șters cu succes' });
   } catch (error) {
     console.error('Error deleting vendor:', error);
     return NextResponse.json(
-      { error: 'Failed to delete vendor' },
+      { error: 'Ștergerea furnizorului a eșuat' },
       { status: 500 }
     );
   }

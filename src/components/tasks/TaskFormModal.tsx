@@ -29,7 +29,7 @@ import { Calendar, X, Plus, User, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 const taskSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().min(1, 'Titlul este obligatoriu'),
   description: z.string().optional(),
   type: z.nativeEnum(TaskType),
   visibility: z.nativeEnum(TaskVisibility),
@@ -37,18 +37,25 @@ const taskSchema = z.object({
   deadline: z.string().optional(),
   patientId: z.string().optional(),
   boardId: z.string().optional(),
-  assignedUserIds: z.array(z.string()).min(1, 'At least one assignee is required'),
+  assignedUserIds: z.array(z.string()).min(1, 'Este necesar cel puțin un responsabil'),
   reminders: z.array(z.object({
     reminderTime: z.string(),
     message: z.string().optional()
   })).optional(),
   options: z.array(z.object({
-    text: z.string().min(1, 'Option text is required'),
+    text: z.string().min(1, 'Textul opțiunii este obligatoriu'),
     order: z.number().optional()
   })).optional()
 });
 
 type TaskFormData = z.infer<typeof taskSchema>;
+
+const priorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.LOW]: 'Scăzută',
+  [TaskPriority.MEDIUM]: 'Medie',
+  [TaskPriority.HIGH]: 'Ridicată',
+  [TaskPriority.URGENT]: 'Urgentă',
+};
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -201,7 +208,7 @@ export default function TaskFormModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {task ? 'Edit Task' : 'Create New Task'}
+            {task ? 'Editează sarcina' : 'Sarcină nouă'}
           </DialogTitle>
         </DialogHeader>
 
@@ -209,10 +216,10 @@ export default function TaskFormModal({
           {/* Basic Information */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title">Titlu *</Label>
               <Input
                 id="title"
-                placeholder="Enter task title"
+                placeholder="Introduceți titlul sarcinii"
                 name={register('title').name}
                 onChange={register('title').onChange}
                 onBlur={register('title').onBlur}
@@ -224,18 +231,18 @@ export default function TaskFormModal({
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Descriere</Label>
               <Textarea
                 id="description"
                 {...register('description')}
-                placeholder="Enter task description"
+                placeholder="Introduceți descrierea sarcinii"
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="type">Task Type</Label>
+                <Label htmlFor="type">Tip sarcină</Label>
                 <Select
                   value={watch('type')}
                   onValueChange={(value) => setValue('type', value as TaskType)}
@@ -244,15 +251,15 @@ export default function TaskFormModal({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={TaskType.TASK}>Regular Task</SelectItem>
-                    <SelectItem value={TaskType.POLL}>Poll</SelectItem>
+                    <SelectItem value={TaskType.TASK}>Sarcină obișnuită</SelectItem>
+                    <SelectItem value={TaskType.POLL}>Sondaj</SelectItem>
                     <SelectItem value={TaskType.PLAN}>Plan</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="visibility">Visibility</Label>
+                <Label htmlFor="visibility">Vizibilitate</Label>
                 <Select
                   value={watch('visibility')}
                   onValueChange={(value) => setValue('visibility', value as TaskVisibility)}
@@ -261,8 +268,8 @@ export default function TaskFormModal({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={TaskVisibility.PRIVATE}>Private</SelectItem>
-                    <SelectItem value={TaskVisibility.PUBLIC}>Public</SelectItem>
+                    <SelectItem value={TaskVisibility.PRIVATE}>Privat</SelectItem>
+                    <SelectItem value={TaskVisibility.PUBLIC}>Publică</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -270,7 +277,7 @@ export default function TaskFormModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="priority">Prioritate</Label>
                 <Select
                   value={watch('priority')}
                   onValueChange={(value) => setValue('priority', value as TaskPriority)}
@@ -281,7 +288,7 @@ export default function TaskFormModal({
                   <SelectContent>
                     {Object.values(TaskPriority).map((priority) => (
                       <SelectItem key={priority} value={priority}>
-                        {priority}
+                        {priorityLabels[priority]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -289,7 +296,7 @@ export default function TaskFormModal({
               </div>
 
               <div>
-                <Label htmlFor="deadline">Deadline</Label>
+                <Label htmlFor="deadline">Termen limită</Label>
                 <Input
                   id="deadline"
                   type="datetime-local"
@@ -305,24 +312,24 @@ export default function TaskFormModal({
           {/* Board Selection */}
           {boards.length > 0 && (
             <div>
-              <Label htmlFor="board">Task Board</Label>
+              <Label htmlFor="board">Tablă sarcini</Label>
               <Select
                 value={watch('boardId') || 'no-board'}
                 onValueChange={(value) => setValue('boardId', value === 'no-board' ? undefined : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a board (optional)" />
+                  <SelectValue placeholder="Selectați o tablă (opțional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no-board">No board</SelectItem>
+                  <SelectItem value="no-board">Fără tablă</SelectItem>
                   {boards.map((board) => (
                     <SelectItem key={board.id} value={board.id}>
                       <div className="flex items-center space-x-2">
                         <span>{board.name}</span>
                         {board.isPublic ? (
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700">Public</Badge>
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700">Publică</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">Private</Badge>
+                          <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">Privat</Badge>
                         )}
                       </div>
                     </SelectItem>
@@ -332,7 +339,7 @@ export default function TaskFormModal({
               {watchedBoardId && !task && (
                 <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                   <p className="text-sm text-blue-800">
-                    <strong>Board settings applied:</strong> Visibility and members automatically set based on board configuration.
+                    <strong>Setări tablă aplicate:</strong> Vizibilitatea și membrii au fost setați automat conform configurației tablei.
                   </p>
                 </div>
               )}
@@ -342,16 +349,16 @@ export default function TaskFormModal({
           {/* Patient Assignment */}
           {patients.length > 0 && (
             <div>
-              <Label htmlFor="patient">Associated Patient</Label>
+              <Label htmlFor="patient">Pacient asociat</Label>
               <Select
                 value={watchedPatientId || 'no-patient'}
                 onValueChange={(value) => setValue('patientId', value === 'no-patient' ? undefined : value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a patient (optional)" />
+                  <SelectValue placeholder="Selectați un pacient (opțional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no-patient">No patient</SelectItem>
+                  <SelectItem value="no-patient">Fără pacient</SelectItem>
                   {patients.map((patient) => (
                     <SelectItem key={patient.id} value={patient.id}>
                       {patient.firstName} {patient.lastName}
@@ -372,7 +379,7 @@ export default function TaskFormModal({
 
           {/* User Assignment */}
           <div>
-            <Label>Assigned Practitioners *</Label>
+            <Label>Practicieni atribuiți *</Label>
             <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
               {users.map((user) => (
                 <div key={user.id} className="flex items-center space-x-2">
@@ -404,7 +411,7 @@ export default function TaskFormModal({
           {/* Reminders */}
           <div>
             <div className="flex items-center justify-between">
-              <Label>Reminders</Label>
+              <Label>Memento-uri</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -412,7 +419,7 @@ export default function TaskFormModal({
                 onClick={addReminder}
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Add Reminder
+                Adaugă memento
               </Button>
             </div>
 
@@ -422,7 +429,7 @@ export default function TaskFormModal({
                   <div key={index} className="flex items-start space-x-2 p-3 border rounded-md">
                     <div className="flex-1 space-y-2">
                       <div>
-                        <Label className="text-xs">Reminder Time</Label>
+                        <Label className="text-xs">Ora mementoului</Label>
                         <Input
                           type="datetime-local"
                           value={reminder.reminderTime}
@@ -430,9 +437,9 @@ export default function TaskFormModal({
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Message (optional)</Label>
+                        <Label className="text-xs">Mesaj (opțional)</Label>
                         <Input
-                          placeholder="Reminder message"
+                          placeholder="Mesaj memento"
                           value={reminder.message}
                           onChange={(e) => updateReminder(index, 'message', e.target.value)}
                         />
@@ -456,7 +463,7 @@ export default function TaskFormModal({
           {watchedTaskType === TaskType.POLL && (
             <div>
               <div className="flex items-center justify-between">
-                <Label>Poll Options</Label>
+                <Label>Opțiuni sondaj</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -464,7 +471,7 @@ export default function TaskFormModal({
                   onClick={() => setPollOptions([...pollOptions, { text: '', order: pollOptions.length }])}
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add Option
+                  Adaugă opțiune
                 </Button>
               </div>
 
@@ -474,7 +481,7 @@ export default function TaskFormModal({
                     <div key={index} className="flex items-center space-x-2">
                       <span className="w-8 text-sm text-muted-foreground">{index + 1}.</span>
                       <Input
-                        placeholder="Option text"
+                        placeholder="Text opțiune"
                         value={option.text}
                         onChange={(e) => {
                           const updated = [...pollOptions];
@@ -500,7 +507,7 @@ export default function TaskFormModal({
 
               {watchedTaskType === TaskType.POLL && pollOptions.length === 0 && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  Add options for users to vote on. Leave empty for a simple yes/no poll.
+                  Adăugați opțiuni pentru vot. Lăsați gol pentru un sondaj simplu da/nu.
                 </p>
               )}
             </div>
@@ -508,10 +515,10 @@ export default function TaskFormModal({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              Anulează
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : task ? 'Update Task' : 'Create Task'}
+              {isLoading ? 'Se salvează...' : task ? 'Actualizează sarcina' : 'Creează sarcina'}
             </Button>
           </DialogFooter>
         </form>

@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const toLon = searchParams.get('toLon')
 
   if (!fromLat || !fromLon || !toLat || !toLon) {
-    return NextResponse.json({ error: 'Missing coordinates' }, { status: 400 })
+    return NextResponse.json({ error: 'Coordonatele lipsesc' }, { status: 400 })
   }
 
   // Validate coordinates
@@ -31,21 +31,21 @@ export async function GET(request: Request) {
   const toLonNum = parseFloat(toLon)
 
   if (isNaN(fromLatNum) || isNaN(fromLonNum) || isNaN(toLatNum) || isNaN(toLonNum)) {
-    return NextResponse.json({ error: 'Invalid coordinates' }, { status: 400 })
+    return NextResponse.json({ error: 'Coordonate invalide' }, { status: 400 })
   }
 
   if (fromLatNum < -90 || fromLatNum > 90 || toLatNum < -90 || toLatNum > 90) {
-    return NextResponse.json({ error: 'Invalid latitude (must be between -90 and 90)' }, { status: 400 })
+    return NextResponse.json({ error: 'Latitudine invalidă (trebuie să fie între -90 și 90)' }, { status: 400 })
   }
 
   if (fromLonNum < -180 || fromLonNum > 180 || toLonNum < -180 || toLonNum > 180) {
-    return NextResponse.json({ error: 'Invalid longitude (must be between -180 and 180)' }, { status: 400 })
+    return NextResponse.json({ error: 'Longitudine invalidă (trebuie să fie între -180 și 180)' }, { status: 400 })
   }
 
   // Check if coordinates are (0,0) which indicates missing data
   if (toLatNum === 0 && toLonNum === 0) {
     return NextResponse.json({
-      error: 'Clinic coordinates not set. Please update the organization address in the database.'
+      error: 'Coordonatele clinicii nu sunt setate. Actualizați adresa organizației în baza de date.'
     }, { status: 400 })
   }
 
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error calculating travel time:', error)
     return NextResponse.json(
-      { error: 'Failed to calculate travel time' },
+      { error: 'Calculul timpului de deplasare a eșuat' },
       { status: 500 }
     )
   }

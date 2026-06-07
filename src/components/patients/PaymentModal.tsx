@@ -12,21 +12,21 @@ import { toast } from 'sonner';
 import { printInvoice } from '@/lib/invoice';
 import { useRouter } from 'next/navigation';
 
-interface DentalProcedure {
+interface SurgicalProcedure {
   id: string;
+  cost?: number | null;
   code: {
     code: string;
     description: string;
-    rate: number | null;
+    price: number | null;
   };
   quantity?: number;
-  toothNumber?: number;
 }
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  procedures: DentalProcedure[];
+  procedures: SurgicalProcedure[];
   patientId: string;
   onPaymentComplete: () => void;
 }
@@ -74,8 +74,8 @@ function PaymentSimulation({ paymentMethod, amount, onComplete }: PaymentSimulat
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h3 className="text-lg font-semibold text-green-600 mb-2">Payment Successful!</h3>
-        <p className="text-gray-600">€{amount.toFixed(2)} paid via {paymentMethod.toLowerCase()}</p>
+        <h3 className="text-lg font-semibold text-green-600 mb-2">Plată reușită!</h3>
+        <p className="text-gray-600">€{amount.toFixed(2)} plătit prin {paymentMethod === 'CARD' ? 'card' : 'numerar'}</p>
       </div>
     );
   }
@@ -85,8 +85,8 @@ function PaymentSimulation({ paymentMethod, amount, onComplete }: PaymentSimulat
       {paymentMethod === 'CARD' ? (
         <>
           <CreditCard className="w-16 h-16 text-blue-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Processing Card Payment</h3>
-          <p className="text-gray-600 mb-4">Please follow the prompts on the card reader</p>
+          <h3 className="text-lg font-semibold mb-2">Procesare plată cu cardul</h3>
+          <p className="text-gray-600 mb-4">Urmați instrucțiunile de pe terminalul de plată</p>
           <div className="w-full max-w-xs">
             <div className="bg-gray-200 rounded-full h-2">
               <div
@@ -94,22 +94,22 @@ function PaymentSimulation({ paymentMethod, amount, onComplete }: PaymentSimulat
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-sm text-gray-500 mt-2">{Math.round(progress)}% complete</p>
+            <p className="text-sm text-gray-500 mt-2">{Math.round(progress)}% finalizat</p>
           </div>
           {isProcessing && (
             <div className="mt-4 space-y-2 text-sm text-gray-600">
-              {progress < 30 && <p>🔒 Securing connection...</p>}
-              {progress >= 30 && progress < 60 && <p>💳 Reading card...</p>}
-              {progress >= 60 && progress < 90 && <p>🏦 Contacting bank...</p>}
-              {progress >= 90 && <p>✅ Finalizing transaction...</p>}
+              {progress < 30 && <p>🔒 Securizare conexiune...</p>}
+              {progress >= 30 && progress < 60 && <p>💳 Citire card...</p>}
+              {progress >= 60 && progress < 90 && <p>🏦 Contactare bancă...</p>}
+              {progress >= 90 && <p>✅ Finalizare tranzacție...</p>}
             </div>
           )}
         </>
       ) : (
         <>
           <Banknote className="w-16 h-16 text-green-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Processing Cash Payment</h3>
-          <p className="text-gray-600 mb-4">Counting cash received...</p>
+          <h3 className="text-lg font-semibold mb-2">Procesare plată numerar</h3>
+          <p className="text-gray-600 mb-4">Se numără numerarul primit...</p>
           <div className="w-full max-w-xs">
             <div className="bg-gray-200 rounded-full h-2">
               <div
@@ -117,13 +117,13 @@ function PaymentSimulation({ paymentMethod, amount, onComplete }: PaymentSimulat
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-sm text-gray-500 mt-2">{Math.round(progress)}% complete</p>
+            <p className="text-sm text-gray-500 mt-2">{Math.round(progress)}% finalizat</p>
           </div>
           {isProcessing && (
             <div className="mt-4 space-y-2 text-sm text-gray-600">
-              {progress < 50 && <p>💵 Counting cash...</p>}
-              {progress >= 50 && progress < 80 && <p>✅ Verifying amount...</p>}
-              {progress >= 80 && <p>📝 Recording transaction...</p>}
+              {progress < 50 && <p>💵 Numărare numerar...</p>}
+              {progress >= 50 && progress < 80 && <p>✅ Verificare sumă...</p>}
+              {progress >= 80 && <p>📝 Înregistrare tranzacție...</p>}
             </div>
           )}
         </>
@@ -141,9 +141,10 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
   const router = useRouter();
 
   // Calculate amounts
-  const subtotal = procedures.reduce((sum, proc) =>
-    sum + ((proc.code.rate || 0) * (proc.quantity || 1)), 0
-  );
+  const subtotal = procedures.reduce((sum, proc) => {
+    const unit = proc.cost ?? (proc.code.price || 0);
+    return sum + unit * (proc.quantity || 1);
+  }, 0);
   const finalAmount = paymentMethod === 'CASH' ? roundForCash(subtotal) : subtotal;
   const cashRounding = paymentMethod === 'CASH' ? finalAmount - subtotal : 0;
 
@@ -154,7 +155,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
   const handlePaymentComplete = async () => {
     onClose(); // Close the payment modal immediately
     try {
-      const response = await fetch(`/api/patients/${patientId}/dental-procedures/pay`, {
+      const response = await fetch(`/api/patients/${patientId}/surgical-procedures/pay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,7 +168,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Payment failed');
+        throw new Error(error.error || 'Plata a eșuat');
       }
 
       const result = await response.json();
@@ -177,7 +178,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
       }
 
       if (sendEmail) {
-        toast.success('Invoice will be sent to patient email');
+        toast.success('Factura va fi trimisă pe e-mailul pacientului');
       }
 
       toast.success(result.message);
@@ -186,7 +187,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
 
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error instanceof Error ? error.message : 'Payment failed');
+      toast.error(error instanceof Error ? error.message : 'Plata a eșuat');
     } finally {
       setIsProcessing(false);
       setShowSimulation(false);
@@ -203,7 +204,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
       <Dialog open={isOpen} onOpenChange={() => { }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Processing Payment</DialogTitle>
+            <DialogTitle>Procesare plată</DialogTitle>
           </DialogHeader>
 
           <PaymentSimulation
@@ -222,33 +223,33 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Euro className="w-5 h-5" />
-            Process Payment
+            Procesare plată
           </DialogTitle>
           <DialogDescription>
-            Complete payment for selected dental procedures
+            Finalizați plata pentru procedurile selectate
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Procedures Summary */}
           <div>
-            <h3 className="font-medium mb-3">Procedures to Pay</h3>
+            <h3 className="font-medium mb-3">Proceduri de plătit</h3>
             <div className="space-y-2">
               {procedures.map((procedure) => (
                 <Card key={procedure.id} className="p-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      {procedure.toothNumber && (
-                        <Badge variant="outline" className="text-xs">
-                          {procedure.toothNumber}
-                        </Badge>
+                      {procedure.code.description && (
+                        <span className="text-xs text-gray-500 truncate max-w-[120px]">
+                          {procedure.code.description}
+                        </span>
                       )}
                       <span className="font-medium text-sm">{procedure.code.code}</span>
                       <span className="text-gray-600 text-sm">{procedure.code.description}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-500">Qty: {procedure.quantity || 1}</p>
-                      <p className="font-medium">€{((procedure.code.rate || 0) * (procedure.quantity || 1)).toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">Cant.: {procedure.quantity || 1}</p>
+                      <p className="font-medium">€{((procedure.cost ?? (procedure.code.price || 0)) * (procedure.quantity || 1)).toFixed(2)}</p>
                     </div>
                   </div>
                 </Card>
@@ -262,12 +263,12 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal:</span>
+                <span>Sumă parțială:</span>
                 <span>€{subtotal.toFixed(2)}</span>
               </div>
               {cashRounding !== 0 && (
                 <div className="flex justify-between text-sm text-orange-600">
-                  <span>Cash Rounding:</span>
+                  <span>Rotunjire numerar:</span>
                   <span>{cashRounding > 0 ? '+' : ''}€{cashRounding.toFixed(2)}</span>
                 </div>
               )}
@@ -281,7 +282,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
 
           {/* Payment Method Selection */}
           <div>
-            <h3 className="font-medium mb-3">Payment Method</h3>
+            <h3 className="font-medium mb-3">Metodă de plată</h3>
             <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'CASH' | 'CARD')}>
               <div className="grid grid-cols-2 gap-4">
                 <Card className={`p-4 cursor-pointer ${paymentMethod === 'CARD' ? 'ring-2 ring-blue-500' : ''}`}>
@@ -289,8 +290,8 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
                     <RadioGroupItem value="CARD" id="card" className="sr-only" />
                     <div className="flex flex-col items-center text-center space-y-2">
                       <CreditCard className="w-8 h-8 text-blue-500" />
-                      <span className="font-medium">Card Payment</span>
-                      <span className="text-sm text-gray-500">Exact amount</span>
+                      <span className="font-medium">Plată cu cardul</span>
+                      <span className="text-sm text-gray-500">Sumă exactă</span>
                       <Badge variant="secondary" className="text-xs">€{subtotal.toFixed(2)}</Badge>
                     </div>
                   </Label>
@@ -301,8 +302,8 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
                     <RadioGroupItem value="CASH" id="cash" className="sr-only" />
                     <div className="flex flex-col items-center text-center space-y-2">
                       <Banknote className="w-8 h-8 text-green-500" />
-                      <span className="font-medium">Cash Payment</span>
-                      <span className="text-sm text-gray-500">Rounded to nearest €0.05</span>
+                      <span className="font-medium">Plată numerar</span>
+                      <span className="text-sm text-gray-500">Rotunjit la cel mai apropiat €0,05</span>
                       <Badge variant="secondary" className="text-xs">€{roundForCash(subtotal).toFixed(2)}</Badge>
                     </div>
                   </Label>
@@ -313,7 +314,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
 
           {/* Invoice Options */}
           <div>
-            <h3 className="font-medium mb-3">Invoice Options</h3>
+            <h3 className="font-medium mb-3">Opțiuni factură</h3>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -323,7 +324,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
                 />
                 <Label htmlFor="email-invoice" className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  Email invoice to patient
+                  Trimite factura pacientului prin e-mail
                 </Label>
               </div>
 
@@ -335,7 +336,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
                 />
                 <Label htmlFor="print-invoice" className="flex items-center gap-2">
                   <Printer className="w-4 h-4" />
-                  Print invoice
+                  Tipărește factura
                 </Label>
               </div>
             </div>
@@ -345,7 +346,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
           {paymentMethod === 'CASH' && cashRounding !== 0 && (
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
               <p className="text-sm text-orange-800">
-                <strong>Cash Payment Note:</strong> The amount has been rounded {cashRounding > 0 ? 'up' : 'down'} by €{Math.abs(cashRounding).toFixed(2)} to the nearest 5 cents for easier cash handling.
+                <strong>Notă plată numerar:</strong> Suma a fost rotunjită {cashRounding > 0 ? 'în sus' : 'în jos'} cu €{Math.abs(cashRounding).toFixed(2)} la cei mai apropiați 5 cenți pentru gestionarea mai ușoară a numerarului.
               </p>
             </div>
           )}
@@ -353,7 +354,7 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isProcessing}>
-            Cancel
+            Anulare
           </Button>
           <Button
             onClick={handlePayment}
@@ -363,11 +364,11 @@ export function PaymentModal({ isOpen, onClose, procedures, patientId, onPayment
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Processing...
+                Se procesează...
               </>
             ) : (
               <>
-                Pay €{finalAmount.toFixed(2)}
+                Plătește €{finalAmount.toFixed(2)}
               </>
             )}
           </Button>

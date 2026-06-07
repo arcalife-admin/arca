@@ -15,7 +15,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Check if user has access to this task
@@ -31,7 +31,7 @@ export async function GET(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     const url = new URL(request.url);
@@ -75,7 +75,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching task messages:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch messages' },
+      { error: 'Încărcarea mesajelor a eșuat' },
       { status: 500 }
     );
   }
@@ -88,7 +88,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     // Check if user has access to this task
@@ -104,7 +104,7 @@ export async function POST(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found or insufficient permissions' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită sau permisiuni insuficiente' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -133,12 +133,12 @@ export async function POST(
     console.error('Error creating task message:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validarea a eșuat', details: error.errors },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Failed to create message' },
+      { error: 'Crearea mesajului a eșuat' },
       { status: 500 }
     );
   }

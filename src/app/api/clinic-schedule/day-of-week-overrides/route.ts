@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     if (!session?.user?.organizationId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
+        { message: 'Neautorizat' },
         { status: 401 }
       )
     }
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     if (!schedule) {
       return NextResponse.json(
-        { message: 'Schedule not found' },
+        { message: 'Programul nu a fost găsit' },
         { status: 404 }
       )
     }
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const targetDow = dayOfWeek.toLowerCase()
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dow = d.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+      const dow = d.toLocaleDateString('ro-RO', { weekday: 'long' }).toLowerCase()
       if (dow === targetDow) {
         overridesToUpsert.push({
           date: new Date(d),
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error creating day-of-week override:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Eroare internă de server' },
       { status: 500 }
     )
   }

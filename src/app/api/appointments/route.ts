@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch appointments' },
+      { error: 'Încărcarea programărilor a eșuat' },
       { status: 500 }
     );
   }
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
 
       if (patients.length !== familyAppointmentRequest.selectedPatientCodes.length) {
         return NextResponse.json(
-          { error: 'One or more patient codes not found' },
+          { error: 'Unul sau mai multe coduri de pacient nu au fost găsite' },
           { status: 404 }
         );
       }
@@ -236,7 +236,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to create appointment' },
+      { error: 'Crearea programării a eșuat' },
       { status: 500 }
     );
   }
@@ -293,7 +293,7 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to update appointment' },
+      { error: 'Actualizarea programării a eșuat' },
       { status: 500 }
     );
   }
@@ -310,7 +310,7 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Appointment ID is required' },
+        { error: 'ID-ul programării este obligatoriu' },
         { status: 400 }
       );
     }
@@ -357,7 +357,7 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to delete appointment' },
+      { error: 'Ștergerea programării a eșuat' },
       { status: 500 }
     );
   }

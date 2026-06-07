@@ -33,7 +33,7 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
     queryFn: async () => {
       const response = await fetch('/api/pending-appointments')
       if (!response.ok) {
-        throw new Error('Failed to fetch pending appointments')
+        throw new Error('Încărcarea programărilor în așteptare a eșuat')
       }
       return response.json()
     }
@@ -45,7 +45,7 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
     queryFn: async () => {
       const response = await fetch('/api/practitioners')
       if (!response.ok) {
-        throw new Error('Failed to fetch practitioners')
+        throw new Error('Încărcarea practicienilor a eșuat')
       }
       return response.json()
     }
@@ -59,19 +59,19 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete pending appointment')
+        throw new Error('Ștergerea pending appointment')
       }
 
       return response.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingAppointments'] })
-      toast.success('Appointment removed successfully')
+      toast.success('Programare eliminată cu succes')
       setShowDeleteModal(false)
       setAppointmentToDelete(null)
     },
     onError: () => {
-      toast.error('Failed to remove appointment')
+      toast.error('Nu s-a putut elimina programarea')
     },
     onSettled: () => {
       setDeleteLoading(false)
@@ -93,7 +93,7 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
   // Format date in a readable way
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return new Intl.DateTimeFormat('en-GB', {
+    return new Intl.DateTimeFormat('ro-RO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -113,10 +113,10 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Pending Appointments</CardTitle>
+          <CardTitle>Programări în așteptare</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center">Loading...</div>
+          <div className="flex justify-center">Se încarcă...</div>
         </CardContent>
       </Card>
     )
@@ -126,11 +126,11 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Pending Appointments</CardTitle>
+          <CardTitle>Programări în așteptare</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="p-4 text-center text-gray-500">
-            No pending appointments
+            Nicio programare în așteptare
           </div>
         </CardContent>
       </Card>
@@ -142,7 +142,7 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ClipboardList size={18} />
-          Pending Appointments ({pendingAppointments.length})
+          Programări în așteptare ({pendingAppointments.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -179,7 +179,7 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Clock size={14} />
-                        <span>{appointment.duration} minutes</span>
+                        <span>{appointment.duration} minute</span>
                       </div>
                     </div>
 
@@ -193,7 +193,7 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
                         }}
                         value=""
                       >
-                        <option value="">Assign to...</option>
+                        <option value="">Alocare către...</option>
                         {practitioners.map((practitioner: any) => (
                           <option key={practitioner.id} value={practitioner.id}>
                             {practitioner.name}
@@ -222,10 +222,10 @@ const PendingAppointmentsTable = ({ onAddToPractitioner }: PendingAppointmentsTa
       <ConfirmationModal
         open={showDeleteModal}
         onOpenChange={setShowDeleteModal}
-        title="Delete Appointment"
-        description={`Are you sure you want to delete the appointment for ${appointmentToDelete?.patient?.firstName} ${appointmentToDelete?.patient?.lastName} on ${appointmentToDelete ? formatDate(appointmentToDelete.startTime) : ''}? This action cannot be undone.`}
-        confirmText="Delete Appointment"
-        cancelText="Cancel"
+        title="Ștergere programare"
+        description={`Sigur doriți să ștergeți programarea pentru ${appointmentToDelete?.patient?.firstName} ${appointmentToDelete?.patient?.lastName} din ${appointmentToDelete ? formatDate(appointmentToDelete.startTime) : ''}? Această acțiune nu poate fi anulată.`}
+        confirmText="Ștergere programare"
+        cancelText="Anulare"
         variant="destructive"
         icon="delete"
         onConfirm={handleConfirmDelete}

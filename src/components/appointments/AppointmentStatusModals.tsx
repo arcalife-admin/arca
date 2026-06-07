@@ -20,7 +20,7 @@ export function RunningLateModal({ isOpen, onClose, onConfirm, patientName }: Ru
   const handleConfirm = () => {
     const minutesNum = parseInt(minutes);
     if (isNaN(minutesNum) || minutesNum <= 0 || minutesNum > 999) {
-      setError('Please enter a valid number of minutes (1-999)');
+      setError('Introduceți un număr valid de minute (1-999)');
       return;
     }
 
@@ -42,17 +42,17 @@ export function RunningLateModal({ isOpen, onClose, onConfirm, patientName }: Ru
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">⏰</span>
-            Patient Running Late
+            Pacientul întârzie
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            How many minutes is <strong>{patientName}</strong> running late?
+            Cu câte minute întârzie <strong>{patientName}</strong>?
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="minutes">Minutes Late</Label>
+            <Label htmlFor="minutes">Minute întârziere</Label>
             <Input
               id="minutes"
               type="number"
@@ -63,7 +63,7 @@ export function RunningLateModal({ isOpen, onClose, onConfirm, patientName }: Ru
                 setMinutes(e.target.value);
                 setError('');
               }}
-              placeholder="Enter minutes..."
+              placeholder="Introduceți minutele..."
               className="w-full"
             />
             {error && <p className="text-sm text-red-500">{error}</p>}
@@ -72,10 +72,10 @@ export function RunningLateModal({ isOpen, onClose, onConfirm, patientName }: Ru
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Anulare
           </Button>
           <Button onClick={handleConfirm} className="bg-orange-500 hover:bg-orange-600">
-            Set Status
+            Setare status
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -96,12 +96,12 @@ export function ImportantNoteModal({ isOpen, onClose, onConfirm, patientName }: 
 
   const handleConfirm = () => {
     if (!note || note.trim() === '') {
-      setError('Please enter an important note');
+      setError('Introduceți o notă importantă');
       return;
     }
 
     if (note.length > 500) {
-      setError('Note must be 500 characters or less');
+      setError('Nota trebuie să aibă maximum 500 de caractere');
       return;
     }
 
@@ -123,17 +123,17 @@ export function ImportantNoteModal({ isOpen, onClose, onConfirm, patientName }: 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">⚠️</span>
-            Important Alert
+            Alertă importantă
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Add an important note for <strong>{patientName}</strong>'s appointment:
+            Adăugați o notă importantă pentru programarea pacientului <strong>{patientName}</strong>:
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="note">Important Note</Label>
+            <Label htmlFor="note">Notă importantă</Label>
             <Textarea
               id="note"
               value={note}
@@ -141,7 +141,7 @@ export function ImportantNoteModal({ isOpen, onClose, onConfirm, patientName }: 
                 setNote(e.target.value);
                 setError('');
               }}
-              placeholder="Enter important note that will be visible on hover..."
+              placeholder="Introduceți o notă importantă vizibilă la trecerea cursorului..."
               className="w-full min-h-[100px] resize-none"
               maxLength={500}
             />
@@ -154,10 +154,10 @@ export function ImportantNoteModal({ isOpen, onClose, onConfirm, patientName }: 
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Anulare
           </Button>
           <Button onClick={handleConfirm} className="bg-red-500 hover:bg-red-600">
-            Set Alert
+            Setare alertă
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -199,7 +199,7 @@ export function StatusConfirmationModal({
 
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Set status for <strong>{patientName}</strong> to "{config.label}"?
+            Setați statusul pentru <strong>{patientName}</strong> la „{config.label}"?
           </p>
           <p className="text-xs text-gray-500">
             {config.description}
@@ -208,14 +208,14 @@ export function StatusConfirmationModal({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Anulare
           </Button>
           <Button
             onClick={handleConfirm}
             style={{ backgroundColor: config.color }}
             className="text-white hover:opacity-90"
           >
-            Confirm
+            Confirmare
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -250,13 +250,13 @@ export function ClearImportantModal({ isOpen, onClose, onConfirm, patientName }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">⚠️</span>
-            Clear Important Status
+            Ștergere status important
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Are you sure you want to clear the important status for <strong>{patientName}</strong>?
+            Sigur doriți să ștergeți statusul important pentru <strong>{patientName}</strong>?
           </p>
 
           <div className="flex items-center space-x-2">
@@ -268,17 +268,17 @@ export function ClearImportantModal({ isOpen, onClose, onConfirm, patientName }:
               className="rounded border-gray-300"
             />
             <label htmlFor="clearNotes" className="text-sm text-gray-700">
-              Also remove important notes from appointment
+              Ștergeți și notițele importante din programare
             </label>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            Anulare
           </Button>
           <Button onClick={handleConfirm} className="bg-red-500 hover:bg-red-600">
-            Clear Status
+            Ștergere status
           </Button>
         </DialogFooter>
       </DialogContent>

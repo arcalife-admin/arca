@@ -1,0 +1,22 @@
+/** Shared Romanian Zod validation messages */
+export const zodMessages = {
+  required: 'Acest câmp este obligatoriu',
+  invalidEmail: 'Adresă de e-mail invalidă',
+  invalidDate: 'Dată invalidă',
+  minLength: (min: number) => `Minim ${min} caractere`,
+  maxLength: (max: number) => `Maxim ${max} caractere`,
+  firstNameRequired: 'Prenumele este obligatoriu',
+  lastNameRequired: 'Numele este obligatoriu',
+  dateOfBirthRequired: 'Data nașterii este obligatorie',
+  addressRequired: 'Adresa este obligatorie',
+  providerRequired: 'Furnizorul este obligatoriu',
+  policyNumberRequired: 'Numărul poliței este obligatoriu',
+  validUntilRequired: 'Data de valabilitate este obligatorie',
+  previousSurgeriesRequired: 'Istoricul chirurgical anterior este obligatoriu',
+  allergiesRequired: 'Informațiile despre alergii sunt obligatorii',
+  medicationsRequired: 'Medicamentele curente sunt obligatorii',
+  smokingRequired: 'Statusul privind fumatul este obligatoriu',
+  anesthesiaRequired: 'Istoricul anesteziei este obligatoriu',
+  passwordsDoNotMatch: 'Parolele nu coincid',
+  selectOption: 'Selectați o opțiune',
+} as const

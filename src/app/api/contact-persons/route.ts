@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching contact persons:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch contact persons' },
+      { error: 'Încărcarea persoanelor de contact a eșuat' },
       { status: 500 }
     );
   }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json(
-        { error: 'Contact person name is required' },
+        { error: 'Numele persoanei de contact este obligatoriu' },
         { status: 400 }
       );
     }
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating contact person:', error);
     return NextResponse.json(
-      { error: 'Failed to create contact person' },
+      { error: 'Crearea persoanei de contact a eșuat' },
       { status: 500 }
     );
   }
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -128,7 +128,7 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Contact person ID is required' },
+        { error: 'ID-ul persoanei de contact este obligatoriu' },
         { status: 400 }
       );
     }
@@ -143,7 +143,7 @@ export async function PUT(request: NextRequest) {
 
     if (!existingContact) {
       return NextResponse.json(
-        { error: 'Contact person not found' },
+        { error: 'Persoana de contact nu a fost găsită' },
         { status: 404 }
       );
     }
@@ -175,7 +175,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error updating contact person:', error);
     return NextResponse.json(
-      { error: 'Failed to update contact person' },
+      { error: 'Actualizarea persoanei de contact a eșuat' },
       { status: 500 }
     );
   }

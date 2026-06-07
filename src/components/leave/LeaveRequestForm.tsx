@@ -51,17 +51,17 @@ import { useToast } from '@/hooks/use-toast'
 
 // Leave types
 const LEAVE_TYPES = [
-  { value: 'VACATION', label: 'Vacation' },
-  { value: 'SICK_LEAVE', label: 'Sick Leave' },
-  { value: 'PERSONAL', label: 'Personal Leave' },
-  { value: 'MATERNITY', label: 'Maternity Leave' },
-  { value: 'PATERNITY', label: 'Paternity Leave' },
-  { value: 'BEREAVEMENT', label: 'Bereavement Leave' },
-  { value: 'JURY_DUTY', label: 'Jury Duty' },
-  { value: 'MILITARY', label: 'Military Leave' },
-  { value: 'STUDY', label: 'Study Leave' },
-  { value: 'UNPAID', label: 'Unpaid Leave' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'VACATION', label: 'Concediu de odihnă' },
+  { value: 'SICK_LEAVE', label: 'Concediu medical' },
+  { value: 'PERSONAL', label: 'Concediu personal' },
+  { value: 'MATERNITY', label: 'Concediu de maternitate' },
+  { value: 'PATERNITY', label: 'Concediu de paternitate' },
+  { value: 'BEREAVEMENT', label: 'Concediu de deces' },
+  { value: 'JURY_DUTY', label: 'Serviciu în instanță' },
+  { value: 'MILITARY', label: 'Concediu militar' },
+  { value: 'STUDY', label: 'Concediu de studii' },
+  { value: 'UNPAID', label: 'Concediu fără plată' },
+  { value: 'OTHER', label: 'Altele' },
 ]
 
 interface LeaveRequestFormProps {
@@ -92,34 +92,34 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
     const newErrors: { [key: string]: string } = {}
 
     if (!title.trim()) {
-      newErrors.title = 'Title is required'
+      newErrors.title = 'Titlul este obligatoriu'
     }
 
     if (!leaveType) {
-      newErrors.leaveType = 'Leave type is required'
+      newErrors.leaveType = 'Tipul concediului este obligatoriu'
     }
 
     if (!startDate) {
-      newErrors.startDate = 'Start date is required'
+      newErrors.startDate = 'Data de început este obligatorie'
     }
 
     if (!endDate) {
-      newErrors.endDate = 'End date is required'
+      newErrors.endDate = 'Data de sfârșit este obligatorie'
     }
 
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      newErrors.endDate = 'End date must be after start date'
+      newErrors.endDate = 'Data de sfârșit trebuie să fie după data de început'
     }
 
     if (isPartialDay) {
       if (!startTime) {
-        newErrors.startTime = 'Start time is required for partial days'
+        newErrors.startTime = 'Ora de început este obligatorie pentru zile parțiale'
       }
       if (!endTime) {
-        newErrors.endTime = 'End time is required for partial days'
+        newErrors.endTime = 'Ora de sfârșit este obligatorie pentru zile parțiale'
       }
       if (startTime && endTime && startTime >= endTime) {
-        newErrors.endTime = 'End time must be after start time'
+        newErrors.endTime = 'Ora de sfârșit trebuie să fie după ora de început'
       }
     }
 
@@ -182,8 +182,8 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
 
       if (response.ok) {
         toast({
-          title: 'Success',
-          description: 'Leave request submitted successfully. You will be notified when it is reviewed.',
+          title: 'Succes',
+          description: 'Cererea de concediu a fost trimisă cu succes. Veți fi notificat când este analizată.',
         })
 
         // Reset form
@@ -204,16 +204,16 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
       } else {
         const error = await response.json()
         toast({
-          title: 'Error',
-          description: error.error || 'Failed to submit leave request.',
+          title: 'Eroare',
+          description: error.error || 'Trimiterea cererii de concediu a eșuat.',
           variant: 'destructive',
         })
       }
     } catch (error) {
       console.error('Error submitting leave request:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to submit leave request. Please try again.',
+        title: 'Eroare',
+        description: 'Trimiterea cererii de concediu a eșuat. Încercați din nou.',
         variant: 'destructive',
       })
     } finally {
@@ -243,14 +243,14 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Request Leave
+          Solicită concediu
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Submit Leave Request</DialogTitle>
+          <DialogTitle>Trimite cerere de concediu</DialogTitle>
           <div className="text-sm text-gray-500">
-            Please fill out all required information for your leave request.
+            Completați toate informațiile obligatorii pentru cererea de concediu.
           </div>
         </DialogHeader>
 
@@ -258,13 +258,13 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="title">
-              Request Title <span className="text-red-500">*</span>
+              Titlu cerere <span className="text-red-500">*</span>
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Vacation to Hawaii, Doctor appointment, etc."
+              placeholder="ex.: Concediu de odihnă, consult medical etc."
               className={errors.title ? 'border-red-500' : ''}
             />
             {errors.title && (
@@ -278,11 +278,11 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
           {/* Leave Type */}
           <div className="space-y-2">
             <Label htmlFor="leaveType">
-              Leave Type <span className="text-red-500">*</span>
+              Tip concediu <span className="text-red-500">*</span>
             </Label>
             <Select value={leaveType} onValueChange={setLeaveType}>
               <SelectTrigger className={errors.leaveType ? 'border-red-500' : ''}>
-                <SelectValue placeholder="Select leave type" />
+                <SelectValue placeholder="Selectați tipul de concediu" />
               </SelectTrigger>
               <SelectContent>
                 {LEAVE_TYPES.map((type) => (
@@ -304,7 +304,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">
-                Start Date <span className="text-red-500">*</span>
+                Data de început <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -327,7 +327,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="endDate">
-                End Date <span className="text-red-500">*</span>
+                Data de sfârșit <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -357,7 +357,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
               onCheckedChange={(checked) => setIsPartialDay(checked as boolean)}
             />
             <Label htmlFor="partialDay" className="text-sm font-medium">
-              This is a partial day request
+              Cerere pentru zi parțială
             </Label>
           </div>
 
@@ -366,7 +366,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
               <div className="space-y-2">
                 <Label htmlFor="startTime">
-                  Start Time <span className="text-red-500">*</span>
+                  Ora de început <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -388,7 +388,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="endTime">
-                  End Time <span className="text-red-500">*</span>
+                  Ora de sfârșit <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -414,7 +414,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
           {startDate && endDate && (
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="text-sm text-gray-600">
-                <strong>Duration:</strong> {calculateDays()} day{calculateDays() !== 1 ? 's' : ''}
+                <strong>Durată:</strong> {calculateDays()} {calculateDays() === 1 ? 'zi' : 'zile'}
               </div>
             </div>
           )}
@@ -422,13 +422,13 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">
-              Description <span className="text-gray-400">(Optional)</span>
+              Descriere <span className="text-gray-400">(opțional)</span>
             </Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Additional details about your leave request..."
+              placeholder="Detalii suplimentare despre cererea de concediu..."
               rows={3}
             />
           </div>
@@ -440,7 +440,7 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
               onClick={() => setIsOpen(false)}
               disabled={isLoading}
             >
-              Cancel
+              Anulare
             </Button>
             <Button
               type="submit"
@@ -450,12 +450,12 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
               {isLoading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Submitting...
+                  Se trimite...
                 </div>
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Submit Request
+                  Trimite cererea
                 </>
               )}
             </Button>
@@ -464,4 +464,4 @@ export default function LeaveRequestForm({ onSubmit }: LeaveRequestFormProps) {
       </DialogContent>
     </Dialog>
   )
-} 
+}

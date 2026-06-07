@@ -11,7 +11,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const familyHeadCode = params.id;
@@ -39,7 +39,7 @@ export async function GET(
     });
 
     if (familyMembers.length === 0) {
-      return NextResponse.json({ error: 'Family not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Familia nu a fost găsită' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -51,7 +51,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching family:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch family' },
+      { error: 'Încărcarea familiei a eșuat' },
       { status: 500 }
     );
   }
@@ -65,7 +65,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const familyHeadCode = params.id;
@@ -73,7 +73,7 @@ export async function PUT(
 
     if (!patientCode) {
       return NextResponse.json(
-        { error: 'Patient code is required' },
+        { error: 'Codul pacientului este obligatoriu' },
         { status: 400 }
       );
     }
@@ -90,7 +90,7 @@ export async function PUT(
 
     if (!patient) {
       return NextResponse.json(
-        { error: 'Patient not found or already in a family' },
+        { error: 'Pacientul nu a fost găsit sau este deja într-o familie' },
         { status: 404 }
       );
     }
@@ -123,7 +123,7 @@ export async function PUT(
     });
 
     return NextResponse.json({
-      message: 'Patient added to family successfully',
+      message: 'Pacientul a fost adăugat în familie cu succes',
       patient: {
         id: updatedPatient.id,
         patientCode: updatedPatient.patientCode,
@@ -136,7 +136,7 @@ export async function PUT(
   } catch (error) {
     console.error('Error adding patient to family:', error);
     return NextResponse.json(
-      { error: 'Failed to add patient to family' },
+      { error: 'Adăugarea pacientului în familie a eșuat' },
       { status: 500 }
     );
   }
@@ -150,7 +150,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const familyHeadCode = params.id;
@@ -169,7 +169,7 @@ export async function DELETE(
 
       if (!patient) {
         return NextResponse.json(
-          { error: 'Patient not found in family' },
+          { error: 'Pacientul nu a fost găsit în familie' },
           { status: 404 }
         );
       }
@@ -214,7 +214,7 @@ export async function DELETE(
       });
 
       return NextResponse.json({
-        message: 'Patient removed from family successfully'
+        message: 'Pacientul a fost eliminat din familie cu succes'
       });
 
     } else {
@@ -227,7 +227,7 @@ export async function DELETE(
       });
 
       if (familyMembers.length === 0) {
-        return NextResponse.json({ error: 'Family not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Familia nu a fost găsită' }, { status: 404 });
       }
 
       // Revert all members to individual status
@@ -247,7 +247,7 @@ export async function DELETE(
       });
 
       return NextResponse.json({
-        message: 'Family deleted successfully',
+        message: 'Familia a fost ștearsă cu succes',
         membersReverted: familyMembers.length
       });
     }
@@ -255,7 +255,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting family/patient:', error);
     return NextResponse.json(
-      { error: 'Failed to delete family/patient' },
+      { error: 'Ștergerea familiei/pacientului a eșuat' },
       { status: 500 }
     );
   }

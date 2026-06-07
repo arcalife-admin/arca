@@ -1,0 +1,22 @@
+{
+  "unauthorized": "Neautorizat",
+  "forbidden": "Acces interzis",
+  "notFound": "Nu a fost găsit",
+  "internalServerError": "Eroare internă de server",
+  "failedToFetch": "Încărcarea datelor a eșuat",
+  "failedToCreate": "Crearea a eșuat",
+  "failedToUpdate": "Actualizarea a eșuat",
+  "failedToDelete": "Ștergerea a eșuat",
+  "invalidInput": "Date introduse invalide",
+  "noActionsToUndo": "Nu există acțiuni de anulat",
+  "procedureNotFound": "Procedura nu a fost găsită",
+  "noBackupFound": "Nu s-a găsit copie de rezervă",
+  "unsupportedAction": "Acțiune neacceptată",
+  "reminderNotFound": "Memento negăsit",
+  "failedToUpdateReminder": "Actualizarea mementoului a eșuat",
+  "taskNotFound": "Sarcina nu a fost găsită",
+  "failedToFetchAssignments": "Încărcarea atribuirilor a eșuat",
+  "failedToCreateSealing": "Crearea procedurilor de sigilare a eșuat",
+  "registrationFailed": "Înregistrarea a eșuat",
+  "validationFailed": "Validarea a eșuat"
+}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Download, FileText, Upload, Trash2, FolderOpen, Plus, X, Files } from 'lucide-react'
 import { toast } from 'sonner'
+import { openHtmlPreview, printHtmlDocument } from '@/lib/print-html'
 
 interface FileItem {
   id: string
@@ -27,448 +28,397 @@ interface FilesModalProps {
 // Default file templates
 const DEFAULT_FILES: FileItem[] = [
   {
-    id: 'dental-hygiene-questionnaire',
-    name: 'Dental Hygiene Questionnaire',
+    id: 'pre-operative-health-questionnaire',
+    name: 'Chestionar medical preoperator',
     type: 'questionnaire',
-    category: 'Questionnaires',
+    category: 'Chestionare',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-DENTAL HYGIENE QUESTIONNAIRE
+CHESTIONAR MEDICAL PREOPERATOR
 
-Patient Name: [Patient Name]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data: [Dată]
+Procedură planificată: [Procedure Name]
 
-1. How often do you brush your teeth?
-   □ Once a day    □ Twice a day    □ Three times a day    □ More than three times
+1. Ați mai avut intervenții chirurgicale?    □ Da    □ Nu
+   Dacă da, enumerați: _________________________________
 
-2. What type of toothbrush do you use?
-   □ Manual soft    □ Manual medium    □ Manual hard    □ Electric
+2. Ați avut complicații cu anestezia?    □ Da    □ Nu
+   Dacă da, descrieți: _________________________________
 
-3. Do you floss regularly?
-   □ Daily    □ Few times a week    □ Weekly    □ Rarely    □ Never
+3. Luați anticoagulante sau antiplachetare?    □ Da    □ Nu
 
-4. Do you use mouthwash?
-   □ Daily    □ Few times a week    □ Weekly    □ Rarely    □ Never
+4. Înțelegeți instrucțiunile de post înainte de intervenție?    □ Da    □ Nu
 
-5. Do you experience bleeding gums?
-   □ Never    □ Rarely    □ Sometimes    □ Often    □ Always
+5. Veți avea pe cineva care să vă conducă acasă după intervenție?    □ Da    □ Nu
 
-6. Do you have tooth sensitivity?
-   □ None    □ Mild    □ Moderate    □ Severe
+6. Aveți sprijin acasă în primele 48 de ore?    □ Da    □ Nu
 
-7. Do you grind your teeth?
-   □ Never    □ Rarely    □ Sometimes    □ Often    □ Always
+7. Fumați sau folosiți produse cu nicotină?    □ Da    □ Nu
 
-8. When was your last dental cleaning?
-   □ Within 6 months    □ 6-12 months ago    □ 1-2 years ago    □ Over 2 years ago
+8. Evaluați anxietatea față de intervenție (1-10): ____
 
-9. Rate your oral health concern level (1-10): ____
+9. Comentarii sau îngrijorări suplimentare:
+   _________________________________
+   _________________________________
 
-10. Additional comments or concerns:
-    _________________________________
-    _________________________________
-    _________________________________
-
-Thank you for completing this questionnaire. This information helps us provide personalized dental hygiene care.
+Vă mulțumim pentru completarea acestui chestionar. Aceste informații ne ajută să vă pregătim în siguranță pentru procedură.
     `
   },
   {
     id: 'gfi-questionnaire',
-    name: 'GFI Health Questionnaire',
+    name: 'Chestionar informații generale de sănătate (GFI)',
     type: 'questionnaire',
-    category: 'Questionnaires',
+    category: 'Chestionare',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-GENERAL HEALTH INFORMATION (GFI) QUESTIONNAIRE
+CHESTIONAR INFORMAȚII GENERALE DE SĂNĂTATE (GFI)
 
-Patient Name: [Patient Name]
-Date of Birth: [DOB]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data nașterii: [Data nașterii]
+Data: [Dată]
 
-MEDICAL HISTORY
+ISTORIC MEDICAL
 
-1. Are you currently under medical care?    □ Yes    □ No
-   If yes, for what condition: _________________________________
+1. Sunteți în prezent sub îngrijire medicală?    □ Da    □ Nu
+   Dacă da, pentru ce afecțiune: _________________________________
 
-2. Are you taking any medications?    □ Yes    □ No
-   If yes, please list: _________________________________
+2. Luați medicamente?    □ Da    □ Nu
+   Dacă da, enumerați: _________________________________
 
-3. Do you have any allergies to medications?    □ Yes    □ No
-   If yes, please specify: _________________________________
+3. Aveți alergii la medicamente?    □ Da    □ Nu
+   Dacă da, precizați: _________________________________
 
-4. Do you have or have you had any of the following:
-   □ Heart disease    □ High blood pressure    □ Diabetes
-   □ Liver disease    □ Kidney disease    □ Cancer
-   □ HIV/AIDS    □ Hepatitis    □ Tuberculosis
-   □ Epilepsy    □ Stroke    □ Arthritis
-   □ Osteoporosis    □ Bleeding disorders    □ Pregnancy
+4. Aveți sau ați avut vreuna dintre următoarele:
+   □ Boli de inimă    □ Hipertensiune arterială    □ Diabet
+   □ Boli hepatice    □ Boli renale    □ Cancer
+   □ HIV/SIDA    □ Hepatită    □ Tuberculoză
+   □ Epilepsie    □ AVC    □ Artrită
+   □ Osteoporoză    □ Tulburări de coagulare    □ Sarcină
 
-5. Do you smoke or use tobacco?    □ Yes    □ No
-   If yes, how much: _________________________________
+5. Fumați sau folosiți tutun?    □ Da    □ Nu
+   Dacă da, cât: _________________________________
 
-6. Do you drink alcohol?    □ Yes    □ No
-   If yes, how much: _________________________________
+6. Consumați alcool?    □ Da    □ Nu
+   Dacă da, cât: _________________________________
 
-DENTAL HISTORY
+ISTORIC CHIRURGICAL
 
-7. When was your last dental visit? _________________________________
+7. Când a fost ultima intervenție chirurgicală? _________________________________
 
-8. Reason for last visit:
-   □ Regular checkup    □ Pain    □ Treatment    □ Emergency
+8. Motivul ultimei intervenții:
+   □ Electivă    □ Urgență    □ Traumă    □ Altul
 
-9. Have you had any bad experiences with dental treatment?    □ Yes    □ No
+9. Ați avut experiențe neplăcute cu intervenții chirurgicale sau anestezia?    □ Da    □ Nu
 
-10. Are you anxious about dental treatment?    □ Yes    □ No
+10. Sunteți anxios/ă față de procedura viitoare?    □ Da    □ Nu
 
-11. Do you have any dental pain now?    □ Yes    □ No
+11. Aveți durere la locul intervenției chirurgicale actuale?    □ Da    □ Nu
 
-CURRENT SYMPTOMS
+SIMPTOME ACTUALE
 
-12. Do you experience any of the following:
-    □ Jaw pain or clicking    □ Headaches    □ Neck pain
-    □ Tooth sensitivity    □ Bleeding gums    □ Bad breath
-    □ Dry mouth    □ Difficulty chewing
+12. Prezentați vreunul dintre următoarele:
+    □ Dispnee    □ Durere toracică    □ Edeme
+    □ Sângerare necontrolată    □ Febră    □ Secreție la nivelul plăgii
 
-Patient Signature: _________________ Date: _________________
+Semnătura pacientului: _________________ Data: _________________
 
-This information is confidential and will be used solely for dental care purposes.
+Aceste informații sunt confidențiale și vor fi utilizate exclusiv în scopul îngrijirii chirurgicale.
     `
   },
   {
-    id: 'erosive-tooth-wear-questionnaire',
-    name: 'Erosive Tooth Wear Assessment',
+    id: 'pre-operative-surgical-risk-assessment',
+    name: 'Evaluarea riscului chirurgical preoperator',
     type: 'questionnaire',
-    category: 'Questionnaires',
+    category: 'Chestionare',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-EROSIVE TOOTH WEAR ASSESSMENT QUESTIONNAIRE
+EVALUAREA RISCULUI CHIRURGICAL PREOPERATOR
 
-Patient Name: [Patient Name]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data: [Dată]
+Procedură planificată: [Procedure Name]
 
-DIETARY HABITS
+CARDIOVASCULAR ȘI RESPIRATOR
 
-1. How often do you consume acidic drinks? (soft drinks, sports drinks, fruit juices)
-   □ Never    □ 1-2 times per week    □ 3-4 times per week    □ Daily    □ Multiple times daily
+1. Antecedente de boli de inimă, AVC sau hipertensiune necontrolată?    □ Da    □ Nu
 
-2. How often do you consume citrus fruits?
-   □ Never    □ 1-2 times per week    □ 3-4 times per week    □ Daily    □ Multiple times daily
+2. Astm, BPOC sau apnee în somn?    □ Da    □ Nu
 
-3. Do you hold acidic drinks in your mouth before swallowing?    □ Yes    □ No
+3. Infecție respiratorie recentă (în ultimele 4 săptămâni)?    □ Da    □ Nu
 
-4. Do you sip drinks slowly over a long period?    □ Yes    □ No
+SÂNGERARE ȘI ANESTEZIE
 
-5. When do you typically brush your teeth after consuming acidic foods/drinks?
-   □ Immediately    □ Within 30 minutes    □ 1 hour later    □ Don't change routine
+4. Antecedente de sângerare excesivă sau cheaguri de sânge?    □ Da    □ Nu
 
-SYMPTOMS
+5. În prezent sub terapie anticoagulantă sau antiplachetară?    □ Da    □ Nu
 
-6. Do you experience tooth sensitivity to:
-   □ Cold    □ Hot    □ Sweet    □ Sour    □ None
+6. Reacție adversă anterioară la anestezie?    □ Da    □ Nu
 
-7. Have you noticed changes in tooth appearance?
-   □ Yellowing    □ Transparency    □ Shortened teeth    □ Rough edges    □ None
+VINDECARE ȘI RISC DE INFECȚIE
 
-8. Do you experience any tooth pain?    □ Yes    □ No
+7. Diabet (controlat/necontrolat)?    □ Nu    □ Da
 
-MEDICAL CONDITIONS
+8. Infecție activă sau imunosupresie?    □ Da    □ Nu
 
-9. Do you suffer from acid reflux or GERD?    □ Yes    □ No
+9. Fumat sau consum de nicotină?    □ Niciodată    □ Fost fumător    □ Fumător actual
 
-10. Do you have frequent vomiting episodes?    □ Yes    □ No
+STATUS FUNCȚIONAL
 
-11. Do you take any medications that cause dry mouth?    □ Yes    □ No
+10. Puteți urca un etaj fără oprire?    □ Da    □ Nu
 
-LIFESTYLE FACTORS
+EVALUARE RISC: _____ (de completat de echipa chirurgicală)
 
-12. Do you swim regularly in chlorinated pools?    □ Yes    □ No
+Recomandări:
+□ Necesită aviz medical
+□ Ajustare protocol anticoagulare
+□ Analize/imagistică preoperatorie
+□ Consult anestezie
 
-13. Are you exposed to acid fumes at work?    □ Yes    □ No
-
-RISK ASSESSMENT SCORE: _____ (to be completed by dental professional)
-
-Recommendations:
-□ Dietary counseling
-□ Fluoride treatment
-□ Regular monitoring
-□ Protective measures
-
-Dental Professional: _________________ Date: _________________
+Medic: _________________ Data: _________________
     `
   },
   {
-    id: 'nutrition-questionnaire',
-    name: 'Nutritional Assessment for Oral Health',
+    id: 'pre-operative-nutrition-questionnaire',
+    name: 'Evaluare nutrițională preoperatorie',
     type: 'questionnaire',
-    category: 'Questionnaires',
+    category: 'Chestionare',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-NUTRITIONAL ASSESSMENT FOR ORAL HEALTH
+EVALUARE NUTRIȚIONALĂ PREOPERATORIE
 
-Patient Name: [Patient Name]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data: [Dată]
+Procedură planificată: [Procedure Name]
 
-EATING PATTERNS
+OBICEIURI ALIMENTARE
 
-1. How many meals do you eat per day?
-   □ 1-2    □ 3    □ 4-5    □ More than 5
+1. Câte mese luați pe zi?
+   □ 1-2    □ 3    □ 4-5    □ Mai mult de 5
 
-2. How many snacks do you have per day?
-   □ None    □ 1-2    □ 3-4    □ More than 4
+2. Urmați un regim alimentar special?    □ Da    □ Nu
+   Dacă da, precizați: _________________________________
 
-3. What time do you usually eat your last meal/snack?
-   □ Before 6 PM    □ 6-8 PM    □ 8-10 PM    □ After 10 PM
+3. Aveți alergii sau intoleranțe alimentare?    □ Da    □ Nu
 
-SUGAR CONSUMPTION
+NUTRIȚIE PREOPERATORIE
 
-4. How often do you consume sugary foods? (candy, desserts, pastries)
-   □ Never    □ 1-2 times per week    □ 3-4 times per week    □ Daily    □ Multiple times daily
+4. Ați primit instrucțiuni privind postul înainte de intervenție?    □ Da    □ Nu
 
-5. How often do you consume sugary drinks? (soda, sports drinks, sweetened coffee/tea)
-   □ Never    □ 1-2 times per week    □ 3-4 times per week    □ Daily    □ Multiple times daily
+5. Luați suplimente proteice sau înlocuitori de masă?    □ Da    □ Nu
 
-6. Do you add sugar to beverages?    □ Yes    □ No
+6. Ați avut pierdere recentă în greutate (>4,5 kg în 3 luni)?    □ Da    □ Nu
 
-ACID EXPOSURE
+7. Aveți dificultăți de înghițire sau mestecat?    □ Da    □ Nu
 
-7. How often do you consume acidic foods/drinks? (citrus, tomatoes, wine)
-   □ Never    □ 1-2 times per week    □ 3-4 times per week    □ Daily    □ Multiple times daily
+HIDRATARE ȘI SUPLIMENTE
 
-HEALTHY CHOICES
+8. Câtă apă beți zilnic?
+   □ Mai puțin de 4 pahare    □ 4-6 pahare    □ 7-8 pahare    □ Mai mult de 8 pahare
 
-8. How many servings of dairy do you consume daily?
-   □ None    □ 1    □ 2-3    □ More than 3
+9. Luați suplimente nutriționale sau vitamine?    □ Da    □ Nu
+   Dacă da, precizați: _________________________________
 
-9. How many servings of fruits and vegetables do you eat daily?
-   □ 0-2    □ 3-5    □ 6-8    □ More than 8
+10. Luați suplimente pe bază de plante care pot afecta coagularea?    □ Da    □ Nu
+    Dacă da, enumerați: _________________________________
 
-10. Do you take any nutritional supplements?    □ Yes    □ No
-    If yes, please specify: _________________________________
+PLANIFICARE POSTOPERATORIE
 
-HYDRATION
+11. Aveți acces ușor la alimente moi/ușor de preparat acasă?    □ Da    □ Nu
 
-11. How much water do you drink daily?
-    □ Less than 4 glasses    □ 4-6 glasses    □ 7-8 glasses    □ More than 8 glasses
+12. Restricții alimentare de care trebuie să ținem cont pentru recuperare?
+    _________________________________
 
-12. What is your primary beverage choice?
-    □ Water    □ Juice    □ Soda    □ Coffee/Tea    □ Sports drinks
+RECOMANDĂRI:
+□ Consiliere nutrițională preoperatorie
+□ Suplimentare proteică înainte de intervenție
+□ Ajustare program suplimente/medicamente
+□ Plan alimentar postoperator furnizat
 
-SPECIAL CONSIDERATIONS
-
-13. Do you follow any special diet?    □ Yes    □ No
-    If yes, specify: _________________________________
-
-14. Do you have any eating disorders or unusual eating habits?    □ Yes    □ No
-
-RECOMMENDATIONS:
-□ Reduce sugar frequency
-□ Increase water intake
-□ Improve meal timing
-□ Add protective foods
-□ Nutritional counseling referral
-
-Nutritionist/Dental Professional: _________________ Date: _________________
+Nutriționist/Echipă clinică: _________________ Data: _________________
     `
   },
   {
     id: 'antibiotic-prescription',
-    name: 'Antibiotic Prescription Form',
+    name: 'Formular rețetă antibiotic',
     type: 'prescription',
-    category: 'Prescriptions',
+    category: 'Rețete',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-ANTIBIOTIC PRESCRIPTION
+REȚETĂ ANTIBIOTIC
 
-Patient Name: [Patient Name]
-Date of Birth: [DOB]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data nașterii: [Data nașterii]
+Data: [Dată]
 
-PRESCRIPTION DETAILS:
-Medication: [Antibiotic Name]
-Strength: [Dose] mg
-Quantity: [Number] tablets/capsules
-Directions: Take [frequency] [timing] for [duration] days
+DETALII REȚETĂ:
+Medicament: [Antibiotic Name]
+Concentrație: [Dose] mg
+Cantitate: [Number] comprimate/capsule
+Mod de administrare: Câte [frequency] [timing] timp de [duration] zile
 
-IMPORTANT INSTRUCTIONS:
+INSTRUCȚIUNI IMPORTANTE:
 
-1. Take exactly as prescribed - Complete the entire course even if you feel better
-2. Take with food to reduce stomach upset
-3. Do not drink alcohol while taking this medication
-4. Space doses evenly throughout the day
-5. Do not share this medication with others
+1. Administrați exact conform prescripției — finalizați întregul tratament chiar dacă vă simțiți mai bine
+2. Administrați cu alimente pentru a reduce disconfortul gastric
+3. Nu consumați alcool în timpul tratamentului
+4. Distribuiți dozele uniform pe parcursul zilei
+5. Nu împărtășiți acest medicament cu alte persoane
 
-SIDE EFFECTS TO WATCH FOR:
-- Nausea or stomach upset
-- Diarrhea
-- Allergic reactions (rash, difficulty breathing, swelling)
-- Yeast infections
+EFECTE SECUNDARE DE MONITORIZAT:
+- Greață sau disconfort gastric
+- Diaree
+- Reacții alergice (erupție cutanată, dificultăți respiratorii, edeme)
+- Infecții fungice
 
-WHEN TO CONTACT US:
-- Severe allergic reactions (seek emergency care immediately)
-- Persistent nausea or vomiting
-- Severe diarrhea
-- No improvement after 2-3 days
-- Any unusual symptoms
+CÂND NE CONTACTAȚI:
+- Reacții alergice severe (solicitați îngrijiri de urgență imediat)
+- Greață sau vărsături persistente
+- Diaree severă
+- Lipsă de îmbunătățire după 2-3 zile
+- Orice simptome neobișnuite
 
-FOLLOW-UP:
-Return for follow-up appointment on: [Date]
+CONTROL:
+Reveniți pentru control la: [Dată]
 
-Prescribing Doctor: [Doctor Name]
-License #: [License Number]
-Signature: _________________
-Date: [Date]
+Medic prescriptor: [Nume medic]
+Nr. autorizație: [License Number]
+Semnătură: _________________
+Data: [Dată]
 
-Pharmacy Information:
+Informații farmacie:
 [Pharmacy Name]
 [Pharmacy Address]
 [Pharmacy Phone]
 
-Patient/Guardian Signature: _________________ Date: _________
-(Acknowledging receipt of instructions)
+Semnătura pacientului/tutorelui: _________________ Data: _________
+(Confirmare primire instrucțiuni)
     `
   },
   {
     id: 'pain-medication-prescription',
-    name: 'Pain Medication Prescription',
+    name: 'Rețetă medicamente pentru durere',
     type: 'prescription',
-    category: 'Prescriptions',
+    category: 'Rețete',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-PAIN MEDICATION PRESCRIPTION
+REȚETĂ MEDICAMENTE PENTRU DURERE
 
-Patient Name: [Patient Name]
-Date of Birth: [DOB]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data nașterii: [Data nașterii]
+Data: [Dată]
 
-PRESCRIPTION DETAILS:
-Medication: [Pain Medication Name]
-Strength: [Dose] mg
-Quantity: [Number] tablets
-Directions: Take [frequency] as needed for pain
-Maximum: [Max daily dose] tablets per day
+DETALII REȚETĂ:
+Medicament: [Pain Medication Name]
+Concentrație: [Dose] mg
+Cantitate: [Number] comprimate
+Mod de administrare: Câte [frequency] la nevoie pentru durere
+Maximum: [Max daily dose] comprimate pe zi
 
-PAIN MANAGEMENT INSTRUCTIONS:
+INSTRUCȚIUNI GESTIONARE DURERE:
 
-MEDICATION GUIDELINES:
-1. Take only as directed - Do not exceed prescribed dose
-2. Take with food if stomach upset occurs
-3. Do not operate machinery or drive while taking this medication
-4. Do not drink alcohol while taking this medication
-5. Store in a safe place away from children
+INDICAȚII MEDICAMENT:
+1. Administrați doar conform prescripției — nu depășiți doza prescrisă
+2. Administrați cu alimente dacă apare disconfort gastric
+3. Nu conduceți și nu operați utilaje în timpul tratamentului
+4. Nu consumați alcool în timpul tratamentului
+5. Păstrați medicamentul într-un loc sigur, inaccesibil copiilor
 
-NON-MEDICATION PAIN RELIEF:
-1. Apply ice for first 24 hours (20 minutes on, 20 minutes off)
-2. After 24 hours, switch to warm compresses
-3. Rest and avoid strenuous activity
-4. Sleep with head elevated
-5. Eat soft foods and avoid chewing on treated side
+AMELIORARE DURERE FĂRĂ MEDICAMENTE:
+1. Aplicați gheață în primele 24 de ore (20 minute pornit, 20 minute oprit)
+2. După 24 de ore, treceți la comprese calde
+3. Repaus și evitați efortul fizic intens
+4. Dormiți cu capul ridicat
+5. Respectați restricțiile de activitate pentru zona operatorie
 
-WHEN TO CONTACT US:
-- Pain worsens or doesn't improve after 2-3 days
-- Signs of infection (fever, increased swelling, pus)
-- Allergic reactions
-- Severe side effects
-- Excessive bleeding
+CÂND NE CONTACTAȚI:
+- Durerea se agravează sau nu se ameliorează după 2-3 zile
+- Semne de infecție (febră, edeme crescute, secreții purulente)
+- Reacții alergice
+- Efecte secundare severe
+- Sângerare excesivă
 
-SIDE EFFECTS TO MONITOR:
-- Drowsiness or dizziness
-- Nausea or constipation
-- Difficulty breathing
-- Unusual mood changes
+EFECTE SECUNDARE DE MONITORIZAT:
+- Somnolență sau amețeli
+- Greață sau constipație
+- Dificultăți respiratorii
+- Modificări neobișnuite ale stării de spirit
 
-FOLLOW-UP CARE:
-Next appointment: [Date]
-Special instructions: [Any specific post-operative care]
+ÎNGRIJIRE DE URMĂRIRE:
+Următoarea programare: [Dată]
+Instrucțiuni speciale: [Any specific post-operative care]
 
-Prescribing Doctor: [Doctor Name]
-License #: [License Number]
-Signature: _________________
-Date: [Date]
+Medic prescriptor: [Nume medic]
+Nr. autorizație: [License Number]
+Semnătură: _________________
+Data: [Dată]
 
-Emergency Contact: [Emergency Phone]
+Contact urgență: [Emergency Phone]
 
-Patient/Guardian Signature: _________________ Date: _________
-(Acknowledging receipt of instructions)
+Semnătura pacientului/tutorelui: _________________ Data: _________
+(Confirmare primire instrucțiuni)
     `
   },
   {
-    id: 'fluoride-prescription',
-    name: 'Fluoride Treatment Prescription',
+    id: 'post-operative-wound-care',
+    name: 'Instrucțiuni îngrijire plagă postoperatorie',
     type: 'prescription',
-    category: 'Prescriptions',
+    category: 'Rețete',
     createdAt: new Date().toISOString(),
     isTemplate: true,
     content: `
-FLUORIDE TREATMENT PRESCRIPTION
+INSTRUCȚIUNI ÎNGRIJIRE PLAGĂ POSTOPERATORIE
 
-Patient Name: [Patient Name]
-Date of Birth: [DOB]
-Date: [Date]
+Nume pacient: [Nume pacient]
+Data nașterii: [Data nașterii]
+Data: [Dată]
+Procedură: [Procedure Name]
 
-PRESCRIPTION DETAILS:
-Medication: [Fluoride Product Name]
-Strength: [Concentration] ppm fluoride
-Quantity: [Amount]
-Form: □ Gel  □ Foam  □ Toothpaste  □ Rinse
+PROTOCOL ÎNGRIJIRE PLAGĂ:
 
-APPLICATION INSTRUCTIONS:
+SCHIMBARE PANSAMENT:
+1. Schimbați pansamentul conform indicațiilor: [Frequency]
+2. Spălați-vă bine mâinile înainte și după fiecare schimbare
+3. Curățați incizia cu [saline/antiseptic solution] conform instrucțiunilor
+4. Aplicați un strat subțire de unguent prescris, dacă este indicat
+5. Acoperiți cu pansament steril curat și uscat
 
-FOR HIGH-CONCENTRATION FLUORIDE TOOTHPASTE:
-1. Use a pea-sized amount on your toothbrush
-2. Brush gently for 2 minutes before bedtime
-3. Spit out excess but do not rinse with water
-4. No eating or drinking for 30 minutes after application
-5. Use only at bedtime
+RESTRICȚII DE ACTIVITATE:
+1. Fără efort intens (peste 4,5 kg) timp de [duration]
+2. Evitați activitatea fizică intensă timp de [duration]
+3. Mențineți zona operatorie ridicată când este posibil
+4. Fără baie, piscină sau jacuzzi până la autorizare medicală
 
-FOR FLUORIDE RINSE:
-1. Use [amount] ml daily after brushing
-2. Rinse for 1 minute then spit out
-3. Do not swallow
-4. No eating or drinking for 30 minutes after use
+SEMNE DE MONITORIZAT:
+- Roșeață, căldură sau edeme crescute la locul inciziei
+- Secreții purulente sau miros neplăcut
+- Febră peste 38,3°C
+- Margini ale plăgii desprinse sau sângerare care nu se oprește
+- Durere crescândă necalmată de medicamentele prescrise
 
-IMPORTANT SAFETY INFORMATION:
-- Do not swallow fluoride products
-- Keep out of reach of children
-- Use only as directed
-- Stop use if irritation occurs
+CÂND NE CONTACTAȚI:
+- Orice semn de infecție menționat mai sus
+- Reacție alergică la produsele de îngrijire a plăgii
+- Întrebări despre schimbarea pansamentului
+- Sângerare sau secreții neașteptate
 
-WHY THIS TREATMENT IS PRESCRIBED:
-□ High risk of dental decay
-□ Root surface caries
-□ Xerostomia (dry mouth)
-□ Orthodontic treatment
-□ Radiation therapy
-□ Other: [Specify]
+CONTROL:
+Următorul control al plăgii: [Dată]
+Îndepărtare fire/agrafă (dacă este cazul): [Dată]
 
-EXPECTED BENEFITS:
-- Strengthens tooth enamel
-- Reduces risk of cavities
-- Helps remineralize early decay
-- Reduces tooth sensitivity
+Chirurg: [Nume medic]
+Nr. autorizație: [License Number]
+Semnătură: _________________
+Data: [Dată]
 
-FOLLOW-UP:
-Return for evaluation in: [Time period]
-Next fluoride application: [Date]
-
-ADDITIONAL RECOMMENDATIONS:
-□ Continue regular fluoride toothpaste
-□ Avoid frequent snacking
-□ Limit sugary/acidic beverages
-□ Regular dental checkups
-
-Prescribing Doctor: [Doctor Name]
-License #: [License Number]
-Signature: _________________
-Date: [Date]
-
-Patient/Guardian Signature: _________________ Date: _________
-(Acknowledging receipt of instructions)
+Semnătura pacientului/tutorelui: _________________ Data: _________
+(Confirmare primire instrucțiuni)
     `
   }
 ]
@@ -476,15 +426,15 @@ Patient/Guardian Signature: _________________ Date: _________
 export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesModalProps) {
   const [files, setFiles] = useState<FileItem[]>(DEFAULT_FILES)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('All')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Toate')
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const categories = ['All', ...Array.from(new Set(files.map(f => f.category)))]
+  const categories = ['Toate', ...Array.from(new Set(files.map(f => f.category)))]
 
   const filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'All' || file.category === selectedCategory
+    const matchesCategory = selectedCategory === 'Toate' || file.category === selectedCategory
     return matchesSearch && matchesCategory
   })
 
@@ -494,14 +444,14 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
         id: `uploaded-${Date.now()}-${Math.random()}`,
         name: file.name,
         type: 'uploaded',
-        category: 'Uploaded Files',
+        category: 'Fișiere încărcate',
         size: file.size,
         createdAt: new Date().toISOString(),
         isTemplate: false
       }
       setFiles(prev => [...prev, newFile])
     })
-    toast.success(`${uploadedFiles.length} file(s) uploaded successfully`)
+    toast.success(`${uploadedFiles.length} fișier(e) încărcat(e) cu succes`)
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -527,15 +477,17 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
     if (file.content) {
       // Create downloadable PDF content
       const personalizedContent = file.content
+        .replace(/\[Nume pacient\]/g, patientName)
         .replace(/\[Patient Name\]/g, patientName)
-        .replace(/\[Date\]/g, new Date().toLocaleDateString())
-        .replace(/\[DOB\]/g, '[Date of Birth]')
-        .replace(/\[Patient Code\]/g, '[Patient Code]')
+        .replace(/\[Dată\]/g, new Date().toLocaleDateString('ro-RO'))
+        .replace(/\[Date\]/g, new Date().toLocaleDateString('ro-RO'))
+        .replace(/\[Data nașterii\]/g, '[Data nașterii]')
+        .replace(/\[DOB\]/g, '[Data nașterii]')
+        .replace(/\[Nume medic\]/g, '[Nume medic]')
+        .replace(/\[Doctor Name\]/g, '[Nume medic]')
+        .replace(/\[Patient Code\]/g, '[Cod pacient]')
 
-      // Create a new window for PDF generation
-      const printWindow = window.open('', '_blank')
-      if (printWindow) {
-        printWindow.document.write(`
+      const html = `
           <!DOCTYPE html>
           <html>
             <head>
@@ -544,7 +496,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
                 @page {
                   size: A4;
-                  margin: 0.75in;
+                  margin: 0;
                 }
                 body { 
                   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -694,14 +646,14 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
                   <h1>${file.name}</h1>
                   <div class="header-info">
                     <div class="practice-info">
-                      <div><strong>[Your Practice Name]</strong></div>
-                      <div>[Practice Address]</div>
-                      <div>📞 [Practice Phone] | 📧 [Practice Email]</div>
+                      <div><strong>[Numele clinicii]</strong></div>
+                      <div>[Adresa clinicii]</div>
+                      <div>📞 [Telefon clinică] | 📧 [E-mail clinică]</div>
                     </div>
                     <div class="document-meta">
-                      <div><strong>Patient:</strong> ${patientName}</div>
-                      <div><strong>Generated:</strong> ${new Date().toLocaleDateString()}</div>
-                      <div><strong>Time:</strong> ${new Date().toLocaleTimeString()}</div>
+                      <div><strong>Pacient:</strong> ${patientName}</div>
+                      <div><strong>Generat:</strong> ${new Date().toLocaleDateString()}</div>
+                      <div><strong>Ora:</strong> ${new Date().toLocaleTimeString()}</div>
                     </div>
                   </div>
                 </div>
@@ -714,51 +666,48 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
           }</div>
                 <div class="footer-info">
                   <div><strong>🏥 ${file.name}</strong></div>
-                  <div>Document generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
-                  <div>This document is confidential and intended solely for medical purposes.</div>
+                  <div>Document generat la ${new Date().toLocaleDateString()}, ora ${new Date().toLocaleTimeString()}</div>
+                  <div>Acest document este confidențial și destinat exclusiv scopurilor medicale.</div>
                 </div>
               </div>
               <div class="no-print" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;">
-                <button onclick="window.print()" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;">📄 Save as PDF</button>
-                <button onclick="window.close()" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3); transition: all 0.2s;">❌ Close</button>
+                <button onclick="window.print()" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;">📄 Salvează ca PDF</button>
+                <button onclick="window.close()" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3); transition: all 0.2s;">❌ Închide</button>
               </div>
             </body>
           </html>
-        `)
-        printWindow.document.close()
+        `
+      printHtmlDocument(html, { delay: 500 })
 
-        // Auto-trigger print dialog after a short delay
-        setTimeout(() => {
-          printWindow.print()
-        }, 1000)
-      }
-
-      toast.success(`PDF ready for download: ${file.name}`)
+      toast.success(`PDF pregătit pentru descărcare: ${file.name}`)
     } else {
-      toast.error('File content not available')
+      toast.error('Conținutul fișierului nu este disponibil')
     }
   }
 
   const previewFile = (file: FileItem) => {
     if (file.content) {
       const personalizedContent = file.content
+        .replace(/\[Nume pacient\]/g, patientName)
         .replace(/\[Patient Name\]/g, patientName)
-        .replace(/\[Date\]/g, new Date().toLocaleDateString())
-        .replace(/\[DOB\]/g, '[Date of Birth]')
-        .replace(/\[Patient Code\]/g, '[Patient Code]')
+        .replace(/\[Dată\]/g, new Date().toLocaleDateString('ro-RO'))
+        .replace(/\[Date\]/g, new Date().toLocaleDateString('ro-RO'))
+        .replace(/\[Data nașterii\]/g, '[Data nașterii]')
+        .replace(/\[DOB\]/g, '[Data nașterii]')
+        .replace(/\[Nume medic\]/g, '[Nume medic]')
+        .replace(/\[Doctor Name\]/g, '[Nume medic]')
+        .replace(/\[Patient Code\]/g, '[Cod pacient]')
 
-      const newWindow = window.open('', '_blank')
-      if (newWindow) {
-        newWindow.document.write(`
+      const html = `
           <!DOCTYPE html>
           <html>
             <head>
-              <title>Preview: ${file.name} - ${patientName}</title>
+              <title>Previzualizare: ${file.name} - ${patientName}</title>
               <style>
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
                 @page {
                   size: A4;
-                  margin: 0.75in;
+                  margin: 0;
                 }
                 body { 
                   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -918,21 +867,21 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
             </head>
                         <body>
               <div class="preview-header">
-                <strong>✨ Modern PDF Preview</strong> - This is how your document will look when printed/downloaded as PDF
+                <strong>✨ Previzualizare PDF modernă</strong> — Așa va arăta documentul la tipărire/descărcare ca PDF
               </div>
               <div class="document-container">
                 <div class="header">
                   <h1>${file.name}</h1>
                   <div class="header-info">
                     <div class="practice-info">
-                      <div><strong>[Your Practice Name]</strong></div>
-                      <div>[Practice Address]</div>
-                      <div>📞 [Practice Phone] | 📧 [Practice Email]</div>
+                      <div><strong>[Numele clinicii]</strong></div>
+                      <div>[Adresa clinicii]</div>
+                      <div>📞 [Telefon clinică] | 📧 [E-mail clinică]</div>
                     </div>
                     <div class="document-meta">
-                      <div><strong>Patient:</strong> ${patientName}</div>
-                      <div><strong>Generated:</strong> ${new Date().toLocaleDateString()}</div>
-                      <div><strong>Time:</strong> ${new Date().toLocaleTimeString()}</div>
+                      <div><strong>Pacient:</strong> ${patientName}</div>
+                      <div><strong>Generat:</strong> ${new Date().toLocaleDateString()}</div>
+                      <div><strong>Ora:</strong> ${new Date().toLocaleTimeString()}</div>
                     </div>
                   </div>
                 </div>
@@ -945,30 +894,29 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
           }</div>
                 <div class="footer-info">
                   <div><strong>🏥 ${file.name}</strong></div>
-                  <div>Document generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
-                  <div>This document is confidential and intended solely for medical purposes.</div>
+                  <div>Document generat la ${new Date().toLocaleDateString()}, ora ${new Date().toLocaleTimeString()}</div>
+                  <div>Acest document este confidențial și destinat exclusiv scopurilor medicale.</div>
                 </div>
               </div>
               <div class="actions">
-                <button onclick="window.print()">🖨️ Print as PDF</button>
-                <button onclick="window.close()" class="close-btn">❌ Close Preview</button>
+                <button onclick="window.print()">🖨️ Tipărește ca PDF</button>
+                <button onclick="window.close()" class="close-btn">❌ Închide previzualizarea</button>
               </div>
             </body>
           </html>
-        `)
-        newWindow.document.close()
-      }
+        `
+      openHtmlPreview(html)
     }
   }
 
   const deleteFile = (fileId: string) => {
     const file = files.find(f => f.id === fileId)
     if (file?.isTemplate) {
-      toast.error('Cannot delete template files')
+      toast.error('Nu se pot șterge fișierele șablon')
       return
     }
     setFiles(prev => prev.filter(f => f.id !== fileId))
-    toast.success('File deleted successfully')
+    toast.success('Fișier șters cu succes')
   }
 
   const getFileIcon = (type: string) => {
@@ -992,7 +940,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Files className="h-5 w-5" />
-            Patient Files - {patientName}
+            Fișiere pacient — {patientName}
           </DialogTitle>
         </DialogHeader>
 
@@ -1002,7 +950,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search files..."
+                placeholder="Căutați fișiere..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -1022,7 +970,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
               className="flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
-              Upload
+              Încarcă
             </Button>
           </div>
 
@@ -1036,9 +984,9 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
           >
             <div className="text-center text-gray-500">
               <FolderOpen className="h-8 w-8 mx-auto mb-2" />
-              <p>Drag and drop files here or click Upload button</p>
-              <p className="text-sm">Supported formats: PDF, DOC, TXT, Images</p>
-              <p className="text-xs text-blue-600 mt-1">💡 All templates download as professional PDFs!</p>
+              <p>Trageți și plasați fișierele aici sau apăsați butonul Încarcă</p>
+              <p className="text-sm">Formate acceptate: PDF, DOC, TXT, imagini</p>
+              <p className="text-xs text-blue-600 mt-1">💡 Toate șabloanele se descarcă ca PDF-uri profesionale!</p>
             </div>
           </div>
 
@@ -1059,7 +1007,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
                         {file.size && ` • ${(file.size / 1024).toFixed(1)} KB`}
                         {file.isTemplate && (
                           <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                            Template
+                            Șablon
                           </span>
                         )}
                       </div>
@@ -1070,7 +1018,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
                       variant="outline"
                       size="sm"
                       onClick={() => previewFile(file)}
-                      title="Preview file"
+                      title="Previzualizare fișier"
                     >
                       <FileText className="h-4 w-4" />
                     </Button>
@@ -1078,7 +1026,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
                       variant="outline"
                       size="sm"
                       onClick={() => downloadFile(file)}
-                      title="Download as PDF"
+                      title="Descarcă ca PDF"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -1087,7 +1035,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
                         variant="outline"
                         size="sm"
                         onClick={() => deleteFile(file.id)}
-                        title="Delete file"
+                        title="Șterge fișierul"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -1098,7 +1046,7 @@ export function FilesModal({ isOpen, onClose, patientId, patientName }: FilesMod
               {filteredFiles.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Files className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No files found matching your criteria</p>
+                  <p>Nu s-au găsit fișiere care să corespundă criteriilor</p>
                 </div>
               )}
             </div>

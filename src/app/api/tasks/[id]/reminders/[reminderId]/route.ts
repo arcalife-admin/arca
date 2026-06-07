@@ -10,7 +10,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -32,7 +32,7 @@ export async function PATCH(
     });
 
     if (!reminder) {
-      return NextResponse.json({ error: 'Reminder not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Memento negăsit' }, { status: 404 });
     }
 
     // Update the reminder
@@ -49,7 +49,7 @@ export async function PATCH(
   } catch (error) {
     console.error('Error updating reminder:', error);
     return NextResponse.json(
-      { error: 'Failed to update reminder' },
+      { error: 'Actualizarea mementoului a eșuat' },
       { status: 500 }
     );
   }

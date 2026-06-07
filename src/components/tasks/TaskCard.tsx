@@ -54,6 +54,20 @@ const statusColors = {
   [TaskStatus.CANCELLED]: 'bg-gray-100 text-gray-800'
 };
 
+const statusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.PENDING]: 'În așteptare',
+  [TaskStatus.IN_PROGRESS]: 'În desfășurare',
+  [TaskStatus.COMPLETED]: 'Finalizat',
+  [TaskStatus.CANCELLED]: 'Anulat',
+};
+
+const priorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.LOW]: 'Scăzută',
+  [TaskPriority.MEDIUM]: 'Medie',
+  [TaskPriority.HIGH]: 'Ridicată',
+  [TaskPriority.URGENT]: 'Urgentă',
+};
+
 const priorityIcons = {
   [TaskPriority.LOW]: null,
   [TaskPriority.MEDIUM]: null,
@@ -135,17 +149,17 @@ export default function TaskCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onViewDetails(task)}>
-                View Details
+                Vezi detalii
               </DropdownMenuItem>
               {canEdit && (
                 <>
                   <DropdownMenuItem onClick={() => onEdit(task)}>
-                    Edit Task
+                    Editează sarcina
                   </DropdownMenuItem>
                   {task.status !== TaskStatus.COMPLETED && (
                     <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.COMPLETED)}>
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark as Complete
+                      Marchează ca finalizată
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -154,7 +168,7 @@ export default function TaskCard({
                       onClick={() => onDelete(task.id)}
                       className="text-red-600"
                     >
-                      Delete Task
+                      Șterge sarcina
                     </DropdownMenuItem>
                   )}
                 </>
@@ -169,26 +183,26 @@ export default function TaskCard({
             {task.type === TaskType.POLL && (
               <Badge variant="secondary" className="bg-purple-100 text-purple-800">
                 <BarChart3 className="w-3 h-3 mr-1" />
-                Poll
+                Sondaj
               </Badge>
             )}
             {task.visibility === TaskVisibility.PUBLIC && (
               <Badge variant="outline" className="bg-green-50 text-green-700">
                 <Globe className="w-3 h-3 mr-1" />
-                Public
+                Publică
               </Badge>
             )}
             <Badge className={statusColors[task.status]}>
-              {task.status.replace('_', ' ')}
+              {statusLabels[task.status]}
             </Badge>
             <Badge className={priorityColors[task.priority]} variant="outline">
               {PriorityIcon && <PriorityIcon className="w-3 h-3 mr-1" />}
-              {task.priority}
+              {priorityLabels[task.priority]}
             </Badge>
           </div>
           {isOverdue && (
             <Badge variant="destructive" className="text-xs">
-              Overdue
+              Depășit
             </Badge>
           )}
         </div>
@@ -197,44 +211,44 @@ export default function TaskCard({
           {task.deadline && (
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
-              <span>Due: {format(new Date(task.deadline), 'MMM dd, yyyy')}</span>
+              <span>Termen: {format(new Date(task.deadline), 'MMM dd, yyyy')}</span>
             </div>
           )}
 
           {task.patient && (
             <div className="flex items-center space-x-2">
               <User className="w-4 h-4" />
-              <span>Patient: {task.patient.firstName} {task.patient.lastName}</span>
+              <span>Pacient: {task.patient.firstName} {task.patient.lastName}</span>
             </div>
           )}
 
           <div className="flex items-center space-x-2">
             <Users className="w-4 h-4" />
             <span>
-              Assigned to: {task.assignments.length === 1
+              Atribuit: {task.assignments.length === 1
                 ? `${task.assignments[0].user.firstName} ${task.assignments[0].user.lastName}`
-                : `${task.assignments.length} practitioners`
+                : `${task.assignments.length} practicieni`
               }
             </span>
           </div>
 
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4" />
-            <span>Created: {format(new Date(task.createdAt), 'MMM dd, yyyy')}</span>
+            <span>Creat: {format(new Date(task.createdAt), 'MMM dd, yyyy')}</span>
           </div>
 
           {task.messages && task.messages.length > 0 && (
             <div className="flex items-center space-x-2">
               <MessageSquare className="w-4 h-4" />
-              <span>{task.messages.length} message{task.messages.length !== 1 ? 's' : ''}</span>
+              <span>{task.messages.length} {task.messages.length === 1 ? 'mesaj' : 'mesaje'}</span>
             </div>
           )}
 
           {task.type === TaskType.POLL && (
             <div className="flex items-center space-x-2">
               <Vote className="w-4 h-4" />
-              <span>{totalVotes} vote{totalVotes !== 1 ? 's' : ''}</span>
-              {userVote && <span className="text-green-600">• You voted</span>}
+              <span>{totalVotes} {totalVotes === 1 ? 'vot' : 'voturi'}</span>
+              {userVote && <span className="text-green-600">• Ați votat</span>}
             </div>
           )}
         </div>
@@ -242,7 +256,7 @@ export default function TaskCard({
         {/* Poll Voting Section */}
         {task.type === TaskType.POLL && (
           <div className="border-t pt-3 space-y-2">
-            <p className="text-sm font-medium">Poll Options:</p>
+            <p className="text-sm font-medium">Opțiuni sondaj:</p>
             <div className="space-y-2">
               {task.options && task.options.length > 0 ? (
                 task.options.map((option) => {
@@ -290,12 +304,12 @@ export default function TaskCard({
                         disabled={isVoting}
                         className="h-7 px-2"
                       >
-                        Vote
+                        Votează
                       </Button>
-                      {userVote && <span className="text-xs text-green-600">✓ You voted</span>}
+                      {userVote && <span className="text-xs text-green-600">✓ Ați votat</span>}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+                      {totalVotes} {totalVotes === 1 ? 'vot' : 'voturi'}
                     </span>
                   </div>
                 </div>
@@ -314,7 +328,7 @@ export default function TaskCard({
               disabled={isUpdating}
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              Assign to me
+              Atribuie-mi
             </Button>
           )}
 
@@ -327,7 +341,7 @@ export default function TaskCard({
                   onClick={() => handleStatusChange(TaskStatus.IN_PROGRESS)}
                   disabled={isUpdating}
                 >
-                  Start Task
+                  Începe sarcina
                 </Button>
               )}
               {task.status === TaskStatus.IN_PROGRESS && (
@@ -337,7 +351,7 @@ export default function TaskCard({
                   disabled={isUpdating}
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Complete
+                  Finalizează
                 </Button>
               )}
             </>
@@ -346,8 +360,8 @@ export default function TaskCard({
 
         {task.completedAt && task.completer && (
           <div className="text-xs text-muted-foreground border-t pt-2">
-            Completed by {task.completer.firstName} {task.completer.lastName} on{' '}
-            {format(new Date(task.completedAt), 'MMM dd, yyyy \'at\' HH:mm')}
+            Finalizat de {task.completer.firstName} {task.completer.lastName} pe{' '}
+            {format(new Date(task.completedAt), 'MMM dd, yyyy \'la\' HH:mm')}
           </div>
         )}
       </CardContent>

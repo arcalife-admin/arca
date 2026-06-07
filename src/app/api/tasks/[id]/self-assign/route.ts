@@ -11,7 +11,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const taskId = params.id;
@@ -34,12 +34,12 @@ export async function POST(
     });
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Sarcina nu a fost găsită' }, { status: 404 });
     }
 
     // Check if user is already assigned
     if (task.assignments.length > 0) {
-      return NextResponse.json({ error: 'You are already assigned to this task' }, { status: 400 });
+      return NextResponse.json({ error: 'Sunteți deja atribuit la această sarcină' }, { status: 400 });
     }
 
     // Check if user has permission to self-assign
@@ -63,7 +63,7 @@ export async function POST(
     }
 
     if (!canSelfAssign) {
-      return NextResponse.json({ error: 'You do not have permission to assign yourself to this task' }, { status: 403 });
+      return NextResponse.json({ error: 'Nu aveți permisiunea de a vă atribui la această sarcină' }, { status: 403 });
     }
 
     // Create self-assignment
@@ -98,7 +98,7 @@ export async function POST(
   } catch (error) {
     console.error('Error self-assigning task:', error);
     return NextResponse.json(
-      { error: 'Failed to self-assign task' },
+      { error: 'Auto-atribuirea sarcinii a eșuat' },
       { status: 500 }
     );
   }
@@ -111,7 +111,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
     const taskId = params.id;
@@ -127,12 +127,12 @@ export async function DELETE(
     });
 
     if (!assignment) {
-      return NextResponse.json({ error: 'You are not assigned to this task' }, { status: 400 });
+      return NextResponse.json({ error: 'Nu sunteți atribuit la această sarcină' }, { status: 400 });
     }
 
     // Only allow removing self-assignments or if user is the one who assigned
     if (!assignment.isSelfAssigned && assignment.assignedBy !== session.user.id) {
-      return NextResponse.json({ error: 'You can only remove your own assignments' }, { status: 403 });
+      return NextResponse.json({ error: 'Puteți elimina doar propriile atribuiri' }, { status: 403 });
     }
 
     // Remove the assignment
@@ -145,12 +145,12 @@ export async function DELETE(
       }
     });
 
-    return NextResponse.json({ message: 'Successfully removed assignment' });
+    return NextResponse.json({ message: 'Atribuirea a fost eliminată cu succes' });
 
   } catch (error) {
     console.error('Error removing assignment:', error);
     return NextResponse.json(
-      { error: 'Failed to remove assignment' },
+      { error: 'Eliminarea atribuirii a eșuat' },
       { status: 500 }
     );
   }
