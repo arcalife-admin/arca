@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { prisma } from '@/lib/prisma';

@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {

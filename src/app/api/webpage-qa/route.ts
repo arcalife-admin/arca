@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import { NextRequest } from 'next/server'
 
 // Medical terminology and their variations

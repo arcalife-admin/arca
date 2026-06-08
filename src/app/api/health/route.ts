@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { checkEnvironment } from '@/lib/env-check';

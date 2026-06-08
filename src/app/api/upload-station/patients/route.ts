@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isUploadStationAuthenticated } from '@/lib/upload-station-auth';

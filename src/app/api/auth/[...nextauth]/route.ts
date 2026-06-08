@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import NextAuth from 'next-auth/next'
 import { authOptions } from '@/lib/auth-config'
 

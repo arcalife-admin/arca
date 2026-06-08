@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 /** @deprecated Legacy patient-forms sets API. Use `/api/patients/intake/complete` via Add Patient intake flow. */
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'

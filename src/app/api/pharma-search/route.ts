@@ -1,3 +1,5 @@
+export { dynamic } from '@/lib/api-config'
+
 import { NextRequest } from 'next/server'
 
 const OFFICIAL_SOURCE_SITES = ['anm.ro', 'ema.europa.eu', 'pubmed.ncbi.nlm.nih.gov']
