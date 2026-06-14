@@ -178,7 +178,6 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
 
 export default function PersonalThemeSettings() {
   const {
-    themeSettings: organizationTheme,
     personalThemeSettings,
     effectiveTheme,
     isLoading,
@@ -190,11 +189,8 @@ export default function PersonalThemeSettings() {
     if (personalThemeSettings) {
       return toThemeValues(personalThemeSettings)
     }
-    if (organizationTheme) {
-      return toThemeValues(organizationTheme)
-    }
     return DEFAULT_THEME_VALUES
-  }, [personalThemeSettings, organizationTheme])
+  }, [personalThemeSettings])
 
   const [formData, setFormData] = useState<Partial<PersonalThemeSettingsType>>(savedFormBaseline)
   const [isSaving, setIsSaving] = useState(false)
@@ -256,8 +252,7 @@ export default function PersonalThemeSettings() {
     setIsResetting(true)
     try {
       await resetPersonalTheme()
-      const baseline = organizationTheme ? toThemeValues(organizationTheme) : DEFAULT_THEME_VALUES
-      setFormData(baseline)
+      setFormData(DEFAULT_THEME_VALUES)
       setHasChanges(false)
 
       toast({
@@ -300,7 +295,12 @@ export default function PersonalThemeSettings() {
           <Button
             variant="outline"
             onClick={handleResetToDefaults}
-            disabled={isResetting || isSaving || (!personalThemeSettings && !hasChanges)}
+            disabled={
+              isResetting ||
+              isSaving ||
+              (!personalThemeSettings &&
+                JSON.stringify(formData) === JSON.stringify(DEFAULT_THEME_VALUES))
+            }
           >
             {isResetting ? 'Se resetează...' : 'Resetează la implicit'}
           </Button>

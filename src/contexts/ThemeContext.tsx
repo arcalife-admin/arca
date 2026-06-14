@@ -54,6 +54,7 @@ interface ThemeContextType {
   effectiveTheme: ThemeValues
   isLoading: boolean
   updateTheme: (settings: Partial<OrganizationThemeSettings>) => Promise<void>
+  resetOrganizationTheme: () => Promise<void>
   updatePersonalTheme: (settings: Partial<PersonalThemeSettings>) => Promise<PersonalThemeSettings>
   resetPersonalTheme: () => Promise<void>
   applyTheme: (settings: OrganizationThemeSettings) => void
@@ -111,6 +112,26 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.message || apiErrors.failedToUpdate)
+    }
+
+    const updatedSettings = await response.json()
+    setThemeSettings(updatedSettings)
+    const effective = applyEffectiveTheme(updatedSettings, personalThemeSettings)
+    setEffectiveTheme(effective)
+  }
+
+  const resetOrganizationTheme = async () => {
+    if (!session?.user?.organizationId || session.user.role !== 'ORGANIZATION_OWNER') {
+      throw new Error('Neautorizat — Doar proprietarii organizației pot actualiza tema')
+    }
+
+    const response = await fetch('/api/organization-theme', {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Resetarea setărilor temei organizației a eșuat')
     }
 
     const updatedSettings = await response.json()
@@ -215,6 +236,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         effectiveTheme,
         isLoading,
         updateTheme,
+        resetOrganizationTheme,
         updatePersonalTheme,
         resetPersonalTheme,
         applyTheme,

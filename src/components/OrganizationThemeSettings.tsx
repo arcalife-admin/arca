@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTheme, OrganizationThemeSettings as OrganizationThemeSettingsType } from '@/contexts/ThemeContext'
-import { DEFAULT_THEME_VALUES, applyThemeToDOM } from '@/lib/theme'
+import { DEFAULT_THEME_VALUES, applyThemeToDOM, toThemeValues } from '@/lib/theme'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -202,9 +202,10 @@ function LivePreview({ formData }: { formData: Partial<OrganizationThemeSettings
 }
 
 export default function OrganizationThemeSettings() {
-  const { themeSettings, effectiveTheme, updateTheme, isLoading } = useTheme()
+  const { themeSettings, effectiveTheme, updateTheme, resetOrganizationTheme, isLoading } = useTheme()
   const [formData, setFormData] = useState<Partial<OrganizationThemeSettingsType>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
   // Initialize form data when theme settings load
@@ -250,9 +251,23 @@ export default function OrganizationThemeSettings() {
     }
   }
 
-  const handleReset = () => {
+  const handleDiscardChanges = () => {
     if (themeSettings) {
       setFormData(themeSettings)
+    }
+  }
+
+  const handleResetToDefaults = async () => {
+    setIsResetting(true)
+    try {
+      await resetOrganizationTheme()
+      setFormData(DEFAULT_THEME_VALUES)
+      setHasChanges(false)
+    } catch (error) {
+      console.error('Failed to reset theme:', error)
+      appAlert('Nu s-au putut reseta setările temei. Încercați din nou.', { title: 'Eroare' })
+    } finally {
+      setIsResetting(false)
     }
   }
 
@@ -273,13 +288,26 @@ export default function OrganizationThemeSettings() {
         </div>
         <div className="flex space-x-3">
           {hasChanges && (
-            <Button variant="outline" onClick={handleReset}>
-              Resetează
+            <Button variant="outline" onClick={handleDiscardChanges}>
+              Anulează
             </Button>
           )}
           <Button
+            variant="outline"
+            onClick={handleResetToDefaults}
+            disabled={
+              isResetting ||
+              isSaving ||
+              (!!themeSettings &&
+                JSON.stringify(toThemeValues(themeSettings)) === JSON.stringify(DEFAULT_THEME_VALUES) &&
+                !hasChanges)
+            }
+          >
+            {isResetting ? 'Se resetează...' : 'Resetează la implicit'}
+          </Button>
+          <Button
             onClick={handleSave}
-            disabled={!hasChanges || isSaving}
+            disabled={!hasChanges || isSaving || isResetting}
           >
             {isSaving ? 'Se salvează...' : 'Salvează modificările'}
           </Button>

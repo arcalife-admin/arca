@@ -155,4 +155,43 @@ export async function PUT(request: Request) {
       { status: 500 }
     )
   }
+}
+
+export async function DELETE() {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.organizationId || session.user.role !== 'ORGANIZATION_OWNER') {
+      return NextResponse.json(
+        { message: 'Neautorizat — doar proprietarii organizației pot actualiza tema' },
+        { status: 403 }
+      )
+    }
+
+    const themeSettings = await db.executeWithRetry(async () => {
+      const prisma = db.getPrismaClient()
+      return prisma.organizationThemeSettings.upsert({
+        where: {
+          organizationId: session.user.organizationId,
+        },
+        update: {
+          ...DEFAULT_THEME_VALUES,
+          customVariables: null,
+          updatedAt: new Date(),
+        },
+        create: {
+          organizationId: session.user.organizationId,
+          ...DEFAULT_THEME_VALUES,
+        },
+      })
+    })
+
+    return NextResponse.json(themeSettings)
+  } catch (error) {
+    console.error('Error resetting theme settings:', error)
+    return NextResponse.json(
+      { message: 'Resetarea setărilor temei organizației a eșuat' },
+      { status: 500 }
+    )
+  }
 } 
