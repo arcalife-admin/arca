@@ -126,6 +126,76 @@ export const DEFAULT_THEME_VALUES: ThemeValues = {
   calendarAccentBg: '#f3f4f6',
 }
 
+/** Convert #rrggbb to shadcn/Tailwind HSL token format: "H S% L%" */
+export function hexToHslToken(hex: string): string {
+  const normalized = hex.replace(/^#/, '')
+  if (normalized.length !== 3 && normalized.length !== 6) {
+    return '0 0% 0%'
+  }
+
+  const full =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((char) => char + char)
+          .join('')
+      : normalized
+
+  const r = parseInt(full.slice(0, 2), 16) / 255
+  const g = parseInt(full.slice(2, 4), 16) / 255
+  const b = parseInt(full.slice(4, 6), 16) / 255
+
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+
+  if (max === min) {
+    return `0 0% ${(l * 100).toFixed(1)}%`
+  }
+
+  const d = max - min
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+  let h = 0
+
+  switch (max) {
+    case r:
+      h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+      break
+    case g:
+      h = ((b - r) / d + 2) / 6
+      break
+    default:
+      h = ((r - g) / d + 4) / 6
+      break
+  }
+
+  return `${(h * 360).toFixed(1)} ${(s * 100).toFixed(1)}% ${(l * 100).toFixed(1)}%`
+}
+
+function applyShadcnThemeTokens(root: HTMLElement, values: ThemeValues) {
+  // shadcn/ui + Tailwind components use hsl(var(--primary)), not --org-primary
+  root.style.setProperty('--primary', hexToHslToken(values.primaryColor))
+  root.style.setProperty('--primary-foreground', hexToHslToken(values.primaryForeground))
+  root.style.setProperty('--secondary', hexToHslToken(values.secondaryColor))
+  root.style.setProperty('--secondary-foreground', hexToHslToken(values.secondaryForeground))
+  root.style.setProperty('--background', hexToHslToken(values.backgroundColor))
+  root.style.setProperty('--foreground', hexToHslToken(values.textPrimary))
+  root.style.setProperty('--card', hexToHslToken(values.surfaceColor))
+  root.style.setProperty('--card-foreground', hexToHslToken(values.textPrimary))
+  root.style.setProperty('--popover', hexToHslToken(values.backgroundColor))
+  root.style.setProperty('--popover-foreground', hexToHslToken(values.textPrimary))
+  root.style.setProperty('--muted', hexToHslToken(values.secondaryColor))
+  root.style.setProperty('--muted-foreground', hexToHslToken(values.textMuted))
+  root.style.setProperty('--accent', hexToHslToken(values.accentColor))
+  root.style.setProperty('--accent-foreground', hexToHslToken(values.accentForeground))
+  root.style.setProperty('--destructive', hexToHslToken(values.errorColor))
+  root.style.setProperty('--destructive-foreground', hexToHslToken(values.primaryForeground))
+  root.style.setProperty('--border', hexToHslToken(values.borderColor))
+  root.style.setProperty('--input', hexToHslToken(values.borderColor))
+  root.style.setProperty('--ring', hexToHslToken(values.primaryColor))
+  root.style.setProperty('--radius', `${values.borderRadius}px`)
+}
+
 export function applyThemeToDOM(settings: Partial<ThemeValues>) {
   if (typeof document === 'undefined') return
 
@@ -206,6 +276,8 @@ export function applyThemeToDOM(settings: Partial<ThemeValues>) {
       root.style.setProperty(`--org-${key}`, value)
     })
   }
+
+  applyShadcnThemeTokens(root, values)
 }
 
 export function toThemeValues(

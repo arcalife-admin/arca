@@ -385,7 +385,6 @@ export function BudgetModal({
             <Button
               onClick={handleDownload}
               disabled={isGenerating}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <Download className="h-4 w-4 mr-2" />
               {isGenerating ? 'Se generează...' : 'Descărcare PDF'}

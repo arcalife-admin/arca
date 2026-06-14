@@ -5539,7 +5539,6 @@ Contactați imediat clinica pentru această urmărire importantă.`
                   }
                 }}
                 disabled={selectedTreatments.length === 0}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 Adaugă {selectedTreatments.length} tratament{selectedTreatments.length !== 1 ? 'e' : ''} în plan
               </Button>
@@ -5662,7 +5661,6 @@ Contactați imediat clinica pentru această urmărire importantă.`
               </Button>
               <Button
                 onClick={handleEditTreatmentSave}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 Salvează modificările
               </Button>

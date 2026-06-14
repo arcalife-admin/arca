@@ -669,7 +669,7 @@ export function TreatmentPlan({
             <Button
               variant={procedure.isPaid ? "default" : "ghost"}
               size="icon"
-              className={`h-6 w-6 ${procedure.isPaid ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+              className="h-6 w-6"
               onClick={() => {
                 setButtonClicked(true);
                 setSelectedProcedure(procedure);
@@ -900,7 +900,6 @@ export function TreatmentPlan({
                 </div>
                 <Button
                   onClick={() => setShowBudgetModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm"
                   size="sm"
                 >
                   <FileText className="w-4 h-4 mr-2" />

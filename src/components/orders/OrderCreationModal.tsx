@@ -322,7 +322,6 @@ export default function OrderCreationModal({
             <Button
               type="submit"
               disabled={loading || !formData.vendorId}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               {loading ? 'Se creează comanda...' : 'Creează comandă'}
             </Button>

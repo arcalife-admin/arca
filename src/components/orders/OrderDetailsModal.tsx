@@ -243,14 +243,14 @@ export default function OrderDetailsModal({ isOpen, onClose, orderId, onStatusCh
               rows={2}
               className="flex-1"
             />
-            <Button onClick={handleAddNote} disabled={addingNote || !newNote.trim()} className="bg-blue-600 hover:bg-blue-700 h-fit mt-1">
+            <Button onClick={handleAddNote} disabled={addingNote || !newNote.trim()} className="h-fit mt-1">
               {addingNote ? 'Se adaugă...' : 'Adaugă'}
             </Button>
           </div>
         </div>
         <DialogFooter className="mt-6">
           <Button variant="outline" onClick={onClose}>Închide</Button>
-          <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Se salvează...' : 'Salvează modificările'}
           </Button>
         </DialogFooter>

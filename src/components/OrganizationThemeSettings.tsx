@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTheme, OrganizationThemeSettings as OrganizationThemeSettingsType } from '@/contexts/ThemeContext'
-import { DEFAULT_THEME_VALUES } from '@/lib/theme'
+import { DEFAULT_THEME_VALUES, applyThemeToDOM } from '@/lib/theme'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -202,7 +202,7 @@ function LivePreview({ formData }: { formData: Partial<OrganizationThemeSettings
 }
 
 export default function OrganizationThemeSettings() {
-  const { themeSettings, updateTheme, isLoading } = useTheme()
+  const { themeSettings, effectiveTheme, updateTheme, isLoading } = useTheme()
   const [formData, setFormData] = useState<Partial<OrganizationThemeSettingsType>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -221,6 +221,12 @@ export default function OrganizationThemeSettings() {
       setHasChanges(hasChanged)
     }
   }, [formData, themeSettings])
+
+  // Live-apply theme while editing; restore saved theme on unmount
+  useEffect(() => {
+    applyThemeToDOM(formData)
+    return () => applyThemeToDOM(effectiveTheme)
+  }, [formData, effectiveTheme])
 
   const handleInputChange = (field: keyof OrganizationThemeSettingsType, value: any) => {
     setFormData(prev => ({
@@ -274,7 +280,6 @@ export default function OrganizationThemeSettings() {
           <Button
             onClick={handleSave}
             disabled={!hasChanges || isSaving}
-            className="bg-blue-600 hover:bg-blue-700"
           >
             {isSaving ? 'Se salvează...' : 'Salvează modificările'}
           </Button>

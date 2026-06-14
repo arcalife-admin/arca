@@ -472,7 +472,6 @@ export default function ComenziPage() {
           </p>
         </div>
         <Button
-          className="bg-blue-600 hover:bg-blue-700"
           onClick={() => setShowNewRequestModal(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -612,7 +611,6 @@ export default function ComenziPage() {
                 </div>
                 <Button
                   onClick={() => handleCreateOrderFromRequests(filteredRequests.filter(r => r.status === 'APPROVED'))}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Package className="h-4 w-4 mr-2" />
                   Creează comandă
@@ -709,7 +707,6 @@ export default function ComenziPage() {
                 </p>
                 <Button
                   onClick={() => setShowNewRequestModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Cerere nouă
@@ -798,7 +795,6 @@ export default function ComenziPage() {
                 Setări reparații
               </Button>
               <Button
-                className="bg-blue-600 hover:bg-blue-700"
                 onClick={() => setShowNewRepairModal(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -1052,7 +1048,6 @@ export default function ComenziPage() {
                 </p>
                 <Button
                   onClick={() => setShowNewRepairModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Raportează prima problemă
@@ -1175,7 +1170,6 @@ export default function ComenziPage() {
             </div>
             <Button
               onClick={() => setShowNewVendorModal(true)}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adaugă furnizor
@@ -1257,7 +1251,6 @@ export default function ComenziPage() {
                 </p>
                 <Button
                   onClick={() => setShowNewVendorModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Adaugă primul furnizor
@@ -1324,7 +1317,7 @@ export default function ComenziPage() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowOrderQuickModal(false)}>Anulează</Button>
-              <Button onClick={handleQuickOrderSubmit} disabled={!quickOrderUnknown && !quickOrderDelivery} className="bg-blue-600 hover:bg-blue-700">Creează comandă</Button>
+              <Button onClick={handleQuickOrderSubmit} disabled={!quickOrderUnknown && !quickOrderDelivery}>Creează comandă</Button>
             </div>
           </div>
         </div>

@@ -295,7 +295,6 @@ export default function RepairSettingsPage() {
                 setLocationForm({ name: '', description: '', color: '#3B82F6' });
                 setShowLocationModal(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adaugă locație
@@ -350,7 +349,6 @@ export default function RepairSettingsPage() {
                 </p>
                 <Button
                   onClick={() => setShowLocationModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Adaugă prima locație
@@ -383,7 +381,6 @@ export default function RepairSettingsPage() {
                 });
                 setShowEquipmentModal(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adaugă echipament
@@ -492,7 +489,6 @@ export default function RepairSettingsPage() {
                 });
                 setShowContactModal(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adaugă contact

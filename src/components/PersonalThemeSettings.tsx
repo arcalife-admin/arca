@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { PersonalThemeSettings as PersonalThemeSettingsType } from '@/types/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { DEFAULT_THEME_VALUES, toThemeValues } from '@/lib/theme'
+import { DEFAULT_THEME_VALUES, applyThemeToDOM, toThemeValues } from '@/lib/theme'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -180,6 +180,7 @@ export default function PersonalThemeSettings() {
   const {
     themeSettings: organizationTheme,
     personalThemeSettings,
+    effectiveTheme,
     isLoading,
     updatePersonalTheme,
     resetPersonalTheme,
@@ -208,6 +209,12 @@ export default function PersonalThemeSettings() {
     const hasChanged = JSON.stringify(formData) !== JSON.stringify(savedFormBaseline)
     setHasChanges(hasChanged)
   }, [formData, savedFormBaseline])
+
+  // Live-apply theme while editing; restore saved theme on unmount
+  useEffect(() => {
+    applyThemeToDOM(formData)
+    return () => applyThemeToDOM(effectiveTheme)
+  }, [formData, effectiveTheme])
 
   const handleInputChange = (field: keyof PersonalThemeSettingsType, value: any) => {
     setFormData(prev => ({
@@ -300,7 +307,6 @@ export default function PersonalThemeSettings() {
           <Button
             onClick={handleSave}
             disabled={!hasChanges || isSaving || isResetting}
-            className="bg-blue-600 hover:bg-blue-700"
           >
             {isSaving ? 'Se salvează...' : 'Salvează modificările'}
           </Button>
