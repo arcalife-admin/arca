@@ -4,10 +4,11 @@ This folder contains documentation you can share with clinics, partners, and aud
 
 ## Quick start for reviewers
 
-1. Read **[security-overview.md](security-overview.md)** — executive summary and architecture
-2. Review **[vendor-compliance.md](vendor-compliance.md)** — how to obtain SOC 2 / ISO reports from Vercel, Supabase, and Cloudinary
-3. Use **[control-matrix.md](control-matrix.md)** — detailed mapping to SOC 2 Trust Services Criteria and GDPR
-4. For engineering review, see **[application-controls.md](application-controls.md)**
+1. Read **[compliance-status.md](compliance-status.md)** — single-page certification matrix (have vs. need) for customers and auditors
+2. Read **[security-overview.md](security-overview.md)** — executive summary and architecture
+3. Review **[vendor-compliance.md](vendor-compliance.md)** — how to obtain SOC 2 / ISO reports from Vercel, Supabase, and Cloudinary
+4. Use **[control-matrix.md](control-matrix.md)** — detailed mapping to SOC 2 Trust Services Criteria and GDPR
+5. For engineering review, see **[application-controls.md](application-controls.md)**
 
 ## Important distinction
 
@@ -33,6 +34,7 @@ Store downloaded reports in your internal compliance vault (not in this git repo
 
 | File | Description |
 |------|-------------|
+| `compliance-status.md` | Customer-shareable certification matrix and compliance summary |
 | `security-overview.md` | Customer-facing security whitepaper |
 | `application-controls.md` | Technical controls implemented in code |
 | `vendor-compliance.md` | Subprocessor certifications and shared responsibility |

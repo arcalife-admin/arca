@@ -149,8 +149,43 @@ Technical reference for security controls implemented in the ArcaLife codebase. 
 | Control | Implementation | Location |
 |---------|----------------|----------|
 | Consent forms | Patient intake GDPR consent | `src/lib/intake/documents.ts` |
+| Privacy policy | Public page Art. 13/14 | `src/app/[locale]/privacy/page.tsx` |
+| Patient export (Art. 15) | Manager-only JSON export | `src/app/api/patients/[id]/export/route.ts` |
+| Patient erasure (Art. 17) | Manager-only + Cloudinary purge | `src/app/api/patients/[id]/erase/route.ts` |
+| Retention purge | Weekly cron job | `src/app/api/cron/data-retention/route.ts` |
+| Legal documents | RoPA, DPIA, DPA, SOPs | `docs/legal/` |
 | Data minimization | Fields collected per intake workflow | Intake components |
 | Multi-tenant separation | Organization-scoped data access | Application layer |
+
+---
+
+## MFA
+
+| Control | Implementation | Location |
+|---------|----------------|----------|
+| TOTP generation | otplib authenticator | `src/lib/mfa.ts` |
+| MFA setup / enable / disable | Manager-only API routes | `src/app/api/auth/mfa/*` |
+| Login MFA challenge | Credentials provider + login UI | `src/lib/auth-config.ts`, login page |
+
+---
+
+## HTTP security headers
+
+| Header | Value | Location |
+|--------|-------|----------|
+| Strict-Transport-Security | max-age=63072000; includeSubDomains; preload | `next.config.cjs` |
+| Content-Security-Policy-Report-Only | Restrictive policy (monitoring phase) | `next.config.cjs` |
+| X-Frame-Options | SAMEORIGIN | `next.config.cjs` |
+| X-Content-Type-Options | nosniff | `next.config.cjs` |
+| Referrer-Policy | strict-origin-when-cross-origin | `next.config.cjs` |
+
+---
+
+## PHI scrubbing
+
+| Control | Implementation | Location |
+|---------|----------------|----------|
+| Sentry beforeSend | Strips CNP, patient fields from errors | `src/lib/sentry.ts` |
 
 ---
 

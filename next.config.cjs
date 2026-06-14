@@ -80,6 +80,24 @@ const nextConfig = {
   async headers() {
     const securityHeaders = [
       {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      },
+      {
+        key: 'Content-Security-Policy-Report-Only',
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob: https://res.cloudinary.com",
+          "font-src 'self' data:",
+          "connect-src 'self' https://res.cloudinary.com https://*.sentry.io",
+          "frame-ancestors 'self'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join('; '),
+      },
+      {
         key: 'X-Frame-Options',
         value: 'SAMEORIGIN',
       },

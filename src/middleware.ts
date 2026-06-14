@@ -10,6 +10,7 @@ const RATE_LIMITED_PATHS = [
   '/api/upload-station/auth',
   '/api/auth/signin',
   '/api/auth/callback/credentials',
+  '/api/auth/mfa/check',
 ]
 
 function isPublicRegistrationEnabled(): boolean {

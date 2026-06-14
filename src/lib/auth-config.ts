@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
-import { UserRole } from '@prisma/client'
+import { verifyTotp } from '@/lib/mfa'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,7 +10,8 @@ export const authOptions: NextAuthOptions = {
       name: 'Credentials',
       credentials: {
         email: { label: "E-mail", type: "email" },
-        password: { label: "Parolă", type: "password" }
+        password: { label: "Parolă", type: "password" },
+        totpCode: { label: "Cod MFA", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -42,6 +43,16 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Parolă incorectă')
           }
 
+          if (user.twoFactorEnabled && user.twoFactorSecret) {
+            const totpCode = credentials.totpCode?.trim()
+            if (!totpCode) {
+              throw new Error('MFA_REQUIRED')
+            }
+            if (!verifyTotp(user.twoFactorSecret, totpCode)) {
+              throw new Error('MFA_INVALID')
+            }
+          }
+
           // Update last login timestamp
           await prisma.user.update({
             where: { id: user.id },
@@ -54,7 +65,8 @@ export const authOptions: NextAuthOptions = {
             lastName: user.lastName,
             email: user.email,
             role: user.role,
-            organizationId: user.organizationId
+            organizationId: user.organizationId,
+            twoFactorEnabled: user.twoFactorEnabled,
           }
         } catch (error) {
           console.error('Auth error:', error);

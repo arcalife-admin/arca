@@ -138,6 +138,7 @@ export const LOG_ACTIONS = {
   BACKUP_DATA: 'BACKUP_DATA',
   RESTORE_DATA: 'RESTORE_DATA',
   EXPORT_DATA: 'EXPORT_DATA',
+  GDPR_ERASURE: 'GDPR_ERASURE',
   IMPORT_DATA: 'IMPORT_DATA',
 
   // Dental procedure actions (deprecated - use surgical)

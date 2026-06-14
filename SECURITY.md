@@ -20,6 +20,7 @@ This repository covers the ArcaLife application layer. Infrastructure security f
 
 | Document | Audience | Purpose |
 |----------|----------|---------|
+| [Compliance status](docs/security/compliance-status.md) | Customers, partners, auditors | Certification matrix — what we have vs. what is in progress |
 | [Security overview](docs/security/security-overview.md) | Customers, partners, auditors | High-level security posture and architecture |
 | [Application controls](docs/security/application-controls.md) | Technical reviewers | Implementation details in this codebase |
 | [Vendor compliance](docs/security/vendor-compliance.md) | Procurement, legal, DPO | Inherited certifications (Vercel, Supabase, Cloudinary) |

@@ -65,6 +65,8 @@ model User {
   isActive                   Boolean                @default(true)
   isDisabled                 Boolean                @default(false)
   lastLoginAt                DateTime?
+  twoFactorEnabled           Boolean                @default(false)
+  twoFactorSecret            String?
   activityLogs               ActivityLog[]          @relation("ActivityLogUser")
   appointments               Appointment[]
   addedBoardMembers          BoardMember[]          @relation("BoardMemberAdder")

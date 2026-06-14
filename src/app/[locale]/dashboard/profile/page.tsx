@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronDown, ChevronRight, Palette, Settings, Euro } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import MfaSettings from '@/components/profile/MfaSettings'
 
 interface User {
   id: string
@@ -382,6 +383,8 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+
+        <MfaSettings />
 
         {/* Organization Information Section */}
         {organization && (

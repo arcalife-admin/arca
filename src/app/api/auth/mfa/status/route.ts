@@ -1,0 +1,32 @@
+export { dynamic } from '@/lib/api-config'
+
+import { NextResponse } from 'next/server'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
+import { db } from '@/lib/db'
+
+/** Current user's MFA status (for profile settings). */
+export async function GET() {
+  const auth = await requireAuth()
+  if (isAuthError(auth)) return auth
+
+  const prisma = db.getPrismaClient()
+  const user = await prisma.user.findUnique({
+    where: { id: auth.user.id },
+    select: {
+      twoFactorEnabled: true,
+      twoFactorSecret: true,
+      role: true,
+    },
+  })
+
+  if (!user) {
+    return NextResponse.json({ error: 'Utilizator negăsit' }, { status: 404 })
+  }
+
+  return NextResponse.json({
+    enabled: user.twoFactorEnabled,
+    pendingSetup: Boolean(user.twoFactorSecret && !user.twoFactorEnabled),
+    isPrivileged:
+      user.role === 'ORGANIZATION_OWNER' || user.role === 'MANAGER',
+  })
+}

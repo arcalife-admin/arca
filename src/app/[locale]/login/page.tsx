@@ -11,6 +11,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showMfa, setShowMfa] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -20,20 +21,43 @@ function LoginForm() {
     const formData = new FormData(e.currentTarget)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const totpCode = (formData.get('totpCode') as string)?.trim() || ''
 
     try {
+      const checkRes = await fetch('/api/auth/mfa/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          totpCode: totpCode || undefined,
+        }),
+      })
+
+      const checkData = await checkRes.json()
+
+      if (!checkData.ok) {
+        if (checkData.error === 'MFA_REQUIRED') {
+          setShowMfa(true)
+        }
+        setError(translateAuthError(checkData.error ?? 'INVALID_CREDENTIALS'))
+        return
+      }
+
       const result = await signIn('credentials', {
         email,
         password,
+        totpCode: checkData.mfaRequired ? totpCode : '',
         redirect: false,
       })
 
       if (!result?.ok || result?.error) {
         setError(translateAuthError(result?.error ?? 'CredentialsSignin'))
-      } else {
-        const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard'
-        window.location.href = callbackUrl
+        return
       }
+
+      const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard'
+      window.location.href = callbackUrl
     } catch {
       setError('A apărut o eroare. Încercați din nou.')
     } finally {
@@ -86,11 +110,37 @@ function LoginForm() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 ${showMfa ? '' : 'rounded-b-md'} focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm`}
                 placeholder="Parolă"
               />
             </div>
+            {showMfa && (
+              <div>
+                <label htmlFor="totpCode" className="sr-only">
+                  Cod MFA
+                </label>
+                <input
+                  id="totpCode"
+                  name="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
+                  placeholder="Cod MFA (6 cifre)"
+                />
+              </div>
+            )}
           </div>
+
+          {showMfa && !error && (
+            <p className="text-sm text-center text-gray-600">
+              Contul are MFA activat. Introduceți codul din aplicația de autentificare.
+            </p>
+          )}
 
           {error && (
             <div className="text-red-500 text-sm text-center">{error}</div>
@@ -102,9 +152,14 @@ function LoginForm() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Se autentifică...' : 'Autentificare'}
+              {isLoading ? 'Se autentifică...' : showMfa ? 'Verifică cod MFA' : 'Autentificare'}
             </button>
           </div>
+          <p className="text-center text-xs text-gray-500">
+            <Link href="/privacy" className="hover:text-gray-700">
+              Politica de confidențialitate
+            </Link>
+          </p>
         </form>
       </motion.div>
     </div>
