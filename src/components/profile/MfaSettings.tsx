@@ -42,15 +42,39 @@ export default function MfaSettings() {
     setBusy(true)
     try {
       const res = await fetch('/api/auth/mfa/setup', { method: 'POST' })
-      const data = await res.json()
+      const text = await res.text()
+      let data: { error?: string; secret?: string; otpauthUrl?: string } = {}
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch {
+        data = {}
+      }
       if (!res.ok) {
-        toast({ title: 'Eroare', description: data.error ?? 'Configurare eșuată', variant: 'destructive' })
+        toast({
+          title: 'Eroare',
+          description: data.error ?? `Configurare eșuată (${res.status})`,
+          variant: 'destructive',
+        })
         return
       }
-      setSetupData({ secret: data.secret, otpauthUrl: data.otpauthUrl })
+      if (!data.secret) {
+        toast({
+          title: 'Eroare',
+          description: 'Răspuns invalid de la server',
+          variant: 'destructive',
+        })
+        return
+      }
+      setSetupData({ secret: data.secret, otpauthUrl: data.otpauthUrl ?? '' })
       setCode('')
       await loadStatus()
       toast({ title: 'Pasul 1', description: 'Adăugați contul în Google Authenticator sau Authy' })
+    } catch {
+      toast({
+        title: 'Eroare',
+        description: 'Nu s-a putut contacta serverul',
+        variant: 'destructive',
+      })
     } finally {
       setBusy(false)
     }

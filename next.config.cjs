@@ -23,6 +23,8 @@ const nextConfig = {
     // Skip building API routes during static generation
     skipTrailingSlashRedirect: true,
     instrumentationHook: true,
+    // Keep crypto/MFA libs out of the webpack bundle (server-only)
+    serverComponentsExternalPackages: ['otplib'],
   },
   // Configure route settings to make dashboard pages dynamic
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
