@@ -1,11 +1,34 @@
 export { dynamic } from '@/lib/api-config'
 
+import { getServerSession } from 'next-auth'
 import { NextResponse } from 'next/server'
-import { requireAuth, isAuthError } from '@/lib/require-auth'
+import { authOptions } from '@/lib/auth-config'
+import { isPublicRegistrationEnabled } from '@/lib/require-auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function GET(request: Request) {
-  const auth = await requireAuth()
-  if (isAuthError(auth)) return auth
+  const session = await getServerSession(authOptions)
+  const isAuthenticated = !!(session?.user?.id && session.user.organizationId)
+
+  if (!isAuthenticated && !isPublicRegistrationEnabled()) {
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 401 })
+  }
+
+  if (!isAuthenticated) {
+    const ip = getClientIp(request.headers)
+    const rateLimit = checkRateLimit(`geocode:${ip}`, 30, 15 * 60 * 1000)
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { error: 'Prea multe cereri. Încercați din nou mai târziu.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSeconds ?? 60),
+          },
+        }
+      )
+    }
+  }
 
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')

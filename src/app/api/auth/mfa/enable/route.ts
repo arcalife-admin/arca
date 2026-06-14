@@ -40,7 +40,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (!verifyTotp(user.twoFactorSecret, code)) {
-    return NextResponse.json({ error: 'Cod MFA invalid' }, { status: 400 })
+    return NextResponse.json(
+      {
+        error:
+          'Cod MFA invalid. Ștergeți intrarea ArcaLife din Authenticator, apoi configurați din nou folosind codul QR (nu tastați manual cheia).',
+      },
+      { status: 400 }
+    )
   }
 
   await prisma.user.update({

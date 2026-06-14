@@ -8,16 +8,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Shield, ShieldCheck, ShieldOff } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
+type SetupData = {
+  secret: string
+  otpauthUrl: string
+  qrDataUrl?: string
+}
+
 type MfaStatus = {
   enabled: boolean
   pendingSetup: boolean
   isPrivileged: boolean
+  pendingSetupData?: SetupData | null
+}
+
+async function parseJsonResponse<T>(res: Response): Promise<T> {
+  const text = await res.text()
+  try {
+    return text ? JSON.parse(text) : ({} as T)
+  } catch {
+    return {} as T
+  }
 }
 
 export default function MfaSettings() {
   const [status, setStatus] = useState<MfaStatus | null>(null)
   const [loading, setLoading] = useState(true)
-  const [setupData, setSetupData] = useState<{ secret: string; otpauthUrl: string } | null>(null)
+  const [setupData, setSetupData] = useState<SetupData | null>(null)
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -25,7 +41,11 @@ export default function MfaSettings() {
     try {
       const res = await fetch('/api/auth/mfa/status')
       if (res.ok) {
-        setStatus(await res.json())
+        const data: MfaStatus = await res.json()
+        setStatus(data)
+        if (data.pendingSetupData && !data.enabled) {
+          setSetupData(data.pendingSetupData)
+        }
       }
     } catch {
       toast({ title: 'Eroare', description: 'Nu s-a putut încărca starea MFA', variant: 'destructive' })
@@ -38,17 +58,21 @@ export default function MfaSettings() {
     loadStatus()
   }, [loadStatus])
 
-  const startSetup = async () => {
+  const startSetup = async (reset = false) => {
     setBusy(true)
     try {
-      const res = await fetch('/api/auth/mfa/setup', { method: 'POST' })
-      const text = await res.text()
-      let data: { error?: string; secret?: string; otpauthUrl?: string } = {}
-      try {
-        data = text ? JSON.parse(text) : {}
-      } catch {
-        data = {}
-      }
+      const res = await fetch('/api/auth/mfa/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset }),
+      })
+      const data = await parseJsonResponse<{
+        error?: string
+        secret?: string
+        otpauthUrl?: string
+        qrDataUrl?: string
+      }>(res)
+
       if (!res.ok) {
         toast({
           title: 'Eroare',
@@ -57,6 +81,7 @@ export default function MfaSettings() {
         })
         return
       }
+
       if (!data.secret) {
         toast({
           title: 'Eroare',
@@ -65,16 +90,38 @@ export default function MfaSettings() {
         })
         return
       }
-      setSetupData({ secret: data.secret, otpauthUrl: data.otpauthUrl ?? '' })
+
+      setSetupData({
+        secret: data.secret,
+        otpauthUrl: data.otpauthUrl ?? '',
+        qrDataUrl: data.qrDataUrl,
+      })
       setCode('')
       await loadStatus()
-      toast({ title: 'Pasul 1', description: 'Adăugați contul în Google Authenticator sau Authy' })
+      toast({
+        title: reset ? 'Configurare nouă' : 'Pasul 1',
+        description: reset
+          ? 'Ștergeți intrarea veche din Authenticator, apoi scanați noul cod QR'
+          : 'Scanați codul QR cu Google Authenticator (recomandat)',
+      })
     } catch {
       toast({
         title: 'Eroare',
         description: 'Nu s-a putut contacta serverul',
         variant: 'destructive',
       })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancelSetup = async () => {
+    setBusy(true)
+    try {
+      await fetch('/api/auth/mfa/reset', { method: 'POST' })
+      setSetupData(null)
+      setCode('')
+      await loadStatus()
     } finally {
       setBusy(false)
     }
@@ -92,7 +139,7 @@ export default function MfaSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code.trim() }),
       })
-      const data = await res.json()
+      const data = await parseJsonResponse<{ error?: string }>(res)
       if (!res.ok) {
         toast({ title: 'Eroare', description: data.error ?? 'Activare eșuată', variant: 'destructive' })
         return
@@ -118,7 +165,7 @@ export default function MfaSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code.trim() }),
       })
-      const data = await res.json()
+      const data = await parseJsonResponse<{ error?: string }>(res)
       if (!res.ok) {
         toast({ title: 'Eroare', description: data.error ?? 'Dezactivare eșuată', variant: 'destructive' })
         return
@@ -155,7 +202,8 @@ export default function MfaSettings() {
           Autentificare în doi pași (MFA)
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Obligatoriu pentru Manager și Proprietar organizație. Folosiți Google Authenticator, Authy sau similar.
+          Obligatoriu pentru Manager și Proprietar organizație. Adresa de e-mail din cont nu contează — folosiți
+          Google Authenticator sau Authy.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -167,20 +215,39 @@ export default function MfaSettings() {
         </div>
 
         {!status.enabled && !setupData && (
-          <Button onClick={startSetup} disabled={busy}>
+          <Button onClick={() => startSetup(false)} disabled={busy}>
             Configurează MFA
           </Button>
         )}
 
         {setupData && !status.enabled && (
           <div className="space-y-4 rounded-lg border bg-gray-50 p-4">
-            <p className="text-sm font-medium">Pasul 1 — Adăugați în aplicația de autentificare</p>
-            <p className="text-xs text-gray-600 break-all">
-              Cheie secretă: <code className="bg-white px-1 py-0.5 rounded">{setupData.secret}</code>
+            <p className="text-sm font-medium">Pasul 1 — Scanați codul QR (recomandat)</p>
+            {setupData.qrDataUrl && (
+              <div className="flex justify-center">
+                <img
+                  src={setupData.qrDataUrl}
+                  alt="Cod QR MFA"
+                  width={200}
+                  height={200}
+                  className="rounded border bg-white p-2"
+                />
+              </div>
+            )}
+            <p className="text-xs text-gray-500 text-center">
+              Google Authenticator → + → Scanați cod QR
             </p>
-            <p className="text-xs text-gray-500">
-              În Google Authenticator: + → Introducere manuală → Nume: ArcaLife → Cheie: secretul de mai sus
-            </p>
+
+            <details className="text-xs text-gray-600">
+              <summary className="cursor-pointer font-medium">Introducere manuală (dacă QR nu funcționează)</summary>
+              <p className="mt-2 break-all">
+                Cheie: <code className="bg-white px-1 py-0.5 rounded">{setupData.secret}</code>
+              </p>
+              <p className="mt-1 text-gray-500">
+                Tip: <strong>Timp</strong> (TOTP), nu contor. Nume cont: ArcaLife
+              </p>
+            </details>
+
             <div className="space-y-2">
               <Label htmlFor="mfa-enable-code">Pasul 2 — Cod din aplicație (6 cifre)</Label>
               <Input
@@ -192,11 +259,14 @@ export default function MfaSettings() {
                 placeholder="000000"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button onClick={enableMfa} disabled={busy}>
                 Activează MFA
               </Button>
-              <Button variant="outline" onClick={() => setSetupData(null)} disabled={busy}>
+              <Button variant="outline" onClick={() => startSetup(true)} disabled={busy}>
+                Regenerează QR
+              </Button>
+              <Button variant="outline" onClick={cancelSetup} disabled={busy}>
                 Anulează
               </Button>
             </div>

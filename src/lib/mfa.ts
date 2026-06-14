@@ -96,8 +96,8 @@ export function verifyTotp(secret: string, token: string): boolean {
   if (!/^\d{6}$/.test(normalized)) return false
 
   const now = Date.now()
-  // Allow ±1 time step (30s) for clock skew
-  for (let step = -1; step <= 1; step++) {
+  // Allow ±5 time steps (~2.5 min) for clock skew and slow entry
+  for (let step = -5; step <= 5; step++) {
     if (generateTotpAt(secret, now + step * 30_000) === normalized) {
       return true
     }

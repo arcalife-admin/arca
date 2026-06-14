@@ -3,6 +3,7 @@ export { dynamic } from '@/lib/api-config'
 import { NextResponse } from 'next/server'
 import { requireAuth, isAuthError } from '@/lib/require-auth'
 import { db } from '@/lib/db'
+import { buildMfaSetupPayload } from '@/lib/mfa-setup'
 
 /** Current user's MFA status (for profile settings). */
 export async function GET() {
@@ -14,6 +15,7 @@ export async function GET() {
     const user = await prisma.user.findUnique({
       where: { id: auth.user.id },
       select: {
+        email: true,
         twoFactorEnabled: true,
         twoFactorSecret: true,
         role: true,
@@ -24,9 +26,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Utilizator negăsit' }, { status: 404 })
     }
 
+    const pendingSetup = Boolean(user.twoFactorSecret && !user.twoFactorEnabled)
+
+    let pendingSetupData: {
+      secret: string
+      otpauthUrl: string
+      qrDataUrl: string
+    } | null = null
+
+    if (pendingSetup && user.twoFactorSecret) {
+      pendingSetupData = await buildMfaSetupPayload(user.email, user.twoFactorSecret)
+    }
+
     return NextResponse.json({
       enabled: user.twoFactorEnabled,
-      pendingSetup: Boolean(user.twoFactorSecret && !user.twoFactorEnabled),
+      pendingSetup,
+      pendingSetupData,
       isPrivileged:
         user.role === 'ORGANIZATION_OWNER' || user.role === 'MANAGER',
     })

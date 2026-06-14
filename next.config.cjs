@@ -24,7 +24,7 @@ const nextConfig = {
     skipTrailingSlashRedirect: true,
     instrumentationHook: true,
     // Keep crypto/MFA libs out of the webpack bundle (server-only)
-    serverComponentsExternalPackages: ['otplib'],
+    serverComponentsExternalPackages: ['otplib', 'qrcode'],
   },
   // Configure route settings to make dashboard pages dynamic
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],

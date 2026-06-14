@@ -1,9 +1,10 @@
 export { dynamic } from '@/lib/api-config'
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, isAuthError, hasManagerPermissions } from '@/lib/require-auth'
 import { db } from '@/lib/db'
-import { generateTotpSecret, buildTotpUri } from '@/lib/mfa'
+import { generateTotpSecret } from '@/lib/mfa'
+import { buildMfaSetupPayload } from '@/lib/mfa-setup'
 
 function isMissingMfaColumnError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
@@ -11,12 +12,16 @@ function isMissingMfaColumnError(error: unknown): boolean {
   return (
     msg.includes('twofactorenabled') ||
     msg.includes('twofactorsecret') ||
-    msg.includes('column') && msg.includes('does not exist')
+    (msg.includes('column') && msg.includes('does not exist'))
   )
 }
 
-/** Generate a TOTP secret for the authenticated user (not yet enabled). */
-export async function POST() {
+/**
+ * Generate or reuse a TOTP secret for MFA setup.
+ * Reuses an existing pending secret so re-clicks don't desync Authenticator.
+ * Pass { "reset": true } to discard a pending setup and start fresh.
+ */
+export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth()
     if (isAuthError(auth)) return auth
@@ -25,10 +30,18 @@ export async function POST() {
       return NextResponse.json({ error: 'Permisiuni insuficiente' }, { status: 403 })
     }
 
+    let reset = false
+    try {
+      const body = await request.json()
+      reset = Boolean(body?.reset)
+    } catch {
+      // empty body is fine
+    }
+
     const prisma = db.getPrismaClient()
     const user = await prisma.user.findUnique({
       where: { id: auth.user.id },
-      select: { email: true, twoFactorEnabled: true },
+      select: { email: true, twoFactorEnabled: true, twoFactorSecret: true },
     })
 
     if (!user) {
@@ -39,16 +52,24 @@ export async function POST() {
       return NextResponse.json({ error: 'MFA este deja activat' }, { status: 400 })
     }
 
-    const secret = generateTotpSecret()
+    let secret: string
 
-    await prisma.user.update({
-      where: { id: auth.user.id },
-      data: { twoFactorSecret: secret },
-    })
+    if (user.twoFactorSecret && !reset) {
+      // Reuse pending secret — do not rotate on every button click
+      secret = user.twoFactorSecret
+    } else {
+      secret = generateTotpSecret()
+      await prisma.user.update({
+        where: { id: auth.user.id },
+        data: { twoFactorSecret: secret, twoFactorEnabled: false },
+      })
+    }
+
+    const payload = await buildMfaSetupPayload(user.email, secret)
 
     return NextResponse.json({
-      secret,
-      otpauthUrl: buildTotpUri(user.email, secret),
+      ...payload,
+      reused: Boolean(user.twoFactorSecret && !reset),
     })
   } catch (error) {
     console.error('MFA setup error:', error)
