@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { translateAuthError } from '@/lib/auth-errors'
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams()
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -32,7 +32,6 @@ export default function LoginPage() {
         setError(translateAuthError(result?.error ?? 'CredentialsSignin'))
       } else {
         const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard'
-        // Full navigation ensures middleware sees the freshly-set session cookie.
         window.location.href = callbackUrl
       }
     } catch {
@@ -109,5 +108,19 @@ export default function LoginPage() {
         </form>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
