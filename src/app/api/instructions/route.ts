@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { uploadImage } from '@/lib/cloudinary';
 import { v2 as cloudinary } from 'cloudinary';
+import { requireAuth, requireManager, isAuthError } from '@/lib/require-auth';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -45,6 +46,9 @@ function convertToEmbedUrl(url: string): string {
 // GET - Fetch all videos and images
 export async function GET() {
   try {
+    const auth = await requireAuth();
+    if (isAuthError(auth)) return auth;
+
     const [videos, images] = await Promise.all([
       prisma.instructionVideo.findMany({
         orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
@@ -67,6 +71,9 @@ export async function GET() {
 // POST - Add new video or image
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireManager();
+    if (isAuthError(auth)) return auth;
+
     const contentType = request.headers.get('content-type');
 
     if (contentType?.includes('multipart/form-data')) {

@@ -1,10 +1,14 @@
 export { dynamic } from '@/lib/api-config'
 
 import { NextRequest } from 'next/server'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
 
 const OFFICIAL_SOURCE_SITES = ['anm.ro', 'ema.europa.eu', 'pubmed.ncbi.nlm.nih.gov']
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth()
+  if (isAuthError(auth)) return auth
+
   const query = req.nextUrl.searchParams.get('q')
   const officialOnly = req.nextUrl.searchParams.get('official') === '1'
   const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY

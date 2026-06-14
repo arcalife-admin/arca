@@ -3,6 +3,7 @@ export { dynamic } from '@/lib/api-config'
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { v2 as cloudinary } from 'cloudinary';
+import { requireManager, isAuthError } from '@/lib/require-auth';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -17,6 +18,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireManager();
+    if (isAuthError(auth)) return auth;
+
     const { id } = params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'video' or 'image'

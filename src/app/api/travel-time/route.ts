@@ -1,6 +1,7 @@
 export { dynamic } from '@/lib/api-config'
 
 import { NextResponse } from 'next/server'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
 
 // Haversine formula to calculate distance between two points
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -16,6 +17,9 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (isAuthError(auth)) return auth
+
   const { searchParams } = new URL(request.url)
   const fromLat = searchParams.get('fromLat')
   const fromLon = searchParams.get('fromLon')

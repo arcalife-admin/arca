@@ -29,6 +29,10 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Utilizator negăsit')
           }
 
+          if (!user.isActive || user.isDisabled) {
+            throw new Error('Cont dezactivat')
+          }
+
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password

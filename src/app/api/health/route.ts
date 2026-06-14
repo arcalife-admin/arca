@@ -1,37 +1,16 @@
 export { dynamic } from '@/lib/api-config'
 
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { checkEnvironment } from '@/lib/env-check';
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    // Check environment
-    const envCheck = checkEnvironment();
+    const dbHealth = await db.healthCheck()
+    const statusCode = dbHealth.status === 'healthy' ? 200 : 503
 
-    // Check database health
-    const dbHealth = await db.healthCheck();
-
-    const healthStatus = {
-      status: dbHealth.status === 'healthy' ? 'ok' : 'error',
-      timestamp: new Date().toISOString(),
-      environment: envCheck,
-      database: dbHealth,
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-    };
-
-    const statusCode = dbHealth.status === 'healthy' ? 200 : 503;
-
-    return NextResponse.json(healthStatus, { status: statusCode });
+    return NextResponse.json({ status: dbHealth.status === 'healthy' ? 'ok' : 'error' }, { status: statusCode })
   } catch (error) {
-    console.error('❌ Health check failed:', error);
-
-    return NextResponse.json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Eroare necunoscută',
-      environment: checkEnvironment(),
-    }, { status: 500 });
+    console.error('Health check failed:', error)
+    return NextResponse.json({ status: 'error' }, { status: 503 })
   }
-} 
+}

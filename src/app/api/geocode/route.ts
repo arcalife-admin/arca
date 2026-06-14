@@ -1,8 +1,12 @@
 export { dynamic } from '@/lib/api-config'
 
 import { NextResponse } from 'next/server'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (isAuthError(auth)) return auth
+
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
 

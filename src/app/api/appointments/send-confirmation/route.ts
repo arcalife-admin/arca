@@ -1,24 +1,32 @@
 export { dynamic } from '@/lib/api-config'
 
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import nodemailer from 'nodemailer';
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import nodemailer from 'nodemailer'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
 
 export async function POST(request: Request) {
   try {
-    const { patientId } = await request.json();
+    const auth = await requireAuth()
+    if (isAuthError(auth)) return auth
+
+    const { patientId } = await request.json()
     if (!patientId) {
-      return NextResponse.json({ error: 'patientId is required' }, { status: 400 });
+      return NextResponse.json({ error: 'patientId is required' }, { status: 400 })
     }
 
-    // Fetch patient info
-    const patient = await prisma.patient.findUnique({ where: { id: patientId } });
+    const patient = await prisma.patient.findFirst({
+      where: {
+        id: patientId,
+        organizationId: auth.user.organizationId,
+      },
+    })
+
     if (!patient || !patient.email) {
-      return NextResponse.json({ error: 'Pacientul nu a fost găsit sau lipsește adresa de e-mail' }, { status: 404 });
+      return NextResponse.json({ error: 'Pacientul nu a fost găsit sau lipsește adresa de e-mail' }, { status: 404 })
     }
 
-    // Fetch upcoming appointments for the patient
-    const now = new Date();
+    const now = new Date()
     const upcoming = await prisma.appointment.findMany({
       where: {
         patientId,
@@ -29,9 +37,8 @@ export async function POST(request: Request) {
       orderBy: {
         startTime: 'asc',
       },
-    });
+    })
 
-    // Build email content
     const htmlContent = `
       <p>Dear ${patient.firstName || ''},</p>
       <p>Here is the confirmation of your upcoming appointment${upcoming.length > 1 ? 's' : ''}:</p>
@@ -45,32 +52,31 @@ export async function POST(request: Request) {
       </ul>
       <p>If you have any questions, please contact us.</p>
       <p>Best regards,<br/>Your Dental Clinic</p>
-    `;
+    `
 
-    // Configure nodemailer transport
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,
-      secure: false, // upgrade later with STARTTLS
+      secure: false,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-    });
+    })
 
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to: patient.email,
       subject: 'Confirmare programare',
       html: htmlContent,
-    });
+    })
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error sending confirmation email:', error);
+    console.error('Error sending confirmation email:', error)
     return NextResponse.json(
       { error: 'Trimiterea e-mailului de confirmare a eșuat' },
       { status: 500 }
-    );
+    )
   }
-} 
+}

@@ -1,10 +1,10 @@
 export { dynamic } from '@/lib/api-config'
 
 import { NextResponse } from 'next/server'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
 
-// Haversine formula to calculate distance between two points
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Earth's radius in kilometers
+  const R = 6371
   const dLat = (lat2 - lat1) * Math.PI / 180
   const dLon = (lon2 - lon1) * Math.PI / 180
   const a =
@@ -16,6 +16,13 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 export async function GET(request: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Neautorizat' }, { status: 404 })
+  }
+
+  const auth = await requireAuth()
+  if (isAuthError(auth)) return auth
+
   const { searchParams } = new URL(request.url)
   const fromLat = searchParams.get('fromLat')
   const fromLon = searchParams.get('fromLon')
@@ -33,9 +40,8 @@ export async function GET(request: Request) {
 
   const distanceKm = calculateDistance(fromLatNum, fromLonNum, toLatNum, toLonNum)
 
-  // Calculate travel times
-  const drivingTimeMinutes = Math.round(distanceKm * 2.5) // ~24 km/h average in city traffic
-  const cyclingTimeMinutes = Math.round(distanceKm * 6) // ~10 km/h average in city
+  const drivingTimeMinutes = Math.round(distanceKm * 2.5)
+  const cyclingTimeMinutes = Math.round(distanceKm * 6)
 
   return NextResponse.json({
     coordinates: {
@@ -57,4 +63,4 @@ export async function GET(request: Request) {
       }
     }
   })
-} 
+}

@@ -1,6 +1,7 @@
 export { dynamic } from '@/lib/api-config'
 
 import { NextRequest } from 'next/server'
+import { requireAuth, isAuthError } from '@/lib/require-auth'
 
 // Medical terminology and their variations
 const MEDICAL_TERMS = {
@@ -99,6 +100,9 @@ function analyzeMedicalText(text: string, question: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuth()
+    if (isAuthError(auth)) return auth
+
     const { url, question } = await req.json()
 
     // Fetch the webpage content

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { uploadImage } from '@/lib/cloudinary'
+import { isPublicRegistrationEnabled } from '@/lib/require-auth'
 
 const addressSchema = z.object({
   display_name: z.string(),
@@ -66,6 +67,13 @@ const registerSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    if (!isPublicRegistrationEnabled()) {
+      return NextResponse.json(
+        { message: 'Înregistrarea publică este dezactivată' },
+        { status: 403 }
+      )
+    }
+
     const formData = await req.formData()
     const body = Object.fromEntries(formData.entries())
 
