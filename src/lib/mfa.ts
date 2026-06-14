@@ -105,7 +105,7 @@ export function verifyTotp(secret: string, token: string): boolean {
   return false
 }
 
+/** Opt-in only: set ENFORCE_MFA_FOR_PRIVILEGED=true to require MFA for manager/owner roles. */
 export function isMfaEnforcementEnabled(): boolean {
-  if (process.env.ENFORCE_MFA_FOR_PRIVILEGED === 'false') return false
-  return process.env.NODE_ENV === 'production'
+  return process.env.ENFORCE_MFA_FOR_PRIVILEGED === 'true'
 }

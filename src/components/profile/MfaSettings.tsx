@@ -202,8 +202,8 @@ export default function MfaSettings() {
           Autentificare în doi pași (MFA)
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Obligatoriu pentru Manager și Proprietar organizație. Adresa de e-mail din cont nu contează — folosiți
-          Google Authenticator sau Authy.
+          Opțional, dar recomandat pentru Manager și Proprietar organizație. Adresa de e-mail din cont nu contează —
+          folosiți Google Authenticator sau Authy.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
