@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
+import { Button } from '@/components/ui/button'
 import { DEFAULT_COUNTRY } from '@/lib/intake/field-registry'
 
 const healthInsuranceSchema = z.preprocess(
@@ -376,13 +377,9 @@ export default function PatientForm({
         </div>
 
         <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={!isValid || isSubmitting}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={!isValid || isSubmitting}>
             {isSubmitting ? 'Se salvează...' : buttonText}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

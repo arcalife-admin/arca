@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { treatmentTypes } from '@/data/treatmentTypes'
 import { cn } from '@/lib/utils'
 import { useSession } from 'next-auth/react'
@@ -217,20 +218,15 @@ function NewAppointmentForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={props.onCancel}
-          className="px-4 py-2 border rounded"
-        >
+        <Button type="button" variant="outline" onClick={props.onCancel}>
           Anulare
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
           disabled={!props.selectedType || !props.selectedPatient || (!isPendingMode && !props.selectedPractitioner)}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
         >
           Creare programare
-        </button>
+        </Button>
       </div>
     </div>
   );

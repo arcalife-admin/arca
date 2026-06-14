@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { MapPin, Car, Bike, Clock, Navigation } from 'lucide-react'
 
 interface LocationModalProps {
@@ -170,13 +171,10 @@ export function LocationModal({ isOpen, onClose, address, clinicLocation }: Loca
           </Card>
 
           {/* Action Button */}
-          <button
-            onClick={openInMaps}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-          >
+          <Button onClick={openInMaps} className="w-full">
             <Navigation className="w-4 h-4" />
             Deschide în hărți
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

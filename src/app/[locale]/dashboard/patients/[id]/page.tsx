@@ -5390,7 +5390,7 @@ Contactați imediat clinica pentru această urmărire importantă.`
                               <div className="font-mono font-bold text-lg">
                                 {treatment.toothNumber ? `#${treatment.toothNumber}` : 'Fără dinte'}
                               </div>
-                              <div className="px-2 py-1 rounded bg-blue-600 text-white text-sm font-medium">
+                              <div className="px-2 py-1 rounded bg-primary text-primary-foreground text-sm font-medium">
                                 {treatment.code.toUpperCase()}
                               </div>
                               <span className="font-medium text-gray-900">

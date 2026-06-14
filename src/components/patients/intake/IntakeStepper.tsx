@@ -16,7 +16,7 @@ export default function IntakeStepper({ currentStep }: { currentStep: StepId }) 
           <div className="flex items-center shrink-0">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep === step.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+                currentStep === step.id ? 'bg-primary text-primary-foreground' : 'bg-gray-200 text-gray-600'
               }`}
             >
               {step.number}

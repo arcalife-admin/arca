@@ -64,7 +64,7 @@ export default function CallPlayer() {
   const getStatusColor = () => {
     switch (currentCall?.status) {
       case 'dialing':
-        return 'bg-blue-600 hover:bg-blue-700';
+        return 'bg-primary hover:bg-primary/90';
       case 'ringing':
         return 'bg-yellow-600 hover:bg-yellow-700';
       case 'connected':
