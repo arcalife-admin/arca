@@ -146,6 +146,12 @@ function LoginForm() {
             <div className="text-red-500 text-sm text-center">{error}</div>
           )}
 
+          <div className="text-center">
+            <Link href="/forgot-password" className="text-sm font-medium text-red-500 hover:text-red-600">
+              Ați uitat parola?
+            </Link>
+          </div>
+
           <div>
             <button
               type="submit"

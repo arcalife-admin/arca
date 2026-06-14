@@ -67,6 +67,8 @@ model User {
   lastLoginAt                DateTime?
   twoFactorEnabled           Boolean                @default(false)
   twoFactorSecret            String?
+  passwordResetToken         String?
+  passwordResetExpires       DateTime?
   activityLogs               ActivityLog[]          @relation("ActivityLogUser")
   appointments               Appointment[]
   addedBoardMembers          BoardMember[]          @relation("BoardMemberAdder")

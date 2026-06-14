@@ -11,6 +11,9 @@ const RATE_LIMITED_PATHS = [
   '/api/auth/signin',
   '/api/auth/callback/credentials',
   '/api/auth/mfa/check',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/user/change-password',
 ]
 
 function isPublicRegistrationEnabled(): boolean {

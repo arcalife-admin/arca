@@ -15,6 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronRight, Palette, Settings, Euro } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import MfaSettings from '@/components/profile/MfaSettings'
+import ChangePasswordSettings from '@/components/profile/ChangePasswordSettings'
 
 interface User {
   id: string
@@ -383,6 +384,8 @@ export default function ProfilePage() {
             )}
           </div>
         )}
+
+        <ChangePasswordSettings />
 
         <MfaSettings />
 
