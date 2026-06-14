@@ -10,6 +10,166 @@ function hasManagerPermissions(userRole: string): boolean {
   return userRole === 'ORGANIZATION_OWNER' || userRole === 'MANAGER'
 }
 
+type ProcedureRevenueRecord = {
+  paymentAmount: number | null
+  cost: number | null
+  quantity: number
+  code: { price: number }
+}
+
+function getProcedureRevenue(procedure: ProcedureRevenueRecord): number {
+  if (procedure.paymentAmount != null) return procedure.paymentAmount
+  if (procedure.cost != null) return procedure.cost
+  return (procedure.code?.price || 0) * (procedure.quantity || 1)
+}
+
+function getPreviousPeriodRange(period: string, endDate: Date): { startDate: Date; endDate: Date } {
+  switch (period) {
+    case 'quarter': {
+      const quarterStart = Math.floor(endDate.getMonth() / 3) * 3
+      const previousQuarterStart = quarterStart - 3
+      const year = previousQuarterStart < 0 ? endDate.getFullYear() - 1 : endDate.getFullYear()
+      const month = previousQuarterStart < 0 ? previousQuarterStart + 12 : previousQuarterStart
+      return {
+        startDate: new Date(year, month, 1),
+        endDate: new Date(endDate.getFullYear(), quarterStart, 0, 23, 59, 59, 999),
+      }
+    }
+    case 'year':
+      return {
+        startDate: new Date(endDate.getFullYear() - 1, 0, 1),
+        endDate: new Date(endDate.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      }
+    default:
+      return {
+        startDate: new Date(endDate.getFullYear(), endDate.getMonth() - 1, 1),
+        endDate: new Date(endDate.getFullYear(), endDate.getMonth(), 0, 23, 59, 59, 999),
+      }
+  }
+}
+
+async function getOrganizationRevenue(
+  organizationId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<number> {
+  const dateFilter =
+    startDate && endDate
+      ? { paidAt: { gte: startDate, lte: endDate } }
+      : {}
+
+  const [procedures, shopPurchases] = await Promise.all([
+    prisma.surgicalProcedure.findMany({
+      where: {
+        isPaid: true,
+        patient: { organizationId },
+        ...dateFilter,
+      },
+      select: {
+        paymentAmount: true,
+        cost: true,
+        quantity: true,
+        code: { select: { price: true } },
+      },
+    }),
+    prisma.shopPurchase.findMany({
+      where: {
+        isPaid: true,
+        patient: { organizationId },
+        ...dateFilter,
+      },
+      select: { totalAmount: true },
+    }),
+  ])
+
+  const procedureRevenue = procedures.reduce((sum, procedure) => sum + getProcedureRevenue(procedure), 0)
+  const shopRevenue = shopPurchases.reduce((sum, purchase) => sum + purchase.totalAmount, 0)
+
+  return procedureRevenue + shopRevenue
+}
+
+async function getAppointmentCompletionRate(
+  organizationId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<number> {
+  const [totalAppointments, completedAppointments] = await Promise.all([
+    prisma.appointment.count({
+      where: {
+        practitioner: { organizationId },
+        startTime: { gte: startDate, lte: endDate },
+      },
+    }),
+    prisma.appointment.count({
+      where: {
+        practitioner: { organizationId },
+        startTime: { gte: startDate, lte: endDate },
+        status: 'COMPLETED',
+      },
+    }),
+  ])
+
+  return totalAppointments > 0 ? Math.round((completedAppointments / totalAppointments) * 100) : 0
+}
+
+async function buildRevenueTrends(
+  organizationId: string,
+  dailyTrends: Array<{ date: string; appointments: number; tasks: number }>
+) {
+  if (dailyTrends.length === 0) return []
+
+  const trendStart = new Date(`${dailyTrends[0].date}T00:00:00.000Z`)
+  const trendEnd = new Date(`${dailyTrends[dailyTrends.length - 1].date}T23:59:59.999Z`)
+
+  const [procedures, shopPurchases] = await Promise.all([
+    prisma.surgicalProcedure.findMany({
+      where: {
+        isPaid: true,
+        paidAt: { gte: trendStart, lte: trendEnd },
+        patient: { organizationId },
+      },
+      select: {
+        paidAt: true,
+        paymentAmount: true,
+        cost: true,
+        quantity: true,
+        code: { select: { price: true } },
+      },
+    }),
+    prisma.shopPurchase.findMany({
+      where: {
+        isPaid: true,
+        paidAt: { gte: trendStart, lte: trendEnd },
+        patient: { organizationId },
+      },
+      select: {
+        paidAt: true,
+        totalAmount: true,
+      },
+    }),
+  ])
+
+  const revenueByDate = new Map<string, number>()
+
+  for (const procedure of procedures) {
+    if (!procedure.paidAt) continue
+    const date = procedure.paidAt.toISOString().split('T')[0]
+    revenueByDate.set(date, (revenueByDate.get(date) || 0) + getProcedureRevenue(procedure))
+  }
+
+  for (const purchase of shopPurchases) {
+    if (!purchase.paidAt) continue
+    const date = purchase.paidAt.toISOString().split('T')[0]
+    revenueByDate.set(date, (revenueByDate.get(date) || 0) + purchase.totalAmount)
+  }
+
+  return dailyTrends.map(trend => ({
+    date: trend.date,
+    revenue: revenueByDate.get(trend.date) || 0,
+    appointments: trend.appointments,
+  }))
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -379,6 +539,32 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.appointmentCount - a.appointmentCount)
       .slice(0, 5)
 
+    const previousPeriod = getPreviousPeriodRange(period, endDate)
+    const [
+      totalRevenue,
+      revenueThisPeriod,
+      revenuePreviousPeriod,
+      staffEfficiencyPercentage,
+      staffEfficiencyPreviousPeriod,
+      revenueTrends,
+    ] = await Promise.all([
+      getOrganizationRevenue(session.user.organizationId),
+      getOrganizationRevenue(session.user.organizationId, startDate, endDate),
+      getOrganizationRevenue(session.user.organizationId, previousPeriod.startDate, previousPeriod.endDate),
+      getAppointmentCompletionRate(session.user.organizationId, startDate, endDate),
+      getAppointmentCompletionRate(session.user.organizationId, previousPeriod.startDate, previousPeriod.endDate),
+      buildRevenueTrends(session.user.organizationId, dailyTrends),
+    ])
+
+    const inactiveUsers = totalUsers - activeUsers
+    const userActivity = {
+      activeUsers,
+      inactiveUsers,
+      totalUsers,
+      activePercentage: totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0,
+      inactivePercentage: totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0,
+    }
+
     // Build comprehensive response
     const analytics = {
       period,
@@ -401,6 +587,11 @@ export async function GET(request: NextRequest) {
         totalLeaveRequests,
         pendingLeaveRequests,
         averageAppointmentDuration: Math.round(averageAppointmentDuration._avg.duration || 0),
+        totalRevenue,
+        revenueThisPeriod,
+        revenuePreviousPeriod,
+        staffEfficiencyPercentage,
+        staffEfficiencyChange: staffEfficiencyPercentage - staffEfficiencyPreviousPeriod,
       },
 
       // Breakdown data
@@ -439,6 +630,8 @@ export async function GET(request: NextRequest) {
       // Performance data
       topPractitioners,
       dailyTrends,
+      revenueTrends,
+      userActivity,
 
       // Recent activity
       recentActivity: {

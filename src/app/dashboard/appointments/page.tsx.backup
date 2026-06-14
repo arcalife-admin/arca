@@ -7,9 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { EnhancedAppointmentForm } from '@/components/appointments/EnhancedAppointmentForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Patient } from '@/types/database';
-import { useAppointmentProcedureTypes } from '@/hooks/useAppointmentProcedureTypes';
-import { resolveAppointmentType } from '@/lib/appointment-procedure-types';
+import { Patient } from '@/types/prisma';
+import { treatmentTypes } from '@/data/treatmentTypes';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, isWithinInterval, addMonths, endOfMonth, startOfMonth, addDays, isSameDay } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -17,41 +16,24 @@ import { Appointment, PendingAppointment } from '@/types/appointment';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { useSession } from 'next-auth/react';
-import { Settings, ArrowLeft, ArrowRight, Calendar as CalendarIcon, Printer, Search } from 'lucide-react';
+import { Settings, ArrowLeft, ArrowRight, Calendar as CalendarIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { convertPendingToAppointment } from '@/lib/appointments';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { AppointmentStatusType, AppointmentStatusMetadata, APPOINTMENT_STATUS_CONFIGS, getStatusConfig, getStatusDisplay, getStatusTooltip } from '@/types/appointment-status';
-import { RunningLateModal, ImportantNoteModal, StatusConfirmationModal, ClearImportantModal } from '@/components/appointments/AppointmentStatusModals';
-import { logActivityClient, LOG_ACTIONS, ENTITY_TYPES, LOG_SEVERITY } from '@/lib/activity-logger';
-import QuickFindEmptySpotModal from '@/components/appointments/QuickFindEmptySpotModal';
-import {
-  fetchLeaveBlocks,
-  isTimeSlotBlocked,
-  LeaveBlock,
-  getSlotPropGetterWithLeaveBlocking,
-  convertLeaveBlocksToEvents,
-  CalendarEvent
-} from '@/lib/calendar-leave-integration';
-import { useClipboard } from '@/hooks/use-clipboard';
-import { printHtmlDocument } from '@/lib/print-html';
 
 const daysOfWeek = [
-  'Luni',
-  'Marți',
-  'Miercuri',
-  'Joi',
-  'Vineri',
-  'Sâmbătă',
-  'Duminică',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
 ];
 
-import { ro as dateFnsRo } from 'date-fns/locale';
-import { calendarCulture, calendarMessages } from '@/lib/date-locale';
-const locales = { ro: dateFnsRo };
+const locales = { 'en-US': require('date-fns/locale/en-US') };
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -76,37 +58,27 @@ function AppointmentContent({
   appointmentDuration,
   isShortAppointment,
   getTextColor,
-  procedureTypes,
+  treatmentTypes,
   onPatientClick
 }: {
   event: any;
   appointmentDuration: number;
   isShortAppointment: boolean;
   getTextColor: (color: string) => string;
-  procedureTypes: any[];
+  treatmentTypes: any[];
   onPatientClick: (patientId: string) => void;
 }) {
-  const eventRef = useRef<HTMLDivElement>(null);
-  const { clipboardData } = useClipboard();
-
-  // If this is a leave block, render nothing inside it. The styling is handled by eventPropGetter.
-  if (event.isLeaveBlock) {
-    return <div className="h-full w-full" />;
-  }
-
-  const { appointment } = event;
-  const patient = appointment?.patient;
-
   // Get the appointment type and its color for dynamic text color
-  const type = resolveAppointmentType(event.appointment?.type, procedureTypes);
+  const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
+    ? event.appointment.type
+    : treatmentTypes.find(t => t.name === String(event.appointment?.type));
   const backgroundColor = type?.color || '#60a5fa';
   const textColor = getTextColor(backgroundColor);
   const shadowColor = textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
 
+  const patient = event.patient;
+  const appointment = event.appointment;
   const isReservation = !patient || appointment?.isReservation;
-
-  // Check if patient has no insurance (for emoji indicator)
-  const hasNoInsurance = patient && !patient.healthInsurance;
 
   // Base text styles
   const baseTextStyle = {
@@ -177,7 +149,7 @@ function AppointmentContent({
           fontWeight: 'bold',
           fontSize: 'inherit'
         }}>
-          {appointment?.notes || 'Rezervare'}
+          {appointment?.notes || 'Reservation'}
         </span>
       </div>
     );
@@ -185,7 +157,7 @@ function AppointmentContent({
 
   // Regular appointment with patient
   if (isShortAppointment) {
-    // Short appointment (≤20 minutes) - show "Patient Name - Notițe" horizontally
+    // Short appointment (≤20 minutes) - show "Patient Name - Notes" horizontally
     const displayText = appointment?.notes
       ? `${event.title} - ${appointment.notes}`
       : event.title;
@@ -205,25 +177,9 @@ function AppointmentContent({
           fontSize: '10px',
           fontWeight: 'bold',
           lineHeight: '1.2',
-          zIndex: 15,
-          position: 'relative'
+          zIndex: 15
         }}
       >
-        {hasNoInsurance && (
-          <div style={{
-            position: 'absolute',
-            top: '2px',
-            right: '2px',
-            fontSize: '14px',
-            zIndex: 20,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            borderRadius: '3px',
-            padding: '1px 3px',
-            border: '1px solid #333'
-          }}>
-            💳
-          </div>
-        )}
         <span style={{
           color: textColor,
           textShadow: `0 1px 3px ${shadowColor}`,
@@ -251,25 +207,9 @@ function AppointmentContent({
         textShadow: `0 1px 3px ${shadowColor}`,
         fontWeight: 'bold',
         lineHeight: '1.2',
-        zIndex: 15,
-        position: 'relative'
+        zIndex: 15
       }}
     >
-      {hasNoInsurance && (
-        <div style={{
-          position: 'absolute',
-          top: '2px',
-          right: '2px',
-          fontSize: '14px',
-          zIndex: 20,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '3px',
-          padding: '1px 3px',
-          border: '1px solid #333'
-        }}>
-          💳
-        </div>
-      )}
       <div
         style={{
           fontSize: '11px',
@@ -303,7 +243,6 @@ function AppointmentContent({
 export default function AppointmentsPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { procedureTypes } = useAppointmentProcedureTypes();
   const [view, setView] = useState<'day' | 'week'>('day');
   const [pendingAppointments, setPendingAppointments] = useState<PendingAppointment[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -327,8 +266,6 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [calendarColor, setCalendarColor] = useState<string | null>(null);
   const [practitionerColors, setPractitionerColors] = useState<Record<string, string>>({});
-  const [leaveBlocks, setLeaveBlocks] = useState<LeaveBlock[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [colorLoaded, setColorLoaded] = useState(false);
   const [visibleDays, setVisibleDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
   const tooltipAnimationFrame = useRef<number>();
@@ -347,37 +284,6 @@ export default function AppointmentsPage() {
   const calendarContainerRef = useRef<HTMLDivElement>(null);
   const [pendingContextMenu, setPendingContextMenu] = useState<PendingContextMenuState>(null);
   const [selectedAppointmentPractitionerId, setSelectedAppointmentPractitionerId] = useState<string | null>(null);
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [selectedPrintPractitionerIds, setSelectedPrintPractitionerIds] = useState<string[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState<string>('Salvează ca PDF');
-  const [printDate, setPrintDate] = useState<Date>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1); // tomorrow
-    if (d.getDay() === 0) { // Sunday = 0
-      d.setDate(d.getDate() + 1); // skip to Monday
-    }
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
-  // Detect if this page is rendered inside an iframe (embed=1 query param)
-  const isEmbed = typeof window !== 'undefined' && window.location.search.includes('embed=1');
-  // Use a smaller vertical offset when embedded to utilise the full pane height
-  const calendarHeight = isEmbed ? 'calc(100vh - 120px)' : 'calc(100vh - 200px)';
-
-  // Status modal states
-  const [runningLateModal, setRunningLateModal] = useState<{ isOpen: boolean; appointment: Appointment | null }>({ isOpen: false, appointment: null });
-  const [importantNoteModal, setImportantNoteModal] = useState<{ isOpen: boolean; appointment: Appointment | null }>({ isOpen: false, appointment: null });
-  const [statusConfirmationModal, setStatusConfirmationModal] = useState<{ isOpen: boolean; appointment: Appointment | null; statusType: AppointmentStatusType | null }>({ isOpen: false, appointment: null, statusType: null });
-  const [clearImportantModal, setClearImportantModal] = useState<{ isOpen: boolean; appointment: Appointment | null }>({ isOpen: false, appointment: null });
-  const [isQuickFindModalOpen, setIsQuickFindModalOpen] = useState(false);
-  const [selectedPendingForQuickFind, setSelectedPendingForQuickFind] = useState<any>(null);
-  const [isSchedulingQuickFind, setIsSchedulingQuickFind] = useState(false);
-
-  const formatLocalDate = (date: Date) => {
-    const tzOffset = date.getTimezoneOffset() * 60000; // ms
-    const localISO = new Date(date.getTime() - tzOffset).toISOString();
-    return localISO.split('T')[0];
-  };
 
   useEffect(() => {
     const fetchColor = async () => {
@@ -407,7 +313,7 @@ export default function AppointmentsPage() {
   //   }
   // }, [calendarColor]);
 
-  // Minimal CSS approach - only what's needed for text visibility
+  // Clean CSS approach - surgical fixes without breaking layout
   useEffect(() => {
     const appointmentStyles = document.createElement('style');
     appointmentStyles.id = 'appointment-content-styles';
@@ -429,45 +335,42 @@ export default function AppointmentsPage() {
         display: none !important;
       }
       
-      /* Custom text overlay with strong visibility */
+      /* Clear, minimal approach to text visibility */
       .custom-text-overlay {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        top: 2px;
+        left: 4px;
+        right: 4px;
+        bottom: 2px;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         align-items: flex-start;
-        pointer-events: none; /* let clicks fall through to calendar/resize handle */
+        pointer-events: none;
         z-index: 5;
         font-size: 11px;
         line-height: 1.2;
-        font-weight: 600;
+        font-weight: 500;
         overflow: hidden;
         word-wrap: break-word;
         white-space: normal;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8), -1px -1px 2px rgba(0,0,0,0.8), 1px -1px 2px rgba(0,0,0,0.8), -1px 1px 2px rgba(0,0,0,0.8);
       }
 
       .custom-text-overlay .patient-name {
-        font-weight: 700;
+        font-weight: 600;
         margin-bottom: 1px;
         display: block;
         width: 100%;
-        text-shadow: inherit;
       }
 
       .custom-text-overlay .appointment-notes {
         font-size: 10px;
-        opacity: 1;
+        opacity: 0.9;
         display: block;
         width: 100%;
-        text-shadow: inherit;
       }
 
-      /* Ensure our custom content shows with maximum visibility */
+      /* Ensure our custom content shows and clickable elements work */
       .rbc-event .custom-text-overlay {
         display: flex !important;
         visibility: visible !important;
@@ -478,44 +381,36 @@ export default function AppointmentsPage() {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        color: inherit !important;
       }
 
-      /* Make clickable elements work */
       .custom-text-overlay .clickable {
-        pointer-events: auto;
-      }
-
-      /* Keep default time label hidden */
-      .rbc-event .rbc-event-label {
-        display: none;
-      }
-
-      /* Make resize handles easier to grab but only at edges (4px) */
-      .rbc-addons-dnd-resize-ns-anchor {
-        position: absolute !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 2px !important;   /* ultra-thin edge */
-        z-index: 400 !important;
         pointer-events: auto !important;
       }
 
-      /* TOP grip */
-      .rbc-addons-dnd-resize-ns-anchor:first-of-type {
-        top: -1px !important;
-        cursor: ns-resize !important;
-      }
-
-      /* BOTTOM grip */
-      .rbc-addons-dnd-resize-ns-anchor:last-of-type {
-        bottom: -1px !important;
-        cursor: ns-resize !important;
-      }
-
-      /* Hide the decorative "≡" glyph inside the anchors */
-      .rbc-addons-dnd-resize-ns-icon {
+      /* Hide React Big Calendar's default content that interferes */
+      .rbc-event .rbc-event-content > *:not(.custom-text-overlay) {
         display: none !important;
+      }
+
+      .rbc-event .rbc-event-label {
+        display: none !important;
+      }
+      
+      /* Ensure resize handles work properly */
+      .rbc-event .rbc-addons-dnd-resize-ns-anchor {
+        z-index: 10;
+        pointer-events: auto;
+        background: rgba(255,255,255,0.15);
+        position: absolute;
+        height: 8px;
+      }
+      
+      .rbc-event .rbc-addons-dnd-resize-ns-anchor[data-resize="top"] {
+        top: 0;
+      }
+      
+      .rbc-event .rbc-addons-dnd-resize-ns-anchor[data-resize="bottom"] {
+        bottom: 0;
       }
     `;
     document.head.appendChild(appointmentStyles);
@@ -606,7 +501,6 @@ export default function AppointmentsPage() {
       fetchPendingAppointments();
       fetchScheduleRules();
       fetchCalendarSettings();
-      fetchLeaveBlocksData();
     };
 
     initializeData();
@@ -617,71 +511,6 @@ export default function AppointmentsPage() {
       fetchAppointments();
     }
   }, [selectedPractitionerId, view]);
-
-  useEffect(() => {
-    // Merge leave blocks into current calendarEvents WITHOUT referencing `events` (avoids TDZ)
-    const leaveEvents = convertLeaveBlocksToEvents(leaveBlocks);
-    setCalendarEvents((prev) => {
-      const nonLeave = prev.filter((ev) => !(ev as any).isLeaveBlock);
-      return [...nonLeave, ...leaveEvents];
-    });
-  }, [leaveBlocks]);
-
-  // Update calendarEvents when appointments change
-  useEffect(() => {
-    // Convert appointments to calendar events
-    const appointmentEvents = appointments
-      .filter(appt => appt.startTime && appt.endTime)
-      .map(appt => {
-        const patient = patients.find(p => p.id === appt.patientId);
-
-        // If there's a patient, show patient name
-        // If no patient (reservation), show the note
-        let title;
-        if (patient) {
-          title = `${patient.firstName} ${patient.lastName}`;
-        } else {
-          // No patient - this is a reservation, show the note
-          title = appt.notes || 'Rezervare';
-        }
-
-
-
-        const type = resolveAppointmentType(appt.type, procedureTypes);
-
-        return {
-          id: appt.id,
-          title,
-          start: new Date(appt.startTime),
-          end: new Date(appt.endTime),
-          resourceId: appt.practitionerId,
-          allDay: false,
-          appointment: appt,
-          patient,
-          tooltip: [
-            <span key="type" style={{ color: type?.color || '#60a5fa' }}>
-              {type?.name || 'Appointment'}
-            </span>,
-            appt.notes && <div key="notes">{appt.notes}</div>,
-            patient?.phone && <div key="phone">{patient.phone}</div>
-          ].filter(Boolean)
-        };
-      });
-
-    // Merge with leave events
-    const leaveEvents = convertLeaveBlocksToEvents(leaveBlocks);
-    const allEvents = [...appointmentEvents, ...leaveEvents];
-
-    console.log('Calendar Events Update:', {
-      appointmentsCount: appointments.length,
-      appointmentEventsCount: appointmentEvents.length,
-      leaveEventsCount: leaveEvents.length,
-      totalEventsCount: allEvents.length,
-      appointmentIds: appointmentEvents.map(e => e.id)
-    });
-
-    setCalendarEvents(allEvents);
-  }, [appointments, patients, leaveBlocks, procedureTypes]);
 
   useEffect(() => {
     const practitioners = getAvailablePractitioners(currentDate);
@@ -728,7 +557,7 @@ export default function AppointmentsPage() {
       applyPractitionerColorsToDOM(colorMap);
     } catch (error) {
       console.error('Error fetching practitioners:', error);
-      toast.error('Încărcarea practicienilor a eșuat');
+      toast.error('Failed to fetch practitioners');
     }
   };
 
@@ -773,7 +602,7 @@ export default function AppointmentsPage() {
         
         /* Today's time slots */
         .rbc-today.rbc-time-column[data-resource-id="${practitionerId}"] .rbc-time-slot,
-        .rbc-today.rbc-day-slot[data-resource-id="${practitionerId}"],
+        .rbc-today.rbc-day-slot[data-resource-id="${practitionerId}"] .rbc-time-slot,
         .rbc-today [data-resource-id="${practitionerId}"] .rbc-time-slot {
           background-color: ${color}30 !important;
         }
@@ -799,7 +628,7 @@ export default function AppointmentsPage() {
       const data = await response.json();
       setPatients(data);
     } catch (error) {
-      toast.error('Încărcarea pacienților a eșuat');
+      toast.error('Failed to fetch patients');
     }
   };
 
@@ -820,7 +649,7 @@ export default function AppointmentsPage() {
       const data = await response.json();
       setPendingAppointments(data);
     } catch (error) {
-      toast.error('Încărcarea programărilor în așteptare a eșuat');
+      toast.error('Failed to fetch pending appointments');
     }
   };
 
@@ -830,7 +659,7 @@ export default function AppointmentsPage() {
       const data = await response.json();
       setAppointments(data);
     } catch (error) {
-      toast.error('Încărcarea programărilor a eșuat');
+      toast.error('Failed to fetch appointments');
     }
   };
 
@@ -864,15 +693,6 @@ export default function AppointmentsPage() {
     }
   };
 
-  const fetchLeaveBlocksData = async () => {
-    try {
-      const blocks = await fetchLeaveBlocks();
-      setLeaveBlocks(blocks);
-    } catch (error) {
-      console.error('Error fetching leave blocks:', error);
-    }
-  };
-
   // Broadcast to other panes that appointments changed
   function broadcastRefresh() {
     try {
@@ -880,11 +700,113 @@ export default function AppointmentsPage() {
     } catch { }
   }
 
+  // Debug function to inspect DOM elements
+  const debugDOM = () => {
+    console.log('🔍 DOM INSPECTION:');
+    const events = document.querySelectorAll('.rbc-event');
+    console.log(`Found ${events.length} appointment events`);
 
+    events.forEach((event, index) => {
+      const overlay = event.querySelector('.custom-text-overlay');
+      const content = event.querySelector('.rbc-event-content');
+
+      console.log(`Event ${index + 1}:`, {
+        element: event,
+        hasOverlay: !!overlay,
+        overlayVisible: overlay ? getComputedStyle(overlay).display : 'none',
+        overlayContent: overlay ? overlay.textContent : 'none',
+        overlayStyles: overlay ? {
+          display: getComputedStyle(overlay).display,
+          visibility: getComputedStyle(overlay).visibility,
+          opacity: getComputedStyle(overlay).opacity,
+          color: getComputedStyle(overlay).color,
+          fontSize: getComputedStyle(overlay).fontSize,
+          zIndex: getComputedStyle(overlay).zIndex
+        } : 'none',
+        hasContent: !!content,
+        contentDisplay: content ? getComputedStyle(content).display : 'none',
+        innerHTML: event.innerHTML.substring(0, 200) + '...'
+      });
+    });
+  };
+
+  // Auto-debug DOM after appointments load
+  useEffect(() => {
+    if (appointments.length > 0) {
+      setTimeout(() => {
+        debugDOM();
+      }, 2000); // Wait 2 seconds for DOM to settle
+    }
+  }, [appointments]);
+
+  // Make debugDOM available globally for console use
+  useEffect(() => {
+    (window as any).debugDOM = debugDOM;
+    return () => {
+      delete (window as any).debugDOM;
+    };
+  }, []);
 
   const handleFormSubmit = async (appointment: any) => {
     try {
-      if (appointment.isReservation && appointment.reservationRequest) {
+      // Handle family appointments
+      if (appointment.isFamilyAppointment && appointment.familyAppointmentRequest) {
+        const { familyAppointmentRequest } = appointment;
+        const { selectedPatientCodes, ...baseAppointment } = familyAppointmentRequest;
+
+        // Create multiple appointments, one for each family member in sequence
+
+        const promises = selectedPatientCodes.map(async (patientCode: string, index: number) => {
+          // Try to find patient by both ID and any identifying field
+          const patient = patients.find(p =>
+            p.id === patientCode ||
+            (p as any).patientCode === patientCode ||
+            `${p.firstName} ${p.lastName}` === patientCode
+          );
+          if (!patient) {
+            console.error('Patient not found for code/ID:', patientCode, 'Available patients:', patients.map(p => ({ id: p.id, name: `${p.firstName} ${p.lastName}` })));
+            return;
+          }
+
+
+          // Calculate sequential start times: each appointment starts when the previous one ends
+          const appointmentStartTime = new Date(baseAppointment.startTime.getTime() + (index * baseAppointment.duration * 60000));
+          const appointmentEndTime = new Date(appointmentStartTime.getTime() + baseAppointment.duration * 60000);
+
+          const appointmentData = {
+            ...baseAppointment,
+            patientId: patient.id,
+            endTime: appointmentEndTime,
+            startTime: appointmentStartTime.toISOString(),
+            status: 'SCHEDULED',
+            appointmentType: 'FAMILY',
+            type: baseAppointment.type
+          };
+
+
+
+          const response = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(appointmentData),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Family appointment API error:', { status: response.status, error: errorText });
+            throw new Error(`Failed to create family appointment: ${response.status} ${errorText}`);
+          }
+
+          const result = await response.json();
+
+          return result;
+        });
+
+        await Promise.all(promises);
+        toast.success(`Family appointments created successfully`);
+      }
+      // Handle reservations (both new and editing)
+      else if (appointment.isReservation && appointment.reservationRequest) {
         const { reservationRequest } = appointment;
 
 
@@ -921,24 +843,7 @@ export default function AppointmentsPage() {
 
           const result = await response.json();
 
-          toast.success('Rezervarea a fost actualizată cu succes');
-
-          // Log reservation update
-          await logActivityClient({
-            action: LOG_ACTIONS.UPDATE_APPOINTMENT,
-            entityType: ENTITY_TYPES.APPOINTMENT,
-            entityId: selectedAppointment.id,
-            description: `Actualizat reservation - ${reservationRequest.notes || 'Fără descriere'}`,
-            details: {
-              duration: reservationRequest.duration,
-              practitionerId: reservationRequest.practitionerId,
-              appointmentType: 'RESERVATION',
-              color: reservationRequest.reservationColor
-            },
-            page: '/dashboard/appointments',
-            appointmentId: selectedAppointment.id,
-            severity: LOG_SEVERITY.INFO
-          });
+          toast.success('Reservation updated successfully');
         } else {
           // Creating new reservation - use POST with reservation structure
 
@@ -957,29 +862,11 @@ export default function AppointmentsPage() {
 
           const result = await response.json();
 
-          toast.success('Rezervarea a fost creată cu succes');
-
-          // Log reservation creation
-          await logActivityClient({
-            action: LOG_ACTIONS.CREATE_APPOINTMENT,
-            entityType: ENTITY_TYPES.APPOINTMENT,
-            entityId: result.id,
-            description: `Creat new reservation - ${appointment.reservationRequest?.notes || 'Fără descriere'}`,
-            details: {
-              duration: appointment.reservationRequest?.duration,
-              practitionerId: appointment.reservationRequest?.practitionerId,
-              appointmentType: 'RESERVATION',
-              color: appointment.reservationRequest?.reservationColor
-            },
-            page: '/dashboard/appointments',
-            appointmentId: result.id,
-            severity: LOG_SEVERITY.INFO
-          });
+          toast.success('Reservation created successfully');
         }
       }
       // Handle regular appointments
       else {
-        console.log('handleFormSubmit: Processing as regular appointment');
         const payload = {
           ...appointment,
           startTime: appointment.startTime instanceof Date ? appointment.startTime.toISOString() : appointment.startTime,
@@ -994,44 +881,14 @@ export default function AppointmentsPage() {
 
 
 
-        console.log('handleFormSubmit: Sending payload to API:', payload);
-
         const response = await fetch('/api/appointments', {
           method: appointment.id ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
 
-        console.log('handleFormSubmit: API response status:', response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('handleFormSubmit: API error:', errorText);
-          throw new Error(`Failed to save appointment: ${response.status} ${errorText}`);
-        }
-        const result = await response.json();
-        toast.success(`Programare ${appointment.id ? 'actualizată' : 'creată'} cu succes`);
-
-        // Log appointment creation or update
-        const patient = appointment.patientId ? await fetch(`/api/patients/${appointment.patientId}`).then(r => r.json()).catch(() => null) : null;
-        await logActivityClient({
-          action: appointment.id ? LOG_ACTIONS.UPDATE_APPOINTMENT : LOG_ACTIONS.CREATE_APPOINTMENT,
-          entityType: ENTITY_TYPES.APPOINTMENT,
-          entityId: appointment.id || result.id,
-          description: `${appointment.id ? 'Actualizat' : 'Creat'} appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'}`,
-          details: {
-            duration: appointment.duration,
-            practitionerId: appointment.practitionerId,
-            appointmentType: appointment.appointmentType || 'REGULAR',
-            startTime: appointment.startTime,
-            endTime: appointment.endTime,
-            status: appointment.status
-          },
-          page: '/dashboard/appointments',
-          patientId: appointment.patientId,
-          appointmentId: appointment.id || result.id,
-          severity: LOG_SEVERITY.INFO
-        });
+        if (!response.ok) throw new Error('Failed to save appointment');
+        toast.success(`Appointment ${appointment.id ? 'updated' : 'created'} successfully`);
       }
 
       // Always refresh appointments from the server after save
@@ -1040,7 +897,7 @@ export default function AppointmentsPage() {
       broadcastRefresh();
     } catch (error) {
       console.error('Error saving appointment:', error);
-      toast.error('Salvarea programării a eșuat');
+      toast.error('Failed to save appointment');
       fetchAppointments();
     }
   };
@@ -1057,7 +914,127 @@ export default function AppointmentsPage() {
     resourceTitle: practitioner.firstName + ' ' + practitioner.lastName,
   }));
 
+  const events = appointments
+    .filter(appt => appt.startTime && appt.endTime)
+    .map(appt => {
+      const patient = patients.find(p => p.id === appt.patientId);
 
+      // If there's a patient, show patient name
+      // If no patient (reservation), show the note
+      let title;
+      if (patient) {
+        title = `${patient.firstName} ${patient.lastName}`;
+      } else {
+        // No patient - this is a reservation, show the note
+        title = appt.notes || 'Reservation';
+      }
+
+
+
+      const type = typeof appt.type === 'object' && appt.type !== null
+        ? appt.type
+        : treatmentTypes.find(t => t.name === String(appt.type));
+
+      return {
+        id: appt.id,
+        title,
+        start: new Date(appt.startTime),
+        end: new Date(appt.endTime),
+        resourceId: appt.practitionerId,
+        allDay: false,
+        appointment: appt,
+        patient,
+        tooltip: [
+          <span key="type" style={{ color: type?.color || '#60a5fa' }}>
+            {type?.name || 'Appointment'}
+          </span>,
+          appt.notes && <div key="notes">{appt.notes}</div>,
+          patient?.phone && <div key="phone">{patient.phone}</div>
+        ].filter(Boolean)
+      };
+    });
+
+  // Add a test appointment for debugging (remove this later!)
+  if (events.length === 0 && practitioners.length > 0) {
+    const now = new Date();
+    const testStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
+    const testEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 0, 0);
+    const testEnd2 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 30, 0);
+
+    events.push(
+      // Normal long appointment with patient and notes
+      {
+        id: 'test-appointment-123',
+        title: 'Test Patient',
+        start: testStart,
+        end: testEnd,
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-appointment-123',
+          notes: 'This is a test appointment with notes that should be visible',
+          duration: 60,
+          isReservation: false,
+        } as any,
+        patient: { firstName: 'Test', lastName: 'Patient' } as any,
+        tooltip: [<span key="test">Test Appointment</span>]
+      },
+      // Short appointment (≤20 minutes) with patient and notes - should show "Patient - Notes"
+      {
+        id: 'test-appointment-456',
+        title: 'Jane Doe',
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 20, 0),
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-appointment-456',
+          notes: 'Cleaning',
+          duration: 20,
+          isReservation: false,
+        } as any,
+        patient: { firstName: 'Jane', lastName: 'Doe' } as any,
+        tooltip: [<span key="test2">Short Appointment</span>]
+      },
+      // Regular reservation - should show only notes
+      {
+        id: 'test-reservation-789',
+        title: 'Lunch Break',
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0, 0),
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-reservation-789',
+          notes: 'Lunch Break',
+          duration: 60,
+          isReservation: true,
+        } as any,
+        patient: null,
+        tooltip: [<span key="test3">Reservation</span>]
+      },
+      // Reservation with connected patient - should show person icon
+      {
+        id: 'test-reservation-with-patient-101',
+        title: 'Reserved for John Smith',
+        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 16, 0, 0),
+        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0),
+        resourceId: practitioners[0].id,
+        allDay: false,
+        appointment: {
+          id: 'test-reservation-with-patient-101',
+          notes: 'Reserved slot',
+          duration: 60,
+          isReservation: true,
+          patientId: 'patient-john-smith-123',
+        } as any,
+        patient: null,
+        tooltip: [<span key="test4">Reservation with Patient</span>]
+      }
+    );
+
+
+  }
 
   // Helper function to determine if a color is light or dark
   const isLightColor = (color: string) => {
@@ -1079,7 +1056,7 @@ export default function AppointmentsPage() {
 
   const effectivePractitionerId = view === 'week' ? selectedPractitionerId : null;
   const filteredResources = getAvailableResourcesForCurrentDate();
-  const filteredEvents = calendarEvents.filter(event => {
+  const filteredEvents = events.filter(event => {
     // Filter by practitioner if in week view
     if (view === 'week' && event.resourceId !== effectivePractitionerId) {
       return false;
@@ -1094,7 +1071,7 @@ export default function AppointmentsPage() {
     // Filter by search query
     if (!searchQuery.trim()) return true;
     const search = searchQuery.trim().toLowerCase();
-    const patient = (event as any).patient;
+    const patient = event.patient;
     if (!patient) return false;
 
     return [
@@ -1118,17 +1095,6 @@ export default function AppointmentsPage() {
   // Update handleDateSelect to immediately paste if clipboardData exists and it's a right-click
   const handleDateSelect = (selectInfo: any) => {
     const date = new Date(selectInfo.start);
-
-    // Check if the selected slot is blocked by leave
-    const slotStart = new Date(selectInfo.start);
-    const slotEnd = new Date(selectInfo.end || slotStart.getTime() + 30 * 60 * 1000);
-
-    const blockCheck = isTimeSlotBlocked(selectInfo.start, slotStart, slotEnd, selectInfo.resourceId, leaveBlocks);
-
-    if (blockCheck.isBlocked) {
-      toast.error(blockCheck.reason || 'Nu se poate crea programare în perioada de concediu aprobat');
-      return;
-    }
 
     // Ensure calendar colors are applied correctly after interactions
     const reapplyColors = () => {
@@ -1194,7 +1160,7 @@ export default function AppointmentsPage() {
         y: selectInfo.clientY,
         appointment: {
           startTime: date,
-          endTime: new Date(date.getTime() + 30 * 60 * 1000),
+          endTime: new Date(date.getTime() + 30 * 60000),
           practitionerId: selectInfo.resourceId || selectedPractitionerId,
         } as Appointment,
       });
@@ -1363,14 +1329,14 @@ export default function AppointmentsPage() {
     try {
       const result = await convertPendingToAppointment(appointment, practitionerId);
       if (result) {
-        toast.success('Programarea a fost atribuită cu succes');
+        toast.success('Appointment assigned successfully');
         fetchPendingAppointments();
         fetchAppointments();
       } else {
-        toast.error('Atribuirea programării a eșuat');
+        toast.error('Failed to assign appointment');
       }
     } catch (error) {
-      toast.error('Eroare la atribuirea programării');
+      toast.error('Error assigning appointment');
     }
   };
 
@@ -1388,7 +1354,7 @@ export default function AppointmentsPage() {
     });
   };
 
-  // NEW: Trimite e-mail de confirmare to patient
+  // NEW: Send confirmation email to patient
   const handleSendConfirmationEmail = async (appointment: Appointment) => {
     try {
       const res = await fetch('/api/appointments/send-confirmation', {
@@ -1397,10 +1363,10 @@ export default function AppointmentsPage() {
         body: JSON.stringify({ patientId: appointment.patientId }),
       });
       if (!res.ok) throw new Error('Request failed');
-      toast.success('Email de confirmare trimis');
+      toast.success('Confirmation email sent');
     } catch (error) {
       console.error('Error sending confirmation email', error);
-      toast.error('Trimiterea emailului de confirmare a eșuat');
+      toast.error('Failed to send confirmation email');
     }
   };
 
@@ -1412,200 +1378,31 @@ export default function AppointmentsPage() {
       const list = includeAllFuture ? patientAppointments : [appointment];
       const patient = patients.find(p => p.id === appointment.patientId);
       const html = `<!DOCTYPE html>
-        <html><head><title>Bilet programare</title>
+        <html><head><title>Appointment Ticket</title>
         <style>
-          @page { margin: 0; }
-          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+          body { font-family: Arial, sans-serif; padding: 20px; }
           h1 { font-size: 20px; margin-bottom: 10px; }
           ul { list-style: none; padding: 0; }
           li { margin-bottom: 6px; }
         </style></head><body>
-        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'} – Programări</h1>
+        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'} – Appointments</h1>
         <ul>
-          ${list.map(appt => {
-        const dateStr = new Date(appt.startTime).toLocaleString(undefined, {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        });
-        const typeName = typeof appt.type === 'object' && appt.type !== null ? (appt.type as any).name ?? 'Appointment' : appt.type;
-        return `<li><strong>${dateStr}</strong> – ${typeName}</li>`;
-      }).join('')}
+          ${list.map(appt => `<li><strong>${new Date(appt.startTime).toLocaleString()}</strong> – ${appt.type}</li>`).join('')}
         </ul>
         </body></html>`;
-      printHtmlDocument(html, { delay: 500 });
+      const printWindow = window.open('', '_blank', 'width=600,height=800');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        // Delay print slightly to ensure content is rendered
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
     } catch (error) {
       console.error('Error printing ticket', error);
-      toast.error('Tipărirea biletului a eșuat');
-    }
-  };
-
-  // Status update handlers
-  const handleStatusUpdate = async (appointment: Appointment, statusType: AppointmentStatusType) => {
-    const config = APPOINTMENT_STATUS_CONFIGS[statusType];
-
-    if (config.requiresInput) {
-      if (config.inputType === 'minutes') {
-        setRunningLateModal({ isOpen: true, appointment });
-      } else if (config.inputType === 'note') {
-        setImportantNoteModal({ isOpen: true, appointment });
-      }
-    } else {
-      // No confirmation needed - directly update status
-      const statusData: AppointmentStatusMetadata = {
-        type: statusType,
-        timestamp: new Date()
-      };
-      await updateAppointmentStatus(appointment.id, statusData);
-    }
-  };
-
-  const updateAppointmentStatusWithNotițe = async (appointmentId: string, statusData: AppointmentStatusMetadata, importantNote: string) => {
-    try {
-      const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: statusData,
-          mergeWithNotes: true,
-          importantNote: importantNote
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Actualizarea status');
-      }
-
-      const result = await response.json();
-      toast.success(`Status actualizat la „${result.statusConfig.label}"`);
-
-      // Refresh appointments to show the new status and updated notes
-      await fetchAppointments();
-      broadcastRefresh();
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
-      toast.error('Actualizarea statusului programării a eșuat');
-    }
-  };
-
-  const handleRunningLateConfirm = async (minutes: number) => {
-    if (!runningLateModal.appointment) return;
-
-    const statusData: AppointmentStatusMetadata = {
-      type: 'running_late',
-      minutesLate: minutes,
-      timestamp: new Date()
-    };
-
-    await updateAppointmentStatus(runningLateModal.appointment.id, statusData);
-  };
-
-  const handleImportantNoteConfirm = async (note: string) => {
-    if (!importantNoteModal.appointment) return;
-
-    const statusData: AppointmentStatusMetadata = {
-      type: 'important',
-      importantNote: note,
-      timestamp: new Date()
-    };
-
-    await updateAppointmentStatusWithNotițe(importantNoteModal.appointment.id, statusData, note);
-  };
-
-  const handleStatusConfirmationConfirm = async () => {
-    if (!statusConfirmationModal.appointment || !statusConfirmationModal.statusType) return;
-
-    const statusData: AppointmentStatusMetadata = {
-      type: statusConfirmationModal.statusType,
-      timestamp: new Date()
-    };
-
-    await updateAppointmentStatus(statusConfirmationModal.appointment.id, statusData);
-  };
-
-  const updateAppointmentStatus = async (appointmentId: string, statusData: AppointmentStatusMetadata) => {
-    try {
-      const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: statusData })
-      });
-
-      if (!response.ok) {
-        throw new Error('Actualizarea status');
-      }
-
-      const result = await response.json();
-      toast.success(`Status actualizat la „${result.statusConfig.label}"`);
-
-      // Refresh appointments to show the new status
-      await fetchAppointments();
-      broadcastRefresh();
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
-      toast.error('Actualizarea statusului programării a eșuat');
-    }
-  };
-
-  const handleȘtergeStatus = async (appointmentId: string) => {
-    // Check if this appointment has an important status
-    const appointment = appointments.find(a => a.id === appointmentId);
-    if (appointment?.appointmentStatus &&
-      (appointment.appointmentStatus as AppointmentStatusMetadata).type === 'important') {
-      // Show modal to ask about clearing notes
-      setClearImportantModal({ isOpen: true, appointment });
-      return;
-    }
-
-    // Regular clear for non-important statuses
-    await performȘtergeStatus(appointmentId, false);
-  };
-
-  const performȘtergeStatus = async (appointmentId: string, clearNotes: boolean) => {
-    try {
-      const response = await fetch(`/api/appointments/${appointmentId}/status`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clearNotes })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to clear status');
-      }
-
-      toast.success('Status șters');
-
-      // Refresh appointments to show the cleared status
-      await fetchAppointments();
-      broadcastRefresh();
-    } catch (error) {
-      console.error('Error clearing appointment status:', error);
-      toast.error('Ștergerea statusului programării a eșuat');
-    }
-  };
-
-  const handleȘtergeImportantConfirm = async (clearNotes: boolean) => {
-    if (!clearImportantModal.appointment) return;
-    await performȘtergeStatus(clearImportantModal.appointment.id, clearNotes);
-    setClearImportantModal({ isOpen: false, appointment: null });
-  };
-
-  const handleQuickȘterge = async (appointmentId: string) => {
-    try {
-      const response = await fetch(`/api/appointments?id=${appointmentId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Ștergerea appointment');
-
-      toast.success('Programarea a fost ștearsă cu succes');
-      await fetchAppointments();
-      broadcastRefresh();
-    } catch (error) {
-      console.error('Error deleting appointment:', error);
-      toast.error('Ștergerea programării a eșuat');
+      toast.error('Failed to print ticket');
     }
   };
 
@@ -1616,139 +1413,18 @@ export default function AppointmentsPage() {
     onClose: () => void;
   }) => {
     const menuRef = useRef<HTMLDivElement>(null);
-    const submenuRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
-    const [showStatusSubmenu, setShowStatusSubmenu] = useState(false);
-    const [menuPosition, setMenuPosition] = useState({ x, y });
-    const [submenuPosition, setSubmenuPosition] = useState({ x: 0, y: 0 });
-    const submenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        const isInsideMainMenu = menuRef.current && menuRef.current.contains(event.target as Node);
-        const isInsideSubmenu = submenuRef.current && submenuRef.current.contains(event.target as Node);
-
-        if (!isInsideMainMenu && !isInsideSubmenu) {
-          onClose();
-        }
-      };
-
-      const handleEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
           onClose();
         }
       };
 
       document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('keydown', handleEscape);
-      };
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
-
-    // Cleanup timeout on unmount
-    useEffect(() => {
-      return () => {
-        if (submenuTimeoutRef.current) {
-          clearTimeout(submenuTimeoutRef.current);
-        }
-      };
-    }, []);
-
-    // Calculate menu position to ensure it stays within viewport
-    useEffect(() => {
-      if (menuRef.current) {
-        const rect = menuRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-
-        let adjustedX = x;
-        let adjustedY = y;
-
-        // Check right boundary (using fixed width of 180px)
-        if (x + 180 > viewportWidth) {
-          adjustedX = viewportWidth - 180 - 10;
-        }
-
-        // Check left boundary
-        if (adjustedX < 10) {
-          adjustedX = 10;
-        }
-
-        // Check bottom boundary
-        if (y + rect.height > viewportHeight) {
-          adjustedY = viewportHeight - rect.height - 10;
-        }
-
-        // Check top boundary
-        if (adjustedY < 10) {
-          adjustedY = 10;
-        }
-
-        setMenuPosition({ x: adjustedX, y: adjustedY });
-      }
-    }, [x, y]);
-
-    // Calculate submenu position
-    useEffect(() => {
-      if (showStatusSubmenu && menuRef.current) {
-        const menuRect = menuRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-
-        // Find the Status menu item position more accurately
-        const statusItem = menuRef.current.querySelector('[data-status-trigger]') as HTMLElement;
-        const statusRect = statusItem ? statusItem.getBoundingClientRect() : menuRect;
-
-        let submenuX = menuRect.right + 2; // Minimal gap from main menu
-        let submenuY = statusRect.top; // Align with Status item
-
-        const estimatedSubmenuWidth = 220;
-        const estimatedSubmenuHeight = 320; // Account for all status options
-
-        // Check right boundary - if submenu would go off-screen, position it to the left
-        if (submenuX + estimatedSubmenuWidth > viewportWidth) {
-          submenuX = menuRect.left - estimatedSubmenuWidth - 2;
-        }
-
-        // Check left boundary if we positioned it to the left
-        if (submenuX < 10) {
-          submenuX = 10;
-        }
-
-        // Check bottom boundary - if submenu would go off bottom, position it higher
-        if (submenuY + estimatedSubmenuHeight > viewportHeight) {
-          submenuY = viewportHeight - estimatedSubmenuHeight - 10;
-        }
-
-        // Check top boundary
-        if (submenuY < 10) {
-          submenuY = 10;
-        }
-
-        setSubmenuPosition({ x: submenuX, y: submenuY });
-      }
-    }, [showStatusSubmenu]);
-
-    const showSubmenu = () => {
-      if (submenuTimeoutRef.current) {
-        clearTimeout(submenuTimeoutRef.current);
-      }
-      setShowStatusSubmenu(true);
-    };
-
-    const hideSubmenu = () => {
-      submenuTimeoutRef.current = setTimeout(() => {
-        setShowStatusSubmenu(false);
-      }, 150); // Small delay to allow mouse movement
-    };
-
-    const cancelHideSubmenu = () => {
-      if (submenuTimeoutRef.current) {
-        clearTimeout(submenuTimeoutRef.current);
-      }
-    };
 
     const handleOpenPatientCard = () => {
       if (appointment.patientId) {
@@ -1790,9 +1466,9 @@ export default function AppointmentsPage() {
           body: JSON.stringify(pendingAppointmentData),
         });
 
-        if (!response.ok) throw new Error('Crearea pending appointment');
+        if (!response.ok) throw new Error('Failed to create pending appointment');
 
-        // Șterge the original appointment
+        // Delete the original appointment
         await fetch(`/api/appointments?id=${appointment.id}`, {
           method: 'DELETE',
         });
@@ -1803,12 +1479,12 @@ export default function AppointmentsPage() {
           fetchPendingAppointments()
         ]);
 
-        toast.success('Programarea a fost mutată în așteptare');
+        toast.success('Appointment moved to pending');
         broadcastRefresh();
         onClose();
       } catch (error) {
         console.error('Error creating pending appointment:', error);
-        toast.error('Mutarea programării în așteptare a eșuat');
+        toast.error('Failed to move appointment to pending');
       }
     };
 
@@ -1841,165 +1517,80 @@ export default function AppointmentsPage() {
         if (!response.ok) throw new Error('Failed to paste appointment');
 
         if (clipboardData.action === 'cut') {
-          // Șterge the original appointment
+          // Delete the original appointment
           await fetch(`/api/appointments?id=${clipboardData.appointment.id}`, {
             method: 'DELETE',
           });
           setClipboardData(null);
         }
 
-        toast.success('Programarea a fost lipită cu succes');
+        toast.success('Appointment pasted successfully');
         // Immediately fetch appointments to update the calendar
         await fetchAppointments();
         onClose();
       } catch (error) {
-        toast.error('Lipirea programării a eșuat');
+        toast.error('Failed to paste appointment');
       }
     };
 
     return (
-      <>
-        <div
-          ref={menuRef}
-          className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-[180px]"
-          style={{ left: menuPosition.x, top: menuPosition.y }}
+      <div
+        ref={menuRef}
+        className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[150px]"
+        style={{ left: x, top: y }}
+      >
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm font-medium text-blue-600"
+          onClick={handleOpenPatientCard}
         >
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm font-medium text-blue-600"
-            onClick={handleOpenPatientCard}
-          >
-            Deschide fișa pacientului
-          </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-            onClick={handleSendToPending}
-          >
-            Trimite în așteptare
-          </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-            onClick={handleCopy}
-          >
-            Copy
-          </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-            onClick={handleCut}
-          >
-            Cut
-          </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-red-100 text-red-600 text-sm"
-            onClick={() => {
-              handleQuickȘterge(appointment.id);
-              onClose();
-            }}
-          >
-            Șterge
-          </button>
-          {clipboardData && (
-            <button
-              className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-              onClick={handlePaste}
-            >
-              Paste
-            </button>
-          )}
-          {/* NEW OPTIONS */}
+          Open patient card
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={handleSendToPending}
+        >
+          Send to pending
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={handleCopy}
+        >
+          Copy
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={handleCut}
+        >
+          Cut
+        </button>
+        {clipboardData && (
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-            onClick={() => { handleSendConfirmationEmail(appointment); onClose(); }}
+            onClick={handlePaste}
           >
-            Trimite e-mail de confirmare
+            Paste
           </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-            onClick={() => { handlePrintTicket(appointment, false); onClose(); }}
-          >
-            Tipărește bilet (selectat)
-          </button>
-          <button
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
-            onClick={() => { handlePrintTicket(appointment, true); onClose(); }}
-          >
-            Tipărește bilet (toate viitoare)
-          </button>
-
-          {/* STATUS SUBMENU TRIGGER */}
-          <div className="border-t border-gray-200 my-1"></div>
-          <div
-            data-status-trigger
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm flex items-center justify-between cursor-pointer relative"
-            onMouseEnter={showSubmenu}
-            onMouseLeave={hideSubmenu}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-base">⚙️</span>
-              <span>Stare</span>
-              {appointment.appointmentStatus && (
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                  {getStatusDisplay(appointment.appointmentStatus as AppointmentStatusMetadata)}
-                </span>
-              )}
-            </div>
-            <span className="text-gray-400">›</span>
-          </div>
-        </div>
-
-        {/* STATUS SUBMENU */}
-        {showStatusSubmenu && (
-          <div
-            ref={submenuRef}
-            className="fixed z-[10000] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[220px] max-h-[320px] overflow-y-auto"
-            style={{
-              left: submenuPosition.x,
-              top: submenuPosition.y,
-              maxHeight: `${Math.min(320, window.innerHeight - submenuPosition.y - 20)}px`
-            }}
-            onMouseEnter={cancelHideSubmenu}
-            onMouseLeave={hideSubmenu}
-          >
-            {/* Current status display and clear option */}
-            {appointment.appointmentStatus && (
-              <>
-                <div className="px-4 py-2 text-sm text-gray-600 bg-gray-50 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <span>{getStatusDisplay(appointment.appointmentStatus as AppointmentStatusMetadata)}</span>
-                    <span>{getStatusConfig((appointment.appointmentStatus as AppointmentStatusMetadata).type).label}</span>
-                  </span>
-                  <button
-                    className="text-xs text-red-500 hover:text-red-700"
-                    onClick={() => {
-                      handleȘtergeStatus(appointment.id);
-                      onClose();
-                    }}
-                  >
-                    Șterge
-                  </button>
-                </div>
-                <div className="border-t border-gray-200 my-1"></div>
-              </>
-            )}
-
-            {/* Status options */}
-            {Object.values(APPOINTMENT_STATUS_CONFIGS)
-              .filter(config => config.type !== 'default')
-              .map((config) => (
-                <button
-                  key={config.type}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm flex items-center gap-2"
-                  onClick={() => {
-                    handleStatusUpdate(appointment, config.type);
-                    onClose();
-                  }}
-                >
-                  <span className="text-base">{config.icon}</span>
-                  <span>{config.label}</span>
-                </button>
-              ))}
-          </div>
         )}
-      </>
+        {/* NEW OPTIONS */}
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={() => { handleSendConfirmationEmail(appointment); onClose(); }}
+        >
+          Send confirmation email
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={() => { handlePrintTicket(appointment, false); onClose(); }}
+        >
+          Print ticket (selected)
+        </button>
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
+          onClick={() => { handlePrintTicket(appointment, true); onClose(); }}
+        >
+          Print ticket (all future)
+        </button>
+      </div>
     );
   };
 
@@ -2161,8 +1752,8 @@ export default function AppointmentsPage() {
     useEffect(() => { const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { onClose(); } }; document.addEventListener('mousedown', handler); return () => document.removeEventListener('mousedown', handler); }, [onClose]);
     return (
       <div ref={ref} className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]" style={{ left: x, top: y }}>
-        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copiază</button>
-        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Taie</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copy</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Cut</button>
       </div>
     );
   };
@@ -2177,16 +1768,6 @@ export default function AppointmentsPage() {
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
-  }, []);
-
-  // Listen for leave requests refresh (personal blocked times)
-  useEffect(() => {
-    const handler = () => {
-      fetchLeaveBlocksData();
-      fetchAppointments();
-    };
-    window.addEventListener('leave_requests_refresh', handler);
-    return () => window.removeEventListener('leave_requests_refresh', handler);
   }, []);
 
   // Create and inject specific styles for each practitioner column
@@ -2251,10 +1832,14 @@ export default function AppointmentsPage() {
   useEffect(() => {
     if (!colorLoaded || Object.keys(practitionerColors).length === 0) return;
 
+
+
     const applyColorsByPosition = () => {
       // Find all time columns (exclude the time gutter)
       const timeColumns = document.querySelectorAll('.rbc-time-column');
       const daySlots = document.querySelectorAll('.rbc-day-slot');
+
+
 
       // CENTER THE PRACTITIONER HEADERS - Apply Tailwind classes to outer .rbc-header divs
       const headers = document.querySelectorAll('.rbc-header');
@@ -2267,9 +1852,11 @@ export default function AppointmentsPage() {
       const today = new Date();
       const isCurrentDateToday = isSameDay(currentDate, today);
 
+
       if (view === 'week' && selectedPractitionerId) {
         // In week view: columns are days, apply selected practitioner's color to all days
         const selectedColor = practitionerColors[selectedPractitionerId];
+
 
         if (selectedColor) {
           // Apply to time columns (skip first one which is the time gutter)
@@ -2301,6 +1888,7 @@ export default function AppointmentsPage() {
       } else {
         // Day view: columns are practitioners
         const practitionerIds = filteredResources.map(r => r.resourceId);
+        console.log('Day view practitioner order:', practitionerIds);
 
         // For day view, we only need to check if we're currently viewing today
         const isViewingToday = isCurrentDateToday;
@@ -2316,6 +1904,7 @@ export default function AppointmentsPage() {
 
           if (color) {
             // In day view, if we're viewing today, all practitioner columns should be darker
+            console.log(`Day view: practitioner ${practitionerId} isViewingToday=${isViewingToday}`);
 
             (column as HTMLElement).style.setProperty('background-color', isViewingToday ? `${color}30` : `${color}15`, 'important');
             (column as HTMLElement).style.setProperty('background', isViewingToday ? `${color}30` : `${color}15`, 'important');
@@ -2342,6 +1931,7 @@ export default function AppointmentsPage() {
 
     // Reapply when DOM changes
     const observer = new MutationObserver(() => {
+      console.log('DOM changed, reapplying colors by position');
       setTimeout(applyColorsByPosition, 100);
     });
 
@@ -2356,96 +1946,11 @@ export default function AppointmentsPage() {
     };
   }, [practitionerColors, colorLoaded, filteredResources, currentDate]);
 
-  const PrintModal = () => {
-    const printers = ['HP LaserJet', 'Canon iR', 'Epson', 'Salvează ca PDF'];
-
-    const togglePractitioner = (id: string, checked: boolean) => {
-      setSelectedPrintPractitionerIds(prev => {
-        if (checked) {
-          return Array.from(new Set([...prev, id]));
-        } else {
-          return prev.filter(pid => pid !== id);
-        }
-      });
-    };
-
-    const handlePreview = () => {
-      const practitionerIds = (selectedPrintPractitionerIds.length ? selectedPrintPractitionerIds : practitioners.map(p => p.id)).join(',');
-      const dateStr = formatLocalDate(printDate);
-      const url = `/dashboard/appointments/print?practitionerIds=${practitionerIds}&date=${dateStr}&printer=${encodeURIComponent(selectedPrinter)}`;
-      router.push(url);
-      setIsPrintModalOpen(false);
-    };
-
-    return (
-      <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-background">
-          <DialogHeader>
-            <DialogTitle>Tipărește calendarele</DialogTitle>
-            <DialogDescription>Selectați practicienii și imprimanta, apoi previzualizați.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <div className="font-medium mb-1">Imprimantă</div>
-              <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selectați imprimanta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {printers.map(p => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <div className="font-medium mb-1">Practicieni</div>
-              <ScrollArea className="h-48 pr-2">
-                <div className="space-y-2">
-                  {practitioners.map(prac => {
-                    const id = prac.id;
-                    const checked = selectedPrintPractitionerIds.includes(id);
-                    return (
-                      <label key={id} className="flex items-center space-x-2 cursor-pointer">
-                        <Checkbox id={`print-${id}`} checked={checked} onCheckedChange={(c) => togglePractitioner(id, Boolean(c))} />
-                        <span>{prac.firstName} {prac.lastName}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-
-            <div>
-              <div className="font-medium mb-1">Dată</div>
-              <Input
-                type="date"
-                value={formatLocalDate(printDate)}
-                onChange={(e) => {
-                  const newDate = new Date(e.target.value);
-                  if (!isNaN(newDate.getTime())) {
-                    setPrintDate(newDate);
-                  }
-                }}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)}>Anulează</Button>
-            <Button onClick={handlePreview}>Previzualizare</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
   return (
     <div className="flex h-full">
       {!colorLoaded || Object.keys(practitionerColors).length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
-          <div>Se încarcă...</div>
+          <div>Loading...</div>
         </div>
       ) : (
         <>
@@ -2459,7 +1964,7 @@ export default function AppointmentsPage() {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="font-medium">
-                      Salt la:
+                      Jump to:
                     </div>
                     <Button
                       variant="outline"
@@ -2469,7 +1974,7 @@ export default function AppointmentsPage() {
                         handleDateChange(newDate);
                       }}
                     >
-                      +3 luni
+                      +3 Months
                     </Button>
                     <Button
                       variant="outline"
@@ -2479,7 +1984,7 @@ export default function AppointmentsPage() {
                         handleDateChange(newDate);
                       }}
                     >
-                      +6 luni
+                      +6 Months
                     </Button>
                     <Button
                       variant="outline"
@@ -2489,13 +1994,13 @@ export default function AppointmentsPage() {
                         handleDateChange(newDate);
                       }}
                     >
-                      +1 an
+                      +1 Year
                     </Button>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Input
                       type="text"
-                      placeholder="Căutați pacienți..."
+                      placeholder="Search patients..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-[200px]"
@@ -2503,13 +2008,13 @@ export default function AppointmentsPage() {
                   </div>
                   {view === 'week' && (
                     <div className="flex items-center space-x-2">
-                      <div className="font-medium">Practician:</div>
+                      <div className="font-medium">Practitioner:</div>
                       <Select
                         value={selectedPractitionerId || ''}
                         onValueChange={(value) => setSelectedPractitionerId(value)}
                       >
                         <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Selectați practicianul" />
+                          <SelectValue placeholder="Select practitioner" />
                         </SelectTrigger>
                         <SelectContent>
                           {practitioners.map((practitioner) => (
@@ -2523,94 +2028,29 @@ export default function AppointmentsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedPendingForQuickFind(null);
-                      setIsQuickFindModalOpen(true);
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Search className="h-4 w-4" />
-                    Căutare rapidă
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsPrintModalOpen(true)}
-                  >
-                    <Printer className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      // If this page is embedded in an iframe (embed=1) we don't
-                      // want to navigate inside the iframe. Instead, ask the
-                      // parent DynamicPane to switch to the Setări calendar
-                      // pane.
-                      const isEmbed = typeof window !== 'undefined' && window.location.search.includes('embed=1');
-                      if (isEmbed && window.parent) {
-                        window.parent.postMessage({ type: 'openPane', pane: 'calendarSettings' }, '*');
-                      } else {
-                        router.push('/dashboard/calendar-settings');
-                      }
-                    }}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    // If this page is embedded in an iframe (embed=1) we don't
+                    // want to navigate inside the iframe. Instead, ask the
+                    // parent DynamicPane to switch to the Calendar Settings
+                    // pane.
+                    const isEmbed = typeof window !== 'undefined' && window.location.search.includes('embed=1');
+                    if (isEmbed && window.parent) {
+                      window.parent.postMessage({ type: 'openPane', pane: 'calendarSettings' }, '*');
+                    } else {
+                      router.push('/dashboard/calendar-settings');
+                    }
+                  }}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
               <DnDCalendar
                 key={`${calendarColor}-${visibleDays.join(',')}-${JSON.stringify(practitionerColors)}`}
                 localizer={localizer}
-                culture={calendarCulture}
-                messages={calendarMessages}
                 events={filteredEvents}
-                eventPropGetter={(event) => {
-                  if (event.isLeaveBlock) {
-                    return {
-                      className: 'leave-block-event',
-                      style: {
-                        backgroundImage: `repeating-linear-gradient(
-                          45deg,
-                          rgba(107,114,128,0.35) 0px,
-                          rgba(107,114,128,0.35) 10px,
-                          rgba(107,114,128,0.15) 10px,
-                          rgba(107,114,128,0.15) 20px
-                        )`,
-                        backgroundColor: 'rgba(107,114,128,0.2)',
-                        border: 'none',
-                        pointerEvents: 'none',
-                        cursor: 'not-allowed',
-                        color: '#fff',
-                        fontStyle: 'italic',
-                      },
-                    };
-                  }
-
-                  // Get the treatment type and its color
-                  const type = resolveAppointmentType(event.appointment?.type, procedureTypes);
-
-                  // Use reservation color if it's a reservation, otherwise use treatment type color
-                  let backgroundColor = type?.color || '#3174ad';
-                  if (event.appointment?.isReservation || event.appointment?.appointmentType === 'RESERVATION') {
-                    backgroundColor = event.appointment?.reservationColor || '#3b82f6';
-                  }
-
-                  return {
-                    style: {
-                      backgroundColor,
-                      borderColor: backgroundColor,
-                    },
-                  };
-                }}
-                draggableAccessor={(event) => !event.isLeaveBlock}
-                resizableAccessor={(event) => !event.isLeaveBlock}
                 resourceIdAccessor="resourceId"
                 resourceTitleAccessor="resourceTitle"
                 defaultView={Views.DAY}
@@ -2618,7 +2058,7 @@ export default function AppointmentsPage() {
                 views={{ day: true, week: true }}
                 tooltipAccessor={null}
                 step={5}
-                timeslots={2}
+                timeslots={4}
                 min={new Date(0, 0, 0, 6, 0)}
                 max={new Date(0, 0, 0, 22, 0)}
                 allDaySlot={false}
@@ -2641,7 +2081,47 @@ export default function AppointmentsPage() {
                   setSelectedAppointment(event.appointment);
                   setIsFormOpen(true);
                 }}
-                style={{ height: calendarHeight }}
+                style={{ height: 'calc(100vh - 200px)' }}
+                eventPropGetter={event => {
+                  let type = event.appointment?.type || event.type;
+                  if (typeof type === 'string') {
+                    type = treatmentTypes.find(t => t.name === type || t.id === type);
+                  }
+
+                  // Color priority: 1. Reservation color (for reservations), 2. Treatment type color, 3. Practitioner color, 4. Default color
+                  const practitionerColor = practitionerColors[event.resourceId];
+                  let color;
+
+                  if (event.appointment?.isReservation || event.appointment?.appointmentType === 'RESERVATION') {
+                    color = event.appointment?.reservationColor || '#3b82f6'; // Use reservation color or default blue
+                    console.log('Reservation color debug:', {
+                      appointmentId: event.appointment.id,
+                      isReservation: event.appointment?.isReservation,
+                      appointmentType: event.appointment?.appointmentType,
+                      reservationColor: event.appointment?.reservationColor,
+                      finalColor: color
+                    });
+                  } else {
+                    color = type?.color || practitionerColor || calendarColor;
+                  }
+
+                  // Determine if this is a short appointment
+                  const appointmentDuration = event.appointment?.duration || 0;
+                  const isShortAppointment = appointmentDuration <= 20;
+
+                  return {
+                    style: {
+                      backgroundColor: color,
+                      color: '#fff',
+                      border: '1px solid #222',
+                      transition: 'all 0.15s ease-in-out',
+                      transform: 'translateZ(0)',
+                      // Removed border - keeping just background colors
+                    },
+                    className: isShortAppointment ? 'short-appointment no-time-display' : 'no-time-display',
+                    'data-resource-id': event.resourceId // Add data attribute for CSS targeting
+                  };
+                }}
                 components={{
                   event: ({ event }) => {
                     const eventRef = useRef<HTMLDivElement>(null);
@@ -2667,33 +2147,12 @@ export default function AppointmentsPage() {
                     };
 
                     const handleMouseEnter = (e: React.MouseEvent) => {
-                      // Șterge any existing tooltip first
+                      // Clear any existing tooltip first
                       clearTooltip();
 
-                      // Handle leave block tooltips
-                      if (event.isLeaveBlock) {
-                        const tooltipContent = (
-                          <div className="space-y-1">
-                            <div className="font-semibold text-sm text-gray-900">
-                              {event.title}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Timp blocat
-                            </div>
-                          </div>
-                        );
-
-                        setTimeout(() => {
-                          setTooltipData({
-                            content: tooltipContent,
-                            x: e.clientX + 15,
-                            y: e.clientY - 10
-                          });
-                        }, 100);
-                        return;
-                      }
-
-                      const type = resolveAppointmentType(event.appointment?.type, procedureTypes);
+                      const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
+                        ? event.appointment.type
+                        : treatmentTypes.find(t => t.name === String(event.appointment?.type));
                       const typeName = type?.name || 'Appointment';
                       const typeColor = type?.color || '#60a5fa';
 
@@ -2713,7 +2172,7 @@ export default function AppointmentsPage() {
                           )}
                           {event.appointment?.notes && (
                             <div className="text-sm text-gray-700 max-w-[250px]">
-                              <strong>Notițe:</strong> {event.appointment.notes}
+                              <strong>Notes:</strong> {event.appointment.notes}
                             </div>
                           )}
                           <div className="text-xs text-gray-500 border-t pt-1">
@@ -2727,7 +2186,7 @@ export default function AppointmentsPage() {
                         eventId: event.id,
                         title: event.title,
                         typeName,
-                        hasNotițe: !!event.appointment?.notes
+                        hasNotes: !!event.appointment?.notes
                       });
 
                       setTimeout(() => {
@@ -2785,56 +2244,36 @@ export default function AppointmentsPage() {
                     return (
                       <div
                         ref={eventRef}
-                        className={`h-full w-full p-1 relative ${clipboardData?.appointment?.id === event.appointment?.id && clipboardData?.action === 'cut'
+                        className={`h-full w-full p-1 cursor-move ${clipboardData?.appointment.id === event.appointment.id && clipboardData.action === 'cut'
                           ? 'opacity-50 border-dashed'
                           : ''
                           }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           clearTooltip();
-                          // Don't open appointment form for leave blocks
-                          if (!event.isLeaveBlock) {
-                            setSelectedAppointment(event.appointment);
-                            setIsFormOpen(true);
-                          }
+                          setSelectedAppointment(event.appointment);
+                          setIsFormOpen(true);
                         }}
                         onContextMenu={handleContextMenu}
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={() => clearTooltip()}
                         onMouseMove={handleMouseMove}
                       >
-                        {/* PROTECTED TEXT DISPLAY */}
-                        <div className="custom-text-overlay">
+                        {/* CUSTOM TEXT DISPLAY */}
+                        <div
+                          className="custom-text-overlay"
+                          style={{
+                            padding: '2px 4px',
+                            overflow: 'hidden',
+                            flexDirection: 'column',
+                            justifyContent: 'flex-start',
+                            alignItems: 'flex-start'
+                          }}
+                        >
                           {(() => {
-                            // Handle leave blocks (personal blocked times and regular leave)
-                            if (event.isLeaveBlock) {
-                              return (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: 6,
-                                  left: 4,
-                                  right: 4,
-                                  bottom: 6,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '14px',
-                                  color: 'white',
-                                  fontWeight: 'bold',
-                                  textAlign: 'center',
-                                  padding: '4px',
-                                  zIndex: 200,
-                                  textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
-                                  overflow: 'hidden',
-                                  wordWrap: 'break-word',
-                                  whiteSpace: 'normal'
-                                }}>
-                                  {event.title}
-                                </div>
-                              );
-                            }
-
-                            const type = resolveAppointmentType(event.appointment?.type, procedureTypes);
+                            const type = typeof event.appointment?.type === 'object' && event.appointment?.type !== null
+                              ? event.appointment.type
+                              : treatmentTypes.find(t => t.name === String(event.appointment?.type));
 
                             // Use reservation color if it's a reservation, otherwise use treatment type color
                             let backgroundColor = type?.color || '#60a5fa';
@@ -2849,48 +2288,42 @@ export default function AppointmentsPage() {
                             const isReservation = !patient || appointment?.isReservation;
                             const isReservationWithPatient = isReservation && appointment?.patientId;
 
-                            const patientIcon = isReservationWithPatient ? (
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  top: 2,
-                                  right: 2,
-                                  fontSize: '14px',
-                                  cursor: 'pointer',
-                                  pointerEvents: 'auto',
-                                  zIndex: 300,
-                                }}
-                                title="Deschide pacientul"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(`/dashboard/patients/${appointment.patientId}`, '_blank');
-                                }}
-                              >
-                                👤
-                              </div>
-                            ) : null;
+                            const commonStyle = {
+                              color: textColor,
+                              fontWeight: 'bold',
+                              textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`,
+                              lineHeight: '1.2',
+                              whiteSpace: 'pre-wrap' as const,
+                              wordBreak: 'break-word' as const
+                            };
 
                             if (isReservationWithPatient) {
-                              // Show reservation text + icon
                               return (
-                                <>
-                                  {patientIcon}
-                                  <div style={{
-                                    position: 'relative',
-                                    padding: '4px',
-                                    fontSize: '12px',
-                                    color: textColor,
-                                    fontWeight: 'bold',
-                                    textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
-                                  }}>
-                                    {appointment?.notes || 'Rezervare'}
-                                  </div>
-                                </>
+                                <div
+                                  className="clickable"
+                                  style={{
+                                    ...commonStyle,
+                                    fontSize: '20px',
+                                    textAlign: 'center',
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '100%',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(`/dashboard/patients/${appointment.patientId}`, '_blank');
+                                  }}
+                                >
+                                  👤
+                                </div>
                               );
                             }
 
                             if (isReservation) {
-                              const reservationText = appointment?.notes || '🚫 Reservation 🚫';
+                              const reservationText = appointment?.notes || 'Reservation';
                               console.log('RESERVATION TEXT DEBUG:', {
                                 eventId: event.id,
                                 text: reservationText,
@@ -2900,21 +2333,14 @@ export default function AppointmentsPage() {
 
                               return (
                                 <div style={{
-                                  position: 'absolute',
-                                  top: 6,
-                                  left: 4,
-                                  right: 4,
-                                  bottom: 6,
+                                  ...commonStyle,
+                                  fontSize: '12px',
+                                  textAlign: 'center',
+                                  width: '100%',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '16px',
-                                  color: textColor,
-                                  fontWeight: 'bold',
-                                  textAlign: 'center',
-                                  padding: '4px',
-                                  zIndex: 200,
-                                  textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
+                                  height: '100%'
                                 }}>
                                   {reservationText}
                                 </div>
@@ -2932,66 +2358,42 @@ export default function AppointmentsPage() {
                               isShort: isShortAppointment
                             });
 
-                            // Check if patient has no insurance (for emoji indicator)
-                            const hasNoInsurance = patient && !patient.healthInsurance;
-
-                            // Get appointment status display
-                            const statusDisplay = appointment?.appointmentStatus
-                              ? getStatusDisplay(appointment.appointmentStatus as AppointmentStatusMetadata)
-                              : '';
-
-                            // Increase font sizes for better readability
-                            const containerFontSize = isShortAppointment ? '12px' : '13px';
-                            const noteFontSize = isShortAppointment ? '11px' : '11px';
+                            const fontSize = isShortAppointment ? '10px' : '11px';
                             const layout = isShortAppointment ? 'horizontal' : 'vertical';
-
-                            // Compact padding for horizontal (short) layout
-                            const blockPadding = isShortAppointment ? '2px' : '4px';
-                            const nameMarginRight = isShortAppointment ? '2px' : '4px';
-
-                            // For short appointments show "Name – Notițe" on one line
-                            const shortCombinedText = isShortAppointment && appointment?.notes
-                              ? `${statusDisplay}${hasNoInsurance ? '💳 ' : ''}${event.title} – ${appointment.notes}`
-                              : null;
 
                             return (
                               <div style={{
-                                position: 'absolute',
-                                top: 6,
-                                left: 4,
-                                right: 4,
-                                bottom: 6,
+                                ...commonStyle,
+                                fontSize: fontSize,
+                                padding: '4px',
+                                height: '100%',
+                                width: '100%',
                                 display: 'flex',
                                 flexDirection: layout === 'horizontal' ? 'row' : 'column',
                                 alignItems: layout === 'horizontal' ? 'center' : 'flex-start',
                                 justifyContent: 'flex-start',
-                                padding: blockPadding,
-                                fontSize: containerFontSize,
-                                color: textColor,
-                                fontWeight: 'bold',
-                                zIndex: 200,
-                                textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`,
-                                lineHeight: '1.2',
-                                overflow: 'hidden'
+                                overflow: 'hidden',
+                                position: 'relative',
+                                zIndex: 999999
                               }}>
                                 <div style={{
                                   marginBottom: layout === 'vertical' ? '2px' : '0',
-                                  marginRight: layout === 'horizontal' ? nameMarginRight : '0',
-                                  display: 'block',
-                                  visibility: 'visible',
-                                  opacity: '1'
+                                  marginRight: layout === 'horizontal' ? '4px' : '0',
+                                  color: textColor,
+                                  fontWeight: 'bold',
+                                  textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
                                 }}>
-                                  {!shortCombinedText ? `${statusDisplay}${hasNoInsurance ? '💳 ' : ''}${event.title}` : shortCombinedText}
+                                  {event.title}
                                 </div>
-                                {(!shortCombinedText && appointment?.notes) && (
+                                {appointment?.notes && (
                                   <div style={{
-                                    fontSize: noteFontSize,
+                                    fontSize: isShortAppointment ? '9px' : '9px',
                                     opacity: 0.9,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
+                                    color: textColor,
                                     fontWeight: 'normal',
-                                    display: 'block',
-                                    visibility: 'visible'
+                                    textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
                                   }}>
                                     {appointment.notes}
                                   </div>
@@ -3026,7 +2428,7 @@ export default function AppointmentsPage() {
                         className="rbc-header max-w-full"
                         style={{ backgroundColor: '#ffffff' }}
                       >
-                        <span>Ora</span>
+                        <span>Time</span>
                       </div>
                     );
                   },
@@ -3172,32 +2574,14 @@ export default function AppointmentsPage() {
                     return {};
                   }
                 }}
-                resources={filteredResources}
-                onEventDrop={async ({ event, start, end, resourceId }) => {
+                resources={(() => {
+                  console.log('DEBUG: Calendar resources being passed:', filteredResources);
+                  console.log('DEBUG: Practitioner colors available:', practitionerColors);
+                  return filteredResources;
+                })()}
+                draggableAccessor={() => true}
+                onEventDrop={({ event, start, end, resourceId }) => {
                   const newDuration = Math.round((end.getTime() - start.getTime()) / 60000);
-
-                  // Log the drag operation
-                  const patient = patients.find(p => p.id === event.appointment.patientId);
-                  await logActivityClient({
-                    action: LOG_ACTIONS.DRAG_APPOINTMENT,
-                    entityType: ENTITY_TYPES.APPOINTMENT,
-                    entityId: event.appointment.id,
-                    description: `Moved appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'} to ${start.toLocaleString()}`,
-                    details: {
-                      previousStartTime: event.appointment.startTime,
-                      newStartTime: start.toISOString(),
-                      previousEndTime: event.appointment.endTime,
-                      newEndTime: end.toISOString(),
-                      duration: newDuration,
-                      practitionerId: resourceId,
-                      oldPractitionerId: event.appointment.practitionerId
-                    },
-                    page: '/dashboard/appointments',
-                    patientId: event.appointment.patientId,
-                    appointmentId: event.appointment.id,
-                    severity: LOG_SEVERITY.INFO
-                  });
-
                   handleFormSubmit({
                     ...event.appointment,
                     startTime: start,
@@ -3206,30 +2590,8 @@ export default function AppointmentsPage() {
                     practitionerId: resourceId,
                   });
                 }}
-                onEventResize={async ({ event, start, end }) => {
+                onEventResize={({ event, start, end }) => {
                   const newDuration = Math.round((end.getTime() - start.getTime()) / 60000);
-
-                  // Log the resize operation
-                  const patient = patients.find(p => p.id === event.appointment.patientId);
-                  await logActivityClient({
-                    action: LOG_ACTIONS.RESIZE_APPOINTMENT,
-                    entityType: ENTITY_TYPES.APPOINTMENT,
-                    entityId: event.appointment.id,
-                    description: `Resized appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'} from ${event.appointment.duration}min to ${newDuration}min`,
-                    details: {
-                      previousDuration: event.appointment.duration,
-                      newDuration: newDuration,
-                      previousStartTime: event.appointment.startTime,
-                      newStartTime: start.toISOString(),
-                      previousEndTime: event.appointment.endTime,
-                      newEndTime: end.toISOString()
-                    },
-                    page: '/dashboard/appointments',
-                    patientId: event.appointment.patientId,
-                    appointmentId: event.appointment.id,
-                    severity: LOG_SEVERITY.INFO
-                  });
-
                   handleFormSubmit({
                     ...event.appointment,
                     startTime: start,
@@ -3247,12 +2609,14 @@ export default function AppointmentsPage() {
                       const pending = pendingAppointments.find(p => p.id === data.appointmentId);
                       if (!pending) return null;
 
-                      const type = resolveAppointmentType(pending.type, procedureTypes);
+                      const type = typeof pending.type === 'object' && pending.type !== null
+                        ? pending.type
+                        : treatmentTypes.find(t => t.name === String(pending.type));
                       const duration = type?.duration || 30;
 
                       return {
                         id: pending.id,
-                        title: pending.patient?.name || 'Pacient necunoscut',
+                        title: pending.patient?.name || 'Unknown patient',
                         start: new Date(),
                         end: new Date(Date.now() + duration * 60000),
                         resourceId: null,
@@ -3277,7 +2641,9 @@ export default function AppointmentsPage() {
                       if (!pending) return;
 
                       const practitionerId = resource?.resourceId || resource;
-                      const type = resolveAppointmentType(pending.type, procedureTypes);
+                      const type = typeof pending.type === 'object' && pending.type !== null
+                        ? pending.type
+                        : treatmentTypes.find(t => t.name === String(pending.type));
                       const duration = pending.duration || type?.duration || 30;
                       const endTime = new Date(start.getTime() + duration * 60000);
 
@@ -3288,11 +2654,11 @@ export default function AppointmentsPage() {
                         startTime: start,
                         endTime: endTime,
                         duration,
-                        type: type || resolveAppointmentType(pending.type, procedureTypes) || procedureTypes[0],
+                        type: type || treatmentTypes.find(t => t.name === String(pending.type)) || treatmentTypes[0],
                         status: 'SCHEDULED',
                         notes: pending.notes
                       }).then(() => {
-                        // Șterge the pending appointment after successful creation
+                        // Delete the pending appointment after successful creation
                         fetch(`/api/pending-appointments?id=${pending.id}`, {
                           method: 'DELETE'
                         }).then(() => {
@@ -3319,12 +2685,9 @@ export default function AppointmentsPage() {
                   agendaTimeFormat: () => '',
                   agendaTimeRangeFormat: () => '',
                   dayFormat: 'dd',
-                  dayRangeHeaderFormat: ({ start, end }, culture, localizer) => {
-                    return `${localizer.format(start, 'd MMMM', culture)} – ${localizer.format(end, 'd MMMM yyyy', culture)}`;
-                  },
+                  dayRangeHeaderFormat: () => '',
                   dayHeaderFormat: (date, culture, localizer) => {
-                    const label = localizer.format(date, 'EEEE dd/MM', culture);
-                    return label.charAt(0).toUpperCase() + label.slice(1);
+                    return localizer.format(date, 'EEEE dd/MM', culture);
                   },
                   monthHeaderFormat: 'MMMM yyyy'
                 }}
@@ -3338,7 +2701,10 @@ export default function AppointmentsPage() {
                     // Always use the practitioner's specific color from the CalendarSettings table
                     const color = practitionerColors[resourceId];
 
-
+                    // Log today's column color for debugging
+                    if (isToday) {
+                      console.log(`TODAY'S COLUMN for ${resourceId}: using color ${color} (no fallback)`);
+                    }
 
                     // Only apply styles if we have a valid practitioner color
                     if (color) {
@@ -3361,59 +2727,6 @@ export default function AppointmentsPage() {
                       display: isVisible ? 'block' : 'none'
                     }
                   };
-                }}
-                slotPropGetter={(date, resourceId) => {
-                  // Check if this slot is blocked by leave
-                  const slotStart = new Date(date);
-                  const slotEnd = new Date(date.getTime() + 30 * 60 * 1000); // 30 minutes later
-
-                  const blockCheck = isTimeSlotBlocked(date, slotStart, slotEnd, resourceId, leaveBlocks);
-
-                  if (blockCheck.isBlocked) {
-                    const showIcon = slotStart.getMinutes() === 30; // show icon on half-hour slots only
-                    const className = `leave-blocked-slot${showIcon ? ' leave-blocked-icon' : ''}`;
-
-                    // Create a custom overlay element
-                    setTimeout(() => {
-                      const slots = document.querySelectorAll(`.${className.replace(' ', '.')}`);
-                      slots.forEach((slot: any) => {
-                        if (!slot.querySelector('.leave-overlay')) {
-                          const overlay = document.createElement('div');
-                          overlay.className = 'leave-overlay';
-                          overlay.style.cssText = `
-                            position: absolute !important;
-                            top: 0 !important;
-                            left: 0 !important;
-                            right: 0 !important;
-                            bottom: 0 !important;
-                            width: 100% !important;
-                            height: 100% !important;
-                            background: #2d3748 !important;
-                            z-index: 999999 !important;
-                            pointer-events: none !important;
-                            opacity: 0.9 !important;
-                          `;
-                          if (showIcon) {
-                            overlay.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; z-index: 1000000;"></div>';
-                          }
-                          slot.style.position = 'relative';
-                          slot.appendChild(overlay);
-                        }
-                      });
-                    }, 100);
-
-                    return {
-                      className,
-                      style: {
-                        position: 'relative',
-                        cursor: 'not-allowed',
-                        pointerEvents: 'none',
-                      },
-                      title: blockCheck.reason || 'This time slot is blocked due to approved leave',
-                    };
-                  }
-
-                  return {};
                 }}
               />
             </Card>
@@ -3439,16 +2752,18 @@ export default function AppointmentsPage() {
           {/* Pending Appointments Mini-Calendar */}
           <div className="w-80 border-l bg-background my-4 rounded-lg">
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold">Programări în așteptare</h2>
+              <h2 className="text-lg font-semibold">Pending Appointments</h2>
             </div>
             <div className="h-[calc(100vh-200px)] overflow-auto">
               <div className="p-2">
                 {pendingAppointments.length === 0 ? (
-                  <p className="text-muted-foreground p-4">Nu există programări în așteptare</p>
+                  <p className="text-muted-foreground p-4">No pending appointments</p>
                 ) : (
                   <div className="space-y-2">
                     {pendingAppointments.map((appointment) => {
-                      const type = resolveAppointmentType(appointment.type, procedureTypes);
+                      const type = typeof appointment.type === 'object' && appointment.type !== null
+                        ? appointment.type
+                        : treatmentTypes.find(t => t.name === String(appointment.type));
                       const patient = patients.find(p => p.id === appointment.patientId);
                       return (
                         <div
@@ -3474,24 +2789,11 @@ export default function AppointmentsPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className="font-medium">
-                                {patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'}
+                                {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown patient'}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-xs opacity-75">
-                                {appointment.createdAt ? new Date(appointment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedPendingForQuickFind(appointment);
-                                  setIsQuickFindModalOpen(true);
-                                }}
-                                className="h-6 w-6 p-0"
-                              >
-                                <Search className="h-3 w-3" />
-                              </Button>
+                            <div className="text-xs opacity-75">
+                              {appointment.createdAt ? new Date(appointment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}
                             </div>
                           </div>
                           <div className="text-sm mt-1">
@@ -3501,7 +2803,7 @@ export default function AppointmentsPage() {
                             <p className="text-xs opacity-75 mt-1">{appointment.notes}</p>
                           )}
                           {appointment.duration && (
-                            <p className="text-xs opacity-75 mt-1">Durată: {appointment.duration} minute</p>
+                            <p className="text-xs opacity-75 mt-1">Duration: {appointment.duration} minutes</p>
                           )}
                         </div>
                       );
@@ -3517,12 +2819,12 @@ export default function AppointmentsPage() {
             <DialogContent className="sm:max-w-[600px] bg-background">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedAppointment ? 'Editează programare' : 'Programare nouă'}
+                  {selectedAppointment ? 'Edit Appointment' : 'New Appointment'}
                 </DialogTitle>
                 <DialogDescription>
                   {selectedAppointment
-                    ? 'Modificați detaliile programării.'
-                    : 'Completați detaliile pentru a crea o programare nouă.'}
+                    ? 'Edit the details of your appointment.'
+                    : 'Fill in the details to create a new appointment.'}
                 </DialogDescription>
               </DialogHeader>
               <EnhancedAppointmentForm
@@ -3557,6 +2859,7 @@ export default function AppointmentsPage() {
                     }))
                   )
                 ]}
+                familyGroups={familyGroups}
                 selectedDate={selectedDate}
                 initialPractitionerId={selectedAppointmentPractitionerId || selectedPractitionerId}
                 practitioners={selectedDate ? getAvailablePractitioners(selectedDate) : practitioners}
@@ -3572,12 +2875,12 @@ export default function AppointmentsPage() {
                           const response = await fetch(`/api/appointments?id=${selectedAppointment.id}`, {
                             method: 'DELETE',
                           });
-                          if (!response.ok) throw new Error('Ștergerea appointment');
-                          toast.success('Programarea a fost ștearsă cu succes');
+                          if (!response.ok) throw new Error('Failed to delete appointment');
+                          toast.success('Appointment deleted successfully');
                           setIsFormOpen(false);
                           await fetchAppointments();
                         } catch (error) {
-                          toast.error('Ștergerea programării a eșuat');
+                          toast.error('Failed to delete appointment');
                         }
                       }}
                     >
@@ -3624,113 +2927,6 @@ export default function AppointmentsPage() {
           {pendingContextMenu && (
             <PendingMenu x={pendingContextMenu.x} y={pendingContextMenu.y} pending={pendingContextMenu.pending} onClose={() => setPendingContextMenu(null)} />
           )}
-          {isPrintModalOpen && <PrintModal />}
-
-          {/* Status Modals */}
-          <RunningLateModal
-            isOpen={runningLateModal.isOpen}
-            onClose={() => setRunningLateModal({ isOpen: false, appointment: null })}
-            onConfirm={handleRunningLateConfirm}
-            patientName={runningLateModal.appointment?.patient ? runningLateModal.appointment.patient.name : 'Patient'}
-          />
-
-          <ImportantNoteModal
-            isOpen={importantNoteModal.isOpen}
-            onClose={() => setImportantNoteModal({ isOpen: false, appointment: null })}
-            onConfirm={handleImportantNoteConfirm}
-            patientName={importantNoteModal.appointment?.patient ? importantNoteModal.appointment.patient.name : 'Patient'}
-          />
-
-          <StatusConfirmationModal
-            isOpen={statusConfirmationModal.isOpen}
-            onClose={() => setStatusConfirmationModal({ isOpen: false, appointment: null, statusType: null })}
-            onConfirm={handleStatusConfirmationConfirm}
-            statusType={statusConfirmationModal.statusType || 'default'}
-            patientName={statusConfirmationModal.appointment?.patient ? statusConfirmationModal.appointment.patient.name : 'Patient'}
-          />
-
-          <ClearImportantModal
-            isOpen={clearImportantModal.isOpen}
-            onClose={() => setClearImportantModal({ isOpen: false, appointment: null })}
-            onConfirm={handleȘtergeImportantConfirm}
-            patientName={clearImportantModal.appointment?.patient ? clearImportantModal.appointment.patient.name : 'Patient'}
-          />
-
-          {/* Căutare rapidă Empty Spot Modal */}
-          <QuickFindEmptySpotModal
-            isOpen={isQuickFindModalOpen}
-            onClose={() => {
-              setIsQuickFindModalOpen(false);
-              setSelectedPendingForQuickFind(null);
-              setIsSchedulingQuickFind(false);
-            }}
-            onSpotFound={async (appointments) => {
-              if (isSchedulingQuickFind) return;
-              setIsSchedulingQuickFind(true);
-              try {
-                console.log('QuickFind: Received appointments to create:', appointments);
-
-                // Create all appointments
-                for (const appointment of appointments) {
-                  console.log('QuickFind: Creating appointment:', appointment);
-                  await handleFormSubmit(appointment);
-                }
-
-                // If this was triggered from a pending appointment, remove it
-                if (selectedPendingForQuickFind) {
-                  await fetch(`/api/pending-appointments?id=${selectedPendingForQuickFind.id}`, {
-                    method: 'DELETE',
-                  });
-                  await fetchPendingAppointments();
-                }
-
-                // Refresh appointments to show the new ones in the calendar
-                await fetchAppointments();
-
-                // Broadcast refresh to other components
-                broadcastRefresh();
-
-                toast.success(`${appointments.length} programări programate cu succes`);
-              } catch (error) {
-                console.error('Error scheduling appointments:', error);
-                toast.error('Programarea consultațiilor a eșuat');
-              } finally {
-                setIsSchedulingQuickFind(false);
-              }
-            }}
-            pendingAppointment={selectedPendingForQuickFind}
-            patients={[
-              ...individualPatients.map((p) => ({
-                id: p.id,
-                patientCode: p.patientCode,
-                firstName: p.firstName,
-                lastName: p.lastName,
-                dateOfBirth: p.dateOfBirth,
-                email: p.email,
-                phone: p.phone,
-                familyHeadCode: p.familyHeadCode,
-                familyPosition: p.familyPosition,
-                isDisabled: p.isDisabled
-              })),
-              ...familyGroups.flatMap(family =>
-                family.patients.map((p) => ({
-                  id: p.id,
-                  patientCode: p.patientCode,
-                  firstName: p.firstName,
-                  lastName: p.lastName,
-                  dateOfBirth: p.dateOfBirth,
-                  email: p.email,
-                  phone: p.phone,
-                  familyHeadCode: p.familyHeadCode,
-                  familyPosition: p.familyPosition,
-                  isDisabled: p.isDisabled
-                }))
-              )
-            ]}
-            practitioners={practitioners}
-            existingAppointments={appointments}
-            leaveBlocks={leaveBlocks}
-          />
         </>
       )}
     </div>

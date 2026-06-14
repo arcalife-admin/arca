@@ -36,6 +36,7 @@ const daysOfWeek = [
 
 import { ro } from 'date-fns/locale';
 import { printHtmlDocument } from '@/lib/print-html';
+import { calendarCulture, calendarMessages } from '@/lib/date-locale';
 const locales = { ro };
 const localizer = dateFnsLocalizer({
   format,
@@ -1033,6 +1034,8 @@ export default function TodayAppointments() {
           <DnDCalendar
             key={`${calendarColor}-${visibleDays.join(',')}`}
             localizer={localizer}
+            culture={calendarCulture}
+            messages={calendarMessages}
             events={filteredEvents}
             resourceIdAccessor="resourceId"
             resourceTitleAccessor="resourceTitle"
@@ -1353,7 +1356,8 @@ export default function TodayAppointments() {
               dayFormat: 'dd',
               dayRangeHeaderFormat: () => '',
               dayHeaderFormat: (date, culture, localizer) => {
-                return localizer.format(date, 'EEEE dd/MM', culture);
+                const label = localizer.format(date, 'EEEE dd/MM', culture);
+                return label.charAt(0).toUpperCase() + label.slice(1);
               },
               monthHeaderFormat: 'MMMM yyyy',
             }}

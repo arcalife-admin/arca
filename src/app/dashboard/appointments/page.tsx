@@ -37,21 +37,18 @@ import {
   CalendarEvent
 } from '@/lib/calendar-leave-integration';
 import { useClipboard } from '@/hooks/use-clipboard';
-import { printHtmlDocument } from '@/lib/print-html';
 
 const daysOfWeek = [
-  'Luni',
-  'Marți',
-  'Miercuri',
-  'Joi',
-  'Vineri',
-  'Sâmbătă',
-  'Duminică',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
 ];
 
-import { ro as dateFnsRo } from 'date-fns/locale';
-import { calendarCulture, calendarMessages } from '@/lib/date-locale';
-const locales = { ro: dateFnsRo };
+const locales = { 'en-US': require('date-fns/locale/en-US') };
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -177,7 +174,7 @@ function AppointmentContent({
           fontWeight: 'bold',
           fontSize: 'inherit'
         }}>
-          {appointment?.notes || 'Rezervare'}
+          {appointment?.notes || 'Reservation'}
         </span>
       </div>
     );
@@ -185,7 +182,7 @@ function AppointmentContent({
 
   // Regular appointment with patient
   if (isShortAppointment) {
-    // Short appointment (≤20 minutes) - show "Patient Name - Notițe" horizontally
+    // Short appointment (≤20 minutes) - show "Patient Name - Notes" horizontally
     const displayText = appointment?.notes
       ? `${event.title} - ${appointment.notes}`
       : event.title;
@@ -349,7 +346,7 @@ export default function AppointmentsPage() {
   const [selectedAppointmentPractitionerId, setSelectedAppointmentPractitionerId] = useState<string | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [selectedPrintPractitionerIds, setSelectedPrintPractitionerIds] = useState<string[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState<string>('Salvează ca PDF');
+  const [selectedPrinter, setSelectedPrinter] = useState<string>('Save as PDF');
   const [printDate, setPrintDate] = useState<Date>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1); // tomorrow
@@ -642,7 +639,7 @@ export default function AppointmentsPage() {
           title = `${patient.firstName} ${patient.lastName}`;
         } else {
           // No patient - this is a reservation, show the note
-          title = appt.notes || 'Rezervare';
+          title = appt.notes || 'Reservation';
         }
 
 
@@ -728,7 +725,7 @@ export default function AppointmentsPage() {
       applyPractitionerColorsToDOM(colorMap);
     } catch (error) {
       console.error('Error fetching practitioners:', error);
-      toast.error('Încărcarea practicienilor a eșuat');
+      toast.error('Failed to fetch practitioners');
     }
   };
 
@@ -799,7 +796,7 @@ export default function AppointmentsPage() {
       const data = await response.json();
       setPatients(data);
     } catch (error) {
-      toast.error('Încărcarea pacienților a eșuat');
+      toast.error('Failed to fetch patients');
     }
   };
 
@@ -820,7 +817,7 @@ export default function AppointmentsPage() {
       const data = await response.json();
       setPendingAppointments(data);
     } catch (error) {
-      toast.error('Încărcarea programărilor în așteptare a eșuat');
+      toast.error('Failed to fetch pending appointments');
     }
   };
 
@@ -830,7 +827,7 @@ export default function AppointmentsPage() {
       const data = await response.json();
       setAppointments(data);
     } catch (error) {
-      toast.error('Încărcarea programărilor a eșuat');
+      toast.error('Failed to fetch appointments');
     }
   };
 
@@ -921,14 +918,14 @@ export default function AppointmentsPage() {
 
           const result = await response.json();
 
-          toast.success('Rezervarea a fost actualizată cu succes');
+          toast.success('Reservation updated successfully');
 
           // Log reservation update
           await logActivityClient({
             action: LOG_ACTIONS.UPDATE_APPOINTMENT,
             entityType: ENTITY_TYPES.APPOINTMENT,
             entityId: selectedAppointment.id,
-            description: `Actualizat reservation - ${reservationRequest.notes || 'Fără descriere'}`,
+            description: `Updated reservation - ${reservationRequest.notes || 'No description'}`,
             details: {
               duration: reservationRequest.duration,
               practitionerId: reservationRequest.practitionerId,
@@ -957,14 +954,14 @@ export default function AppointmentsPage() {
 
           const result = await response.json();
 
-          toast.success('Rezervarea a fost creată cu succes');
+          toast.success('Reservation created successfully');
 
           // Log reservation creation
           await logActivityClient({
             action: LOG_ACTIONS.CREATE_APPOINTMENT,
             entityType: ENTITY_TYPES.APPOINTMENT,
             entityId: result.id,
-            description: `Creat new reservation - ${appointment.reservationRequest?.notes || 'Fără descriere'}`,
+            description: `Created new reservation - ${appointment.reservationRequest?.notes || 'No description'}`,
             details: {
               duration: appointment.reservationRequest?.duration,
               practitionerId: appointment.reservationRequest?.practitionerId,
@@ -1010,7 +1007,7 @@ export default function AppointmentsPage() {
           throw new Error(`Failed to save appointment: ${response.status} ${errorText}`);
         }
         const result = await response.json();
-        toast.success(`Programare ${appointment.id ? 'actualizată' : 'creată'} cu succes`);
+        toast.success(`Appointment ${appointment.id ? 'updated' : 'created'} successfully`);
 
         // Log appointment creation or update
         const patient = appointment.patientId ? await fetch(`/api/patients/${appointment.patientId}`).then(r => r.json()).catch(() => null) : null;
@@ -1018,7 +1015,7 @@ export default function AppointmentsPage() {
           action: appointment.id ? LOG_ACTIONS.UPDATE_APPOINTMENT : LOG_ACTIONS.CREATE_APPOINTMENT,
           entityType: ENTITY_TYPES.APPOINTMENT,
           entityId: appointment.id || result.id,
-          description: `${appointment.id ? 'Actualizat' : 'Creat'} appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'}`,
+          description: `${appointment.id ? 'Updated' : 'Created'} appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}`,
           details: {
             duration: appointment.duration,
             practitionerId: appointment.practitionerId,
@@ -1040,7 +1037,7 @@ export default function AppointmentsPage() {
       broadcastRefresh();
     } catch (error) {
       console.error('Error saving appointment:', error);
-      toast.error('Salvarea programării a eșuat');
+      toast.error('Failed to save appointment');
       fetchAppointments();
     }
   };
@@ -1126,7 +1123,7 @@ export default function AppointmentsPage() {
     const blockCheck = isTimeSlotBlocked(selectInfo.start, slotStart, slotEnd, selectInfo.resourceId, leaveBlocks);
 
     if (blockCheck.isBlocked) {
-      toast.error(blockCheck.reason || 'Nu se poate crea programare în perioada de concediu aprobat');
+      toast.error(blockCheck.reason || 'Cannot create appointment during approved leave time');
       return;
     }
 
@@ -1363,14 +1360,14 @@ export default function AppointmentsPage() {
     try {
       const result = await convertPendingToAppointment(appointment, practitionerId);
       if (result) {
-        toast.success('Programarea a fost atribuită cu succes');
+        toast.success('Appointment assigned successfully');
         fetchPendingAppointments();
         fetchAppointments();
       } else {
-        toast.error('Atribuirea programării a eșuat');
+        toast.error('Failed to assign appointment');
       }
     } catch (error) {
-      toast.error('Eroare la atribuirea programării');
+      toast.error('Error assigning appointment');
     }
   };
 
@@ -1388,7 +1385,7 @@ export default function AppointmentsPage() {
     });
   };
 
-  // NEW: Trimite e-mail de confirmare to patient
+  // NEW: Send confirmation email to patient
   const handleSendConfirmationEmail = async (appointment: Appointment) => {
     try {
       const res = await fetch('/api/appointments/send-confirmation', {
@@ -1397,10 +1394,10 @@ export default function AppointmentsPage() {
         body: JSON.stringify({ patientId: appointment.patientId }),
       });
       if (!res.ok) throw new Error('Request failed');
-      toast.success('Email de confirmare trimis');
+      toast.success('Confirmation email sent');
     } catch (error) {
       console.error('Error sending confirmation email', error);
-      toast.error('Trimiterea emailului de confirmare a eșuat');
+      toast.error('Failed to send confirmation email');
     }
   };
 
@@ -1412,15 +1409,14 @@ export default function AppointmentsPage() {
       const list = includeAllFuture ? patientAppointments : [appointment];
       const patient = patients.find(p => p.id === appointment.patientId);
       const html = `<!DOCTYPE html>
-        <html><head><title>Bilet programare</title>
+        <html><head><title>Appointment Ticket</title>
         <style>
-          @page { margin: 0; }
-          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+          body { font-family: Arial, sans-serif; padding: 20px; }
           h1 { font-size: 20px; margin-bottom: 10px; }
           ul { list-style: none; padding: 0; }
           li { margin-bottom: 6px; }
         </style></head><body>
-        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'} – Programări</h1>
+        <h1>${patient ? `${patient.firstName} ${patient.lastName}` : 'Patient'} – Appointments</h1>
         <ul>
           ${list.map(appt => {
         const dateStr = new Date(appt.startTime).toLocaleString(undefined, {
@@ -1436,10 +1432,19 @@ export default function AppointmentsPage() {
       }).join('')}
         </ul>
         </body></html>`;
-      printHtmlDocument(html, { delay: 500 });
+      const printWindow = window.open('', '_blank', 'width=600,height=800');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        // Delay print slightly to ensure content is rendered
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
     } catch (error) {
       console.error('Error printing ticket', error);
-      toast.error('Tipărirea biletului a eșuat');
+      toast.error('Failed to print ticket');
     }
   };
 
@@ -1463,7 +1468,7 @@ export default function AppointmentsPage() {
     }
   };
 
-  const updateAppointmentStatusWithNotițe = async (appointmentId: string, statusData: AppointmentStatusMetadata, importantNote: string) => {
+  const updateAppointmentStatusWithNotes = async (appointmentId: string, statusData: AppointmentStatusMetadata, importantNote: string) => {
     try {
       const response = await fetch(`/api/appointments/${appointmentId}/status`, {
         method: 'PATCH',
@@ -1476,18 +1481,18 @@ export default function AppointmentsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Actualizarea status');
+        throw new Error('Failed to update status');
       }
 
       const result = await response.json();
-      toast.success(`Status actualizat la „${result.statusConfig.label}"`);
+      toast.success(`Status updated to "${result.statusConfig.label}"`);
 
       // Refresh appointments to show the new status and updated notes
       await fetchAppointments();
       broadcastRefresh();
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      toast.error('Actualizarea statusului programării a eșuat');
+      toast.error('Failed to update appointment status');
     }
   };
 
@@ -1512,7 +1517,7 @@ export default function AppointmentsPage() {
       timestamp: new Date()
     };
 
-    await updateAppointmentStatusWithNotițe(importantNoteModal.appointment.id, statusData, note);
+    await updateAppointmentStatusWithNotes(importantNoteModal.appointment.id, statusData, note);
   };
 
   const handleStatusConfirmationConfirm = async () => {
@@ -1535,22 +1540,22 @@ export default function AppointmentsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Actualizarea status');
+        throw new Error('Failed to update status');
       }
 
       const result = await response.json();
-      toast.success(`Status actualizat la „${result.statusConfig.label}"`);
+      toast.success(`Status updated to "${result.statusConfig.label}"`);
 
       // Refresh appointments to show the new status
       await fetchAppointments();
       broadcastRefresh();
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      toast.error('Actualizarea statusului programării a eșuat');
+      toast.error('Failed to update appointment status');
     }
   };
 
-  const handleȘtergeStatus = async (appointmentId: string) => {
+  const handleClearStatus = async (appointmentId: string) => {
     // Check if this appointment has an important status
     const appointment = appointments.find(a => a.id === appointmentId);
     if (appointment?.appointmentStatus &&
@@ -1561,10 +1566,10 @@ export default function AppointmentsPage() {
     }
 
     // Regular clear for non-important statuses
-    await performȘtergeStatus(appointmentId, false);
+    await performClearStatus(appointmentId, false);
   };
 
-  const performȘtergeStatus = async (appointmentId: string, clearNotes: boolean) => {
+  const performClearStatus = async (appointmentId: string, clearNotes: boolean) => {
     try {
       const response = await fetch(`/api/appointments/${appointmentId}/status`, {
         method: 'DELETE',
@@ -1576,36 +1581,36 @@ export default function AppointmentsPage() {
         throw new Error('Failed to clear status');
       }
 
-      toast.success('Status șters');
+      toast.success('Status cleared');
 
       // Refresh appointments to show the cleared status
       await fetchAppointments();
       broadcastRefresh();
     } catch (error) {
       console.error('Error clearing appointment status:', error);
-      toast.error('Ștergerea statusului programării a eșuat');
+      toast.error('Failed to clear appointment status');
     }
   };
 
-  const handleȘtergeImportantConfirm = async (clearNotes: boolean) => {
+  const handleClearImportantConfirm = async (clearNotes: boolean) => {
     if (!clearImportantModal.appointment) return;
-    await performȘtergeStatus(clearImportantModal.appointment.id, clearNotes);
+    await performClearStatus(clearImportantModal.appointment.id, clearNotes);
     setClearImportantModal({ isOpen: false, appointment: null });
   };
 
-  const handleQuickȘterge = async (appointmentId: string) => {
+  const handleQuickDelete = async (appointmentId: string) => {
     try {
       const response = await fetch(`/api/appointments?id=${appointmentId}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Ștergerea appointment');
+      if (!response.ok) throw new Error('Failed to delete appointment');
 
-      toast.success('Programarea a fost ștearsă cu succes');
+      toast.success('Appointment deleted successfully');
       await fetchAppointments();
       broadcastRefresh();
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      toast.error('Ștergerea programării a eșuat');
+      toast.error('Failed to delete appointment');
     }
   };
 
@@ -1790,9 +1795,9 @@ export default function AppointmentsPage() {
           body: JSON.stringify(pendingAppointmentData),
         });
 
-        if (!response.ok) throw new Error('Crearea pending appointment');
+        if (!response.ok) throw new Error('Failed to create pending appointment');
 
-        // Șterge the original appointment
+        // Delete the original appointment
         await fetch(`/api/appointments?id=${appointment.id}`, {
           method: 'DELETE',
         });
@@ -1803,12 +1808,12 @@ export default function AppointmentsPage() {
           fetchPendingAppointments()
         ]);
 
-        toast.success('Programarea a fost mutată în așteptare');
+        toast.success('Appointment moved to pending');
         broadcastRefresh();
         onClose();
       } catch (error) {
         console.error('Error creating pending appointment:', error);
-        toast.error('Mutarea programării în așteptare a eșuat');
+        toast.error('Failed to move appointment to pending');
       }
     };
 
@@ -1841,19 +1846,19 @@ export default function AppointmentsPage() {
         if (!response.ok) throw new Error('Failed to paste appointment');
 
         if (clipboardData.action === 'cut') {
-          // Șterge the original appointment
+          // Delete the original appointment
           await fetch(`/api/appointments?id=${clipboardData.appointment.id}`, {
             method: 'DELETE',
           });
           setClipboardData(null);
         }
 
-        toast.success('Programarea a fost lipită cu succes');
+        toast.success('Appointment pasted successfully');
         // Immediately fetch appointments to update the calendar
         await fetchAppointments();
         onClose();
       } catch (error) {
-        toast.error('Lipirea programării a eșuat');
+        toast.error('Failed to paste appointment');
       }
     };
 
@@ -1868,13 +1873,13 @@ export default function AppointmentsPage() {
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm font-medium text-blue-600"
             onClick={handleOpenPatientCard}
           >
-            Deschide fișa pacientului
+            Open patient card
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
             onClick={handleSendToPending}
           >
-            Trimite în așteptare
+            Send to pending
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
@@ -1891,11 +1896,11 @@ export default function AppointmentsPage() {
           <button
             className="w-full px-4 py-2 text-left hover:bg-red-100 text-red-600 text-sm"
             onClick={() => {
-              handleQuickȘterge(appointment.id);
+              handleQuickDelete(appointment.id);
               onClose();
             }}
           >
-            Șterge
+            Delete
           </button>
           {clipboardData && (
             <button
@@ -1910,19 +1915,19 @@ export default function AppointmentsPage() {
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
             onClick={() => { handleSendConfirmationEmail(appointment); onClose(); }}
           >
-            Trimite e-mail de confirmare
+            Send confirmation email
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
             onClick={() => { handlePrintTicket(appointment, false); onClose(); }}
           >
-            Tipărește bilet (selectat)
+            Print ticket (selected)
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm"
             onClick={() => { handlePrintTicket(appointment, true); onClose(); }}
           >
-            Tipărește bilet (toate viitoare)
+            Print ticket (all future)
           </button>
 
           {/* STATUS SUBMENU TRIGGER */}
@@ -1935,7 +1940,7 @@ export default function AppointmentsPage() {
           >
             <div className="flex items-center gap-2">
               <span className="text-base">⚙️</span>
-              <span>Stare</span>
+              <span>Status</span>
               {appointment.appointmentStatus && (
                 <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
                   {getStatusDisplay(appointment.appointmentStatus as AppointmentStatusMetadata)}
@@ -1970,11 +1975,11 @@ export default function AppointmentsPage() {
                   <button
                     className="text-xs text-red-500 hover:text-red-700"
                     onClick={() => {
-                      handleȘtergeStatus(appointment.id);
+                      handleClearStatus(appointment.id);
                       onClose();
                     }}
                   >
-                    Șterge
+                    Clear
                   </button>
                 </div>
                 <div className="border-t border-gray-200 my-1"></div>
@@ -2161,8 +2166,8 @@ export default function AppointmentsPage() {
     useEffect(() => { const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) { onClose(); } }; document.addEventListener('mousedown', handler); return () => document.removeEventListener('mousedown', handler); }, [onClose]);
     return (
       <div ref={ref} className="fixed z-[9999] bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]" style={{ left: x, top: y }}>
-        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copiază</button>
-        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Taie</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'copy' }); onClose(); }}>Copy</button>
+        <button className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm" onClick={() => { setClipboardData({ appointment: pending as any, action: 'cut' }); onClose(); }}>Cut</button>
       </div>
     );
   };
@@ -2357,7 +2362,7 @@ export default function AppointmentsPage() {
   }, [practitionerColors, colorLoaded, filteredResources, currentDate]);
 
   const PrintModal = () => {
-    const printers = ['HP LaserJet', 'Canon iR', 'Epson', 'Salvează ca PDF'];
+    const printers = ['HP LaserJet', 'Canon iR', 'Epson', 'Save as PDF'];
 
     const togglePractitioner = (id: string, checked: boolean) => {
       setSelectedPrintPractitionerIds(prev => {
@@ -2381,15 +2386,15 @@ export default function AppointmentsPage() {
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-background">
           <DialogHeader>
-            <DialogTitle>Tipărește calendarele</DialogTitle>
-            <DialogDescription>Selectați practicienii și imprimanta, apoi previzualizați.</DialogDescription>
+            <DialogTitle>Print calendars</DialogTitle>
+            <DialogDescription>Select the practitioners and printer, then preview.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <div className="font-medium mb-1">Imprimantă</div>
+              <div className="font-medium mb-1">Printer</div>
               <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selectați imprimanta" />
+                  <SelectValue placeholder="Select printer" />
                 </SelectTrigger>
                 <SelectContent>
                   {printers.map(p => (
@@ -2400,7 +2405,7 @@ export default function AppointmentsPage() {
             </div>
 
             <div>
-              <div className="font-medium mb-1">Practicieni</div>
+              <div className="font-medium mb-1">Practitioners</div>
               <ScrollArea className="h-48 pr-2">
                 <div className="space-y-2">
                   {practitioners.map(prac => {
@@ -2418,7 +2423,7 @@ export default function AppointmentsPage() {
             </div>
 
             <div>
-              <div className="font-medium mb-1">Dată</div>
+              <div className="font-medium mb-1">Date</div>
               <Input
                 type="date"
                 value={formatLocalDate(printDate)}
@@ -2433,8 +2438,8 @@ export default function AppointmentsPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)}>Anulează</Button>
-            <Button onClick={handlePreview}>Previzualizare</Button>
+            <Button variant="outline" onClick={() => setIsPrintModalOpen(false)}>Cancel</Button>
+            <Button onClick={handlePreview}>Preview</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -2445,7 +2450,7 @@ export default function AppointmentsPage() {
     <div className="flex h-full">
       {!colorLoaded || Object.keys(practitionerColors).length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
-          <div>Se încarcă...</div>
+          <div>Loading...</div>
         </div>
       ) : (
         <>
@@ -2459,7 +2464,7 @@ export default function AppointmentsPage() {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="font-medium">
-                      Salt la:
+                      Jump to:
                     </div>
                     <Button
                       variant="outline"
@@ -2469,7 +2474,7 @@ export default function AppointmentsPage() {
                         handleDateChange(newDate);
                       }}
                     >
-                      +3 luni
+                      +3 Months
                     </Button>
                     <Button
                       variant="outline"
@@ -2479,7 +2484,7 @@ export default function AppointmentsPage() {
                         handleDateChange(newDate);
                       }}
                     >
-                      +6 luni
+                      +6 Months
                     </Button>
                     <Button
                       variant="outline"
@@ -2489,13 +2494,13 @@ export default function AppointmentsPage() {
                         handleDateChange(newDate);
                       }}
                     >
-                      +1 an
+                      +1 Year
                     </Button>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Input
                       type="text"
-                      placeholder="Căutați pacienți..."
+                      placeholder="Search patients..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-[200px]"
@@ -2503,13 +2508,13 @@ export default function AppointmentsPage() {
                   </div>
                   {view === 'week' && (
                     <div className="flex items-center space-x-2">
-                      <div className="font-medium">Practician:</div>
+                      <div className="font-medium">Practitioner:</div>
                       <Select
                         value={selectedPractitionerId || ''}
                         onValueChange={(value) => setSelectedPractitionerId(value)}
                       >
                         <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Selectați practicianul" />
+                          <SelectValue placeholder="Select practitioner" />
                         </SelectTrigger>
                         <SelectContent>
                           {practitioners.map((practitioner) => (
@@ -2534,7 +2539,7 @@ export default function AppointmentsPage() {
                     className="flex items-center gap-2"
                   >
                     <Search className="h-4 w-4" />
-                    Căutare rapidă
+                    Quick Find
                   </Button>
 
                   <Button
@@ -2551,7 +2556,7 @@ export default function AppointmentsPage() {
                     onClick={() => {
                       // If this page is embedded in an iframe (embed=1) we don't
                       // want to navigate inside the iframe. Instead, ask the
-                      // parent DynamicPane to switch to the Setări calendar
+                      // parent DynamicPane to switch to the Calendar Settings
                       // pane.
                       const isEmbed = typeof window !== 'undefined' && window.location.search.includes('embed=1');
                       if (isEmbed && window.parent) {
@@ -2568,8 +2573,6 @@ export default function AppointmentsPage() {
               <DnDCalendar
                 key={`${calendarColor}-${visibleDays.join(',')}-${JSON.stringify(practitionerColors)}`}
                 localizer={localizer}
-                culture={calendarCulture}
-                messages={calendarMessages}
                 events={filteredEvents}
                 eventPropGetter={(event) => {
                   if (event.isLeaveBlock) {
@@ -2667,7 +2670,7 @@ export default function AppointmentsPage() {
                     };
 
                     const handleMouseEnter = (e: React.MouseEvent) => {
-                      // Șterge any existing tooltip first
+                      // Clear any existing tooltip first
                       clearTooltip();
 
                       // Handle leave block tooltips
@@ -2678,7 +2681,7 @@ export default function AppointmentsPage() {
                               {event.title}
                             </div>
                             <div className="text-xs text-gray-500">
-                              Timp blocat
+                              Blocked Time
                             </div>
                           </div>
                         );
@@ -2713,7 +2716,7 @@ export default function AppointmentsPage() {
                           )}
                           {event.appointment?.notes && (
                             <div className="text-sm text-gray-700 max-w-[250px]">
-                              <strong>Notițe:</strong> {event.appointment.notes}
+                              <strong>Notes:</strong> {event.appointment.notes}
                             </div>
                           )}
                           <div className="text-xs text-gray-500 border-t pt-1">
@@ -2727,7 +2730,7 @@ export default function AppointmentsPage() {
                         eventId: event.id,
                         title: event.title,
                         typeName,
-                        hasNotițe: !!event.appointment?.notes
+                        hasNotes: !!event.appointment?.notes
                       });
 
                       setTimeout(() => {
@@ -2860,7 +2863,7 @@ export default function AppointmentsPage() {
                                   pointerEvents: 'auto',
                                   zIndex: 300,
                                 }}
-                                title="Deschide pacientul"
+                                title="Open patient"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   window.open(`/dashboard/patients/${appointment.patientId}`, '_blank');
@@ -2883,7 +2886,7 @@ export default function AppointmentsPage() {
                                     fontWeight: 'bold',
                                     textShadow: `1px 1px 2px ${textColor === 'white' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)'}`
                                   }}>
-                                    {appointment?.notes || 'Rezervare'}
+                                    {appointment?.notes || 'Reservation'}
                                   </div>
                                 </>
                               );
@@ -2949,7 +2952,7 @@ export default function AppointmentsPage() {
                             const blockPadding = isShortAppointment ? '2px' : '4px';
                             const nameMarginRight = isShortAppointment ? '2px' : '4px';
 
-                            // For short appointments show "Name – Notițe" on one line
+                            // For short appointments show "Name – Notes" on one line
                             const shortCombinedText = isShortAppointment && appointment?.notes
                               ? `${statusDisplay}${hasNoInsurance ? '💳 ' : ''}${event.title} – ${appointment.notes}`
                               : null;
@@ -3026,7 +3029,7 @@ export default function AppointmentsPage() {
                         className="rbc-header max-w-full"
                         style={{ backgroundColor: '#ffffff' }}
                       >
-                        <span>Ora</span>
+                        <span>Time</span>
                       </div>
                     );
                   },
@@ -3182,7 +3185,7 @@ export default function AppointmentsPage() {
                     action: LOG_ACTIONS.DRAG_APPOINTMENT,
                     entityType: ENTITY_TYPES.APPOINTMENT,
                     entityId: event.appointment.id,
-                    description: `Moved appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'} to ${start.toLocaleString()}`,
+                    description: `Moved appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'} to ${start.toLocaleString()}`,
                     details: {
                       previousStartTime: event.appointment.startTime,
                       newStartTime: start.toISOString(),
@@ -3215,7 +3218,7 @@ export default function AppointmentsPage() {
                     action: LOG_ACTIONS.RESIZE_APPOINTMENT,
                     entityType: ENTITY_TYPES.APPOINTMENT,
                     entityId: event.appointment.id,
-                    description: `Resized appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'} from ${event.appointment.duration}min to ${newDuration}min`,
+                    description: `Resized appointment for ${patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'} from ${event.appointment.duration}min to ${newDuration}min`,
                     details: {
                       previousDuration: event.appointment.duration,
                       newDuration: newDuration,
@@ -3252,7 +3255,7 @@ export default function AppointmentsPage() {
 
                       return {
                         id: pending.id,
-                        title: pending.patient?.name || 'Pacient necunoscut',
+                        title: pending.patient?.name || 'Unknown patient',
                         start: new Date(),
                         end: new Date(Date.now() + duration * 60000),
                         resourceId: null,
@@ -3292,7 +3295,7 @@ export default function AppointmentsPage() {
                         status: 'SCHEDULED',
                         notes: pending.notes
                       }).then(() => {
-                        // Șterge the pending appointment after successful creation
+                        // Delete the pending appointment after successful creation
                         fetch(`/api/pending-appointments?id=${pending.id}`, {
                           method: 'DELETE'
                         }).then(() => {
@@ -3319,12 +3322,9 @@ export default function AppointmentsPage() {
                   agendaTimeFormat: () => '',
                   agendaTimeRangeFormat: () => '',
                   dayFormat: 'dd',
-                  dayRangeHeaderFormat: ({ start, end }, culture, localizer) => {
-                    return `${localizer.format(start, 'd MMMM', culture)} – ${localizer.format(end, 'd MMMM yyyy', culture)}`;
-                  },
+                  dayRangeHeaderFormat: () => '',
                   dayHeaderFormat: (date, culture, localizer) => {
-                    const label = localizer.format(date, 'EEEE dd/MM', culture);
-                    return label.charAt(0).toUpperCase() + label.slice(1);
+                    return localizer.format(date, 'EEEE dd/MM', culture);
                   },
                   monthHeaderFormat: 'MMMM yyyy'
                 }}
@@ -3439,12 +3439,12 @@ export default function AppointmentsPage() {
           {/* Pending Appointments Mini-Calendar */}
           <div className="w-80 border-l bg-background my-4 rounded-lg">
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold">Programări în așteptare</h2>
+              <h2 className="text-lg font-semibold">Pending Appointments</h2>
             </div>
             <div className="h-[calc(100vh-200px)] overflow-auto">
               <div className="p-2">
                 {pendingAppointments.length === 0 ? (
-                  <p className="text-muted-foreground p-4">Nu există programări în așteptare</p>
+                  <p className="text-muted-foreground p-4">No pending appointments</p>
                 ) : (
                   <div className="space-y-2">
                     {pendingAppointments.map((appointment) => {
@@ -3474,7 +3474,7 @@ export default function AppointmentsPage() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className="font-medium">
-                                {patient ? `${patient.firstName} ${patient.lastName}` : 'Pacient necunoscut'}
+                                {patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown patient'}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -3501,7 +3501,7 @@ export default function AppointmentsPage() {
                             <p className="text-xs opacity-75 mt-1">{appointment.notes}</p>
                           )}
                           {appointment.duration && (
-                            <p className="text-xs opacity-75 mt-1">Durată: {appointment.duration} minute</p>
+                            <p className="text-xs opacity-75 mt-1">Duration: {appointment.duration} minutes</p>
                           )}
                         </div>
                       );
@@ -3517,12 +3517,12 @@ export default function AppointmentsPage() {
             <DialogContent className="sm:max-w-[600px] bg-background">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedAppointment ? 'Editează programare' : 'Programare nouă'}
+                  {selectedAppointment ? 'Edit Appointment' : 'New Appointment'}
                 </DialogTitle>
                 <DialogDescription>
                   {selectedAppointment
-                    ? 'Modificați detaliile programării.'
-                    : 'Completați detaliile pentru a crea o programare nouă.'}
+                    ? 'Edit the details of your appointment.'
+                    : 'Fill in the details to create a new appointment.'}
                 </DialogDescription>
               </DialogHeader>
               <EnhancedAppointmentForm
@@ -3572,12 +3572,12 @@ export default function AppointmentsPage() {
                           const response = await fetch(`/api/appointments?id=${selectedAppointment.id}`, {
                             method: 'DELETE',
                           });
-                          if (!response.ok) throw new Error('Ștergerea appointment');
-                          toast.success('Programarea a fost ștearsă cu succes');
+                          if (!response.ok) throw new Error('Failed to delete appointment');
+                          toast.success('Appointment deleted successfully');
                           setIsFormOpen(false);
                           await fetchAppointments();
                         } catch (error) {
-                          toast.error('Ștergerea programării a eșuat');
+                          toast.error('Failed to delete appointment');
                         }
                       }}
                     >
@@ -3652,11 +3652,11 @@ export default function AppointmentsPage() {
           <ClearImportantModal
             isOpen={clearImportantModal.isOpen}
             onClose={() => setClearImportantModal({ isOpen: false, appointment: null })}
-            onConfirm={handleȘtergeImportantConfirm}
+            onConfirm={handleClearImportantConfirm}
             patientName={clearImportantModal.appointment?.patient ? clearImportantModal.appointment.patient.name : 'Patient'}
           />
 
-          {/* Căutare rapidă Empty Spot Modal */}
+          {/* Quick Find Empty Spot Modal */}
           <QuickFindEmptySpotModal
             isOpen={isQuickFindModalOpen}
             onClose={() => {
@@ -3690,10 +3690,10 @@ export default function AppointmentsPage() {
                 // Broadcast refresh to other components
                 broadcastRefresh();
 
-                toast.success(`${appointments.length} programări programate cu succes`);
+                toast.success(`Successfully scheduled ${appointments.length} appointment${appointments.length > 1 ? 's' : ''}`);
               } catch (error) {
                 console.error('Error scheduling appointments:', error);
-                toast.error('Programarea consultațiilor a eșuat');
+                toast.error('Failed to schedule appointments');
               } finally {
                 setIsSchedulingQuickFind(false);
               }

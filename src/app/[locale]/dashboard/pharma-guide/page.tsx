@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Search, Pill } from 'lucide-react'
 import MedicationCard, { ClinicMedicationResult } from '@/components/pharma/MedicationCard'
@@ -37,10 +36,10 @@ export default function PharmaGuidePage() {
   }, [])
 
   useEffect(() => {
-    runSearch('')
-  }, [runSearch])
-
-  const handleSearch = () => runSearch(query)
+    const delay = query.trim() ? 300 : 0
+    const timeoutId = setTimeout(() => runSearch(query), delay)
+    return () => clearTimeout(timeoutId)
+  }, [query, runSearch])
 
   const handleStockUpdated = (updated: ClinicMedicationResult) => {
     setResults((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
@@ -61,22 +60,14 @@ export default function PharmaGuidePage() {
         </p>
       </div>
 
-      <div className="mb-6 flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSearch()
-            }}
-            placeholder="Căutați medicament (ex: Propofol, Midazolam, Paracetamol)..."
-            className="pl-10"
-          />
-        </div>
-        <Button onClick={handleSearch} disabled={loading}>
-          {loading ? 'Se caută...' : 'Caută'}
-        </Button>
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Căutați medicament (ex: Propofol, Midazolam, Paracetamol)..."
+          className="pl-10"
+        />
       </div>
 
       {hasSearched && !loading && (

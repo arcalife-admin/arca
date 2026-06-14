@@ -151,7 +151,7 @@ interface User {
   role: string
   isActive: boolean
   isDisabled: boolean
-  disabledMotiv?: string
+  disabledReason?: string
   disabledAt?: string
   lastLoginAt?: string
   createdAt: string
@@ -182,11 +182,11 @@ interface LeaveRequest {
   endTime?: string
   totalDays: number
   status: string
-  reviewComentarii?: string
+  reviewComments?: string
   hasAlternative: boolean
   alternativeStartDate?: string
   alternativeEndDate?: string
-  alternativeComentarii?: string
+  alternativeComments?: string
   alternativeAccepted?: boolean
   createdAt: string
   user: {
@@ -242,7 +242,7 @@ interface Analytics {
     appointmentCount: number
   }>
   tasksByStatus: Array<{ status: string; count: number }>
-  tasksByPrioritate: Array<{ priority: string; count: number }>
+  tasksByPriority: Array<{ priority: string; count: number }>
   leaveRequestsByStatus: Array<{ status: string; count: number }>
   leaveRequestsByType: Array<{ type: string; count: number }>
   topPractitioners: Array<{
@@ -402,8 +402,8 @@ export default function ManagerPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [analyticsFilter, setAnalyticsFilter] = useState('month')
 
-  // Personal Manager Notițe & Links states
-  const [personalNotițe, setPersonalNotițe] = useState('')
+  // Personal Manager Notes & Links states
+  const [personalNotes, setPersonalNotes] = useState('')
   const [personalLinks, setPersonalLinks] = useState<Array<{ id: string; title: string; url: string }>>([])
   const [newLinkTitle, setNewLinkTitle] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
@@ -417,17 +417,17 @@ export default function ManagerPage() {
     action: '',
     user: null
   })
-  const [disableMotiv, setDisableMotiv] = useState('')
+  const [disableReason, setDisableReason] = useState('')
 
   // Leave request states
   const [selectedLeaveRequest, setSelectedLeaveRequest] = useState<LeaveRequest | null>(null)
   const [leaveActionDialog, setLeaveActionDialog] = useState(false)
-  const [reviewComentarii, setReviewComentarii] = useState('')
+  const [reviewComments, setReviewComments] = useState('')
   const [alternativeStartDate, setAlternativeStartDate] = useState('')
   const [alternativeEndDate, setAlternativeEndDate] = useState('')
-  const [alternativeComentarii, setAlternativeComentarii] = useState('')
+  const [alternativeComments, setAlternativeComments] = useState('')
 
-  // Jurnale de activitate states
+  // Activity Logs states
   const [logs, setLogs] = useState<any[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [logFilters, setLogFilters] = useState({
@@ -447,7 +447,7 @@ export default function ManagerPage() {
   // Calendar Planning states
   const [practitioners, setPractitioners] = useState<(Practitioner & { isDisabled?: boolean })[]>([])
   const [roomCount, setRoomCount] = useState<number>(1)
-  const [openingDays, setOpeningDays] = useState<string[]>(['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'])
+  const [openingDays, setOpeningDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
   const [eurToRonRate, setEurToRonRate] = useState<number>(5.26)
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
@@ -529,8 +529,8 @@ export default function ManagerPage() {
     const userRole = session.user.role
     if (userRole !== 'ORGANIZATION_OWNER' && userRole !== 'MANAGER') {
       toast({
-        title: 'Acces refuzat',
-        description: 'Nu aveți permisiunea de a accesa această pagină.',
+        title: 'Access Denied',
+        description: 'You do not have permission to access this page.',
         variant: 'destructive',
       })
       router.push('/dashboard')
@@ -568,7 +568,7 @@ export default function ManagerPage() {
         newAssignments.push({
           startTime: defaultWorkingHours.start,
           endTime: defaultWorkingHours.end,
-          workingDays: ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri']
+          workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
         })
       }
       setRoomAssignments(newAssignments)
@@ -627,7 +627,7 @@ export default function ManagerPage() {
       if (response.ok) {
         const data = await response.json()
         setRoomCount(data.roomCount || 1)
-        setOpeningDays(data.openingDays || ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'])
+        setOpeningDays(data.openingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
         setEurToRonRate(typeof data.eurToRonRate === 'number' ? data.eurToRonRate : 5.26)
       }
     } catch (error) {
@@ -642,7 +642,7 @@ export default function ManagerPage() {
         try {
           setOpeningDays(JSON.parse(savedOpeningDays))
         } catch (e) {
-          setOpeningDays(['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'])
+          setOpeningDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
         }
       }
     }
@@ -663,7 +663,7 @@ export default function ManagerPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Salvarea organization settings')
+        throw new Error('Failed to save organization settings')
       }
       if (settings.eurToRonRate !== undefined) {
         invalidateEurToRonRateCache()
@@ -741,13 +741,13 @@ export default function ManagerPage() {
     }
   }
 
-  // Personal Notițe & Links Functions
-  const fetchPersonalNotițe = async () => {
+  // Personal Notes & Links Functions
+  const fetchPersonalNotes = async () => {
     try {
       const response = await fetch('/api/manager/personal-notes')
       if (response.ok) {
         const data = await response.json()
-        setPersonalNotițe(data.notes || '')
+        setPersonalNotes(data.notes || '')
         setPersonalLinks(data.links || [])
       }
     } catch (error) {
@@ -755,7 +755,7 @@ export default function ManagerPage() {
     }
   }
 
-  const savePersonalNotițe = async (notes: string) => {
+  const savePersonalNotes = async (notes: string) => {
     if (notesLoading) return
     setNotesLoading(true)
     try {
@@ -765,13 +765,13 @@ export default function ManagerPage() {
         body: JSON.stringify({ notes }),
       })
       if (!response.ok) {
-        throw new Error('Salvarea notes')
+        throw new Error('Failed to save notes')
       }
     } catch (error) {
       console.error('Error saving personal notes:', error)
       toast({
-        title: 'Eroare',
-        description: 'Salvarea notițelor a eșuat. Se va reîncerca automat.',
+        title: 'Error',
+        description: 'Failed to save notes. They will be retried automatically.',
         variant: 'destructive'
       })
     } finally {
@@ -782,8 +782,8 @@ export default function ManagerPage() {
   const addPersonalLink = async () => {
     if (!newLinkTitle.trim() || !newLinkUrl.trim()) {
       toast({
-        title: 'Eroare',
-        description: 'Introduceți titlul și URL-ul',
+        title: 'Error',
+        description: 'Please enter both title and URL',
         variant: 'destructive'
       })
       return
@@ -805,13 +805,13 @@ export default function ManagerPage() {
         setPersonalLinks(prev => [...prev, link])
         setNewLinkTitle('')
         setNewLinkUrl('')
-        toast({ title: 'Succes', description: 'Link adăugat cu succes' })
+        toast({ title: 'Success', description: 'Link added successfully' })
       }
     } catch (error) {
       console.error('Error adding link:', error)
       toast({
-        title: 'Eroare',
-        description: 'Adăugarea linkului a eșuat',
+        title: 'Error',
+        description: 'Failed to add link',
         variant: 'destructive'
       })
     }
@@ -835,13 +835,13 @@ export default function ManagerPage() {
           link.id === linkId ? { ...link, title: title.trim(), url: url.trim() } : link
         ))
         setEditingLinkId(null)
-        toast({ title: 'Succes', description: 'Link actualizat cu succes' })
+        toast({ title: 'Success', description: 'Link updated successfully' })
       }
     } catch (error) {
       console.error('Error updating link:', error)
       toast({
-        title: 'Eroare',
-        description: 'Actualizarea linkului a eșuat',
+        title: 'Error',
+        description: 'Failed to update link',
         variant: 'destructive'
       })
     }
@@ -857,13 +857,13 @@ export default function ManagerPage() {
 
       if (response.ok) {
         setPersonalLinks(prev => prev.filter(link => link.id !== linkId))
-        toast({ title: 'Succes', description: 'Link șters cu succes' })
+        toast({ title: 'Success', description: 'Link deleted successfully' })
       }
     } catch (error) {
       console.error('Error deleting link:', error)
       toast({
-        title: 'Eroare',
-        description: 'Ștergerea linkului a eșuat',
+        title: 'Error',
+        description: 'Failed to delete link',
         variant: 'destructive'
       })
     }
@@ -871,19 +871,19 @@ export default function ManagerPage() {
 
   // Auto-save personal notes when they change (with debounce)
   useEffect(() => {
-    if (personalNotițe && !loading) {
+    if (personalNotes && !loading) {
       const timer = setTimeout(() => {
-        savePersonalNotițe(personalNotițe)
+        savePersonalNotes(personalNotes)
       }, 1000) // Debounce for 1 second
 
       return () => clearTimeout(timer)
     }
-  }, [personalNotițe, loading])
+  }, [personalNotes, loading])
 
   // Fetch personal notes and links on mount
   useEffect(() => {
     if (activeTab === 'overview' && !loading) {
-      fetchPersonalNotițe()
+      fetchPersonalNotes()
     }
   }, [activeTab, loading])
 
@@ -896,7 +896,7 @@ export default function ManagerPage() {
       }
     } catch (error) {
       console.error('Error fetching practitioners:', error)
-      toast({ title: 'Eroare', description: 'Încărcarea practicienilor a eșuat', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Failed to fetch practitioners', variant: 'destructive' })
     }
   }
 
@@ -928,7 +928,7 @@ export default function ManagerPage() {
             uiRoomAssignments.push({
               startTime: defaultWorkingHours.start,
               endTime: defaultWorkingHours.end,
-              workingDays: ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri']
+              workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
             })
           }
 
@@ -988,7 +988,7 @@ export default function ManagerPage() {
         const initialAssignments = Array.from({ length: roomCount }, () => ({
           startTime: defaultWorkingHours.start,
           endTime: defaultWorkingHours.end,
-          workingDays: ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri']
+          workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
         }))
         setRoomAssignments(initialAssignments)
       }
@@ -1017,31 +1017,25 @@ export default function ManagerPage() {
 
       if (response.ok) {
         toast({
-          title: 'Succes',
-          description: action === 'DISABLE'
-            ? 'Utilizatorul a fost dezactivat cu succes.'
-            : 'Utilizatorul a fost activat cu succes.',
+          title: 'Success',
+          description: `User ${action.toLowerCase()}d successfully.`,
         })
         fetchUsers() // Refresh users list
         setUserActionDialog({ isOpen: false, action: '', user: null })
-        setDisableMotiv('')
+        setDisableReason('')
       } else {
         const error = await response.json()
         toast({
-          title: 'Eroare',
-          description: error.error || (action === 'DISABLE'
-            ? 'Utilizatorul nu a putut fi dezactivat.'
-            : 'Utilizatorul nu a putut fi activat.'),
+          title: 'Error',
+          description: error.error || `Failed to ${action.toLowerCase()} user.`,
           variant: 'destructive',
         })
       }
     } catch (error) {
       console.error('Error updating user:', error)
       toast({
-        title: 'Eroare',
-        description: action === 'DISABLE'
-          ? 'Utilizatorul nu a putut fi dezactivat. Încercați din nou.'
-          : 'Utilizatorul nu a putut fi activat. Încercați din nou.',
+        title: 'Error',
+        description: `Failed to ${action.toLowerCase()} user. Please try again.`,
         variant: 'destructive',
       })
     }
@@ -1068,29 +1062,29 @@ export default function ManagerPage() {
 
       if (response.ok) {
         toast({
-          title: 'Succes',
-          description: 'Cererea de concediu a fost actualizată cu succes.',
+          title: 'Success',
+          description: `Leave request ${action.toLowerCase().replace('_', ' ')}d successfully.`,
         })
         fetchLeaveRequests() // Refresh leave requests list
         setLeaveActionDialog(false)
         setSelectedLeaveRequest(null)
-        setReviewComentarii('')
+        setReviewComments('')
         setAlternativeStartDate('')
         setAlternativeEndDate('')
-        setAlternativeComentarii('')
+        setAlternativeComments('')
       } else {
         const error = await response.json()
         toast({
-          title: 'Eroare',
-          description: error.error || 'Actualizarea cererii de concediu a eșuat.',
+          title: 'Error',
+          description: error.error || 'Failed to update leave request.',
           variant: 'destructive',
         })
       }
     } catch (error) {
       console.error('Error updating leave request:', error)
       toast({
-        title: 'Eroare',
-        description: 'Actualizarea cererii de concediu a eșuat. Încercați din nou.',
+        title: 'Error',
+        description: 'Failed to update leave request. Please try again.',
         variant: 'destructive',
       })
     }
@@ -1105,15 +1099,15 @@ export default function ManagerPage() {
           leaveRequestId,
           type: 'review',
           action: 'DENY',
-          reviewComentarii: 'Anulat de manager',
+          reviewComments: 'Cancelled by manager',
         }),
       });
       if (!response.ok) throw new Error('Failed');
-      toast({ title: 'Succes', description: 'Cererea de concediu a fost anulată' });
+      toast({ title: 'Success', description: 'Leave request cancelled' });
       fetchLeaveRequests();
     } catch (err) {
       console.error(err);
-      toast({ title: 'Eroare', description: 'Anularea cererii de concediu a eșuat', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to cancel leave request', variant: 'destructive' });
     }
   };
 
@@ -1139,7 +1133,7 @@ export default function ManagerPage() {
         end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
         break
       case 'nextWeek':
-        // Următor week
+        // Next week
         const nextWeekStart = new Date(today)
         nextWeekStart.setDate(today.getDate() + (7 - today.getDay() + 1) % 7 || 7)
         start = nextWeekStart
@@ -1147,7 +1141,7 @@ export default function ManagerPage() {
         end.setDate(start.getDate() + 6)
         break
       case 'nextMonth':
-        // Următor month
+        // Next month
         start = new Date(today.getFullYear(), today.getMonth() + 1, 1)
         end = new Date(today.getFullYear(), today.getMonth() + 2, 0)
         break
@@ -1174,7 +1168,7 @@ export default function ManagerPage() {
     }))
     setOtherWorkers(updatedOtherWorkers)
 
-    toast({ title: 'Succes', description: 'Orele implicite au fost aplicate tuturor angajaților' })
+    toast({ title: 'Success', description: 'Default hours applied to all workers' })
   }
 
   const handleRoomAssignment = (roomIndex: number, field: string, value: any) => {
@@ -1183,7 +1177,7 @@ export default function ManagerPage() {
       updatedAssignments[roomIndex] = {
         startTime: defaultWorkingHours.start,
         endTime: defaultWorkingHours.end,
-        workingDays: ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri']
+        workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       }
     }
 
@@ -1212,7 +1206,7 @@ export default function ManagerPage() {
       practitionerId: '',
       startTime: defaultWorkingHours.start,
       endTime: defaultWorkingHours.end,
-      workingDays: ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri']
+      workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     }])
   }
 
@@ -1230,7 +1224,7 @@ export default function ManagerPage() {
     reason?: string
   }) => {
     if (!activeSchedule) {
-      toast({ title: 'Eroare', description: 'Niciun program activ găsit', variant: 'destructive' })
+      toast({ title: 'Error', description: 'No active schedule found', variant: 'destructive' })
       return
     }
 
@@ -1256,15 +1250,15 @@ export default function ManagerPage() {
         // Also refresh the schedule to make sure we have the latest data from DB
         await fetchActiveSchedule()
 
-        toast({ title: 'Succes', description: 'Tura a fost adăugată cu succes' })
+        toast({ title: 'Success', description: 'Shift added successfully' })
       } else {
         const error = await response.json()
         console.error('Failed to create shift:', error)
-        toast({ title: 'Eroare', description: error.error, variant: 'destructive' })
+        toast({ title: 'Error', description: error.error, variant: 'destructive' })
       }
     } catch (error) {
       console.error('Error adding shift:', error)
-      toast({ title: 'Eroare', description: 'Adăugarea turei a eșuat', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Failed to add shift', variant: 'destructive' })
     }
   }
 
@@ -1276,14 +1270,14 @@ export default function ManagerPage() {
 
       if (response.ok) {
         setRoomShifts(prev => prev.filter(shift => shift.id !== shiftId))
-        toast({ title: 'Succes', description: 'Tura a fost eliminată cu succes' })
+        toast({ title: 'Success', description: 'Shift removed successfully' })
       } else {
         const error = await response.json()
-        toast({ title: 'Eroare', description: error.error, variant: 'destructive' })
+        toast({ title: 'Error', description: error.error, variant: 'destructive' })
       }
     } catch (error) {
       console.error('Error removing shift:', error)
-      toast({ title: 'Eroare', description: 'Eliminarea turei a eșuat', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Failed to remove shift', variant: 'destructive' })
     }
   }
 
@@ -1293,7 +1287,7 @@ export default function ManagerPage() {
 
   const handleSaveWeekShifts = async (roomNumber: number, shifts: RoomShiftDB[]) => {
     if (!activeSchedule) {
-      toast({ title: 'Eroare', description: 'Niciun program activ găsit', variant: 'destructive' })
+      toast({ title: 'Error', description: 'No active schedule found', variant: 'destructive' })
       return
     }
 
@@ -1303,7 +1297,7 @@ export default function ManagerPage() {
         shift => shift.roomNumber === roomNumber && shift.dayOfWeek && !shift.date
       )
 
-      // Șterge existing weekly shifts
+      // Delete existing weekly shifts
       for (const shift of existingWeeklyShifts) {
         if (shift.id && !shift.id.startsWith('temp-')) {
           await fetch(`/api/clinic-schedule/shifts?id=${shift.id}`, {
@@ -1350,7 +1344,7 @@ export default function ManagerPage() {
         ...newShifts
       ])
 
-      toast({ title: 'Succes', description: 'Programul săptămânal a fost salvat cu succes' })
+      toast({ title: 'Success', description: 'Week schedule saved successfully' })
     } catch (error) {
       console.error('Error saving week shifts:', error)
       throw error
@@ -1448,12 +1442,12 @@ export default function ManagerPage() {
     const end = new Date(endDate)
 
     while (current <= end) {
-      const dayName = current.toLocaleDateString('ro-RO', { weekday: 'long' })
+      const dayName = current.toLocaleDateString('en-US', { weekday: 'long' })
       if (!openingDays.includes(dayName)) {
         current.setDate(current.getDate() + 1)
         continue
       }
-      const dateStr = current.toLocaleDateString('ro-RO', { month: 'short', day: 'numeric' })
+      const dateStr = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
       const overridesToday = overrideMap[current.toDateString()] || []
 
@@ -1654,7 +1648,7 @@ export default function ManagerPage() {
       const defaultAssignments = Array.from({ length: roomCount }, () => ({
         startTime: defaultWorkingHours.start,
         endTime: defaultWorkingHours.end,
-        workingDays: ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri']
+        workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       }))
       setRoomAssignments(defaultAssignments)
 
@@ -1669,14 +1663,14 @@ export default function ManagerPage() {
       setEndDate(nextWeek)
 
       toast({
-        title: 'Resetare program',
-        description: 'Programul a fost resetat complet, inclusiv orele personalizate și excepțiile. Puteți configura acum un program nou.'
+        title: 'Schedule Reset',
+        description: 'Schedule has been completely reset including all custom times and overrides. You can now set up a new schedule.'
       })
     } catch (error) {
       console.error('Error resetting schedule:', error)
       toast({
-        title: 'Resetare eșuată',
-        description: 'Resetarea programului a eșuat. Încercați din nou.',
+        title: 'Reset Failed',
+        description: 'Failed to reset schedule. Please try again.',
         variant: 'destructive'
       })
     } finally {
@@ -1687,7 +1681,7 @@ export default function ManagerPage() {
   const handleSaveSchedule = async () => {
     try {
       if (!startDate || !endDate) {
-        toast({ title: 'Eroare', description: 'Selectați datele de început și sfârșit', variant: 'destructive' })
+        toast({ title: 'Error', description: 'Please select start and end dates', variant: 'destructive' })
         return
       }
 
@@ -1710,7 +1704,7 @@ export default function ManagerPage() {
       }))
 
       const scheduleData = {
-        name: `Program ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
+        name: `Schedule ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         roomCount,
@@ -1728,7 +1722,7 @@ export default function ManagerPage() {
 
       if (response.ok) {
         const data = await response.json()
-        toast({ title: 'Succes', description: 'Programul a fost salvat cu succes în baza de date' })
+        toast({ title: 'Success', description: 'Schedule saved successfully to database' })
 
         // Refresh the schedule data from the server
         await fetchActiveSchedule()
@@ -1738,28 +1732,28 @@ export default function ManagerPage() {
       }
     } catch (error) {
       console.error('Error saving schedule:', error)
-      toast({ title: 'Eroare', description: `Salvarea programului a eșuat: ${error.message}`, variant: 'destructive' })
+      toast({ title: 'Error', description: `Failed to save schedule: ${error.message}`, variant: 'destructive' })
     }
   }
 
   const handleExportSchedule = async () => {
     if (!startDate || !endDate) {
-      toast({ title: 'Eroare', description: 'Setați mai întâi datele programului', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Please set schedule dates first', variant: 'destructive' })
       return
     }
 
     try {
       const preview = generateSchedulePreview()
       const workbook = new ExcelJS.Workbook()
-      const worksheet = workbook.addWorksheet('Program clinică')
+      const worksheet = workbook.addWorksheet('Clinic Schedule')
 
       // Define headers with separate columns for main and side practitioners
-      const headers = ['📊 Săptămâna', '📅 Data', '📆 Zi']
+      const headers = ['📊 Week', '📅 Date', '📆 Day']
       for (let i = 1; i <= roomCount; i++) {
-        headers.push(`🏥 Sala ${i} - Principal`)
-        headers.push(`🏥 Sala ${i} - Secundar`)
+        headers.push(`🏥 Room ${i} - Main`)
+        headers.push(`🏥 Room ${i} - Side`)
       }
-      headers.push('👥 Alți angajați')
+      headers.push('👥 Other Workers')
 
       // Helper function to get ISO week number
       const getISOWeek = (date: Date) => {
@@ -1775,7 +1769,7 @@ export default function ManagerPage() {
 
       // Title row
       const titleRow = worksheet.getRow(currentRow)
-      titleRow.getCell(1).value = '🦷 Program clinică'
+      titleRow.getCell(1).value = '🦷 Clinic Schedule'
       titleRow.getCell(1).font = { size: 20, bold: true, color: { argb: 'FF34495E' } }
       titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
       worksheet.mergeCells(currentRow, 1, currentRow, headers.length)
@@ -1784,12 +1778,12 @@ export default function ManagerPage() {
 
       // Date range row
       const dateRow = worksheet.getRow(currentRow)
-      const dateText = `${startDate.toLocaleDateString('ro-RO', {
+      const dateText = `${startDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-      })} - ${endDate.toLocaleDateString('ro-RO', {
+      })} - ${endDate.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -1884,7 +1878,7 @@ export default function ManagerPage() {
               const fontColor = getContrastYIQ(bgColor.slice(2))
               mainCell.font = { color: { argb: 'FF' + fontColor }, size: 9, bold: true }
             } else {
-              mainCell.value = 'Fără atribuire'
+              mainCell.value = 'No assignment'
               mainCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
               mainCell.font = { color: { argb: 'FF666666' }, size: 9, italic: true }
             }
@@ -1899,7 +1893,7 @@ export default function ManagerPage() {
               const fontColor = getContrastYIQ(bgColor.slice(2))
               mainCell.font = { color: { argb: 'FF' + fontColor }, size: 9, bold: true }
             } else {
-              mainCell.value = 'Fără atribuire'
+              mainCell.value = 'No assignment'
               mainCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
               mainCell.font = { color: { argb: 'FF666666' }, size: 9, italic: true }
             }
@@ -1918,7 +1912,7 @@ export default function ManagerPage() {
               const fontColor = getContrastYIQ(bgColor.slice(2))
               sideCell.font = { color: { argb: 'FF' + fontColor }, size: 9, bold: true }
             } else {
-              sideCell.value = 'Fără atribuire'
+              sideCell.value = 'No assignment'
               sideCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
               sideCell.font = { color: { argb: 'FF666666' }, size: 9, italic: true }
             }
@@ -1933,7 +1927,7 @@ export default function ManagerPage() {
               const fontColor = getContrastYIQ(bgColor.slice(2))
               sideCell.font = { color: { argb: 'FF' + fontColor }, size: 9, bold: true }
             } else {
-              sideCell.value = 'Fără atribuire'
+              sideCell.value = 'No assignment'
               sideCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
               sideCell.font = { color: { argb: 'FF666666' }, size: 9, italic: true }
             }
@@ -1951,7 +1945,7 @@ export default function ManagerPage() {
           })
         })
 
-        // Alți angajați column
+        // Other Workers column
         const otherWorkersCell = dataRow.getCell(4 + (roomCount * 2))
         if (day.otherWorkers.length > 0) {
           // If multiple workers, show them separately or use first one's color
@@ -1966,7 +1960,7 @@ export default function ManagerPage() {
           const fontColor = getContrastYIQ(bgColor.slice(2))
           otherWorkersCell.font = { color: { argb: 'FF' + fontColor }, size: 9, bold: true }
         } else {
-          otherWorkersCell.value = 'Niciunul'
+          otherWorkersCell.value = 'None'
           otherWorkersCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
           otherWorkersCell.font = { color: { argb: 'FF666666' }, size: 9, italic: true }
         }
@@ -2035,14 +2029,14 @@ export default function ManagerPage() {
       window.URL.revokeObjectURL(url)
 
       toast({
-        title: '✨ Succes!',
-        description: 'Programul colorat a fost exportat cu coloane separate pentru practicieni!',
+        title: '✨ Success!',
+        description: 'Your beautifully colored schedule has been exported with separate practitioner columns!',
       })
     } catch (error) {
       console.error('Export error:', error)
       toast({
-        title: 'Export eșuat',
-        description: 'Exportul programului a eșuat. Încercați din nou.',
+        title: 'Export Failed',
+        description: 'There was an error exporting the schedule. Please try again.',
         variant: 'destructive'
       })
     }
@@ -2054,7 +2048,7 @@ export default function ManagerPage() {
 
   const handleEditSpecificDay = () => {
     // For now, just show a toast - this would open a modal to edit specific days
-    toast({ title: 'În curând', description: 'Editarea zilelor specifice va fi disponibilă în curând' })
+    toast({ title: 'Coming Soon', description: 'Specific day editing will be available soon' })
   }
 
   // Helper to determine default start/end given room/practitioner context and date
@@ -2138,12 +2132,12 @@ export default function ManagerPage() {
 
   const getDayContextMenuItems = useCallback((date: Date, roomNumber?: number, practitionerId?: string) => [
     {
-      label: 'Setează ore personalizate',
+      label: 'Set Custom Times',
       icon: <Clock className="h-4 w-4" />,
       onClick: () => handleDayRightClick(date, roomNumber, practitionerId)
     },
     {
-      label: 'Marchează indisponibil',
+      label: 'Mark Unavailable',
       icon: <UserX className="h-4 w-4" />,
       onClick: () => {
         const { defaultStart, defaultEnd } = computeDefaultTimes(roomNumber, practitionerId)
@@ -2161,12 +2155,12 @@ export default function ManagerPage() {
 
   const getDayOfWeekContextMenuItems = useCallback((dayOfWeek: string, roomNumber?: number, practitionerId?: string) => [
     {
-      label: `Setează orele pentru ${dayOfWeek}`,
+      label: `Set ${dayOfWeek} Hours`,
       icon: <Clock className="h-4 w-4" />,
       onClick: () => handleDayOfWeekRightClick(dayOfWeek, roomNumber, practitionerId)
     },
     {
-      label: `${dayOfWeek} indisponibil`,
+      label: `${dayOfWeek} Unavailable`,
       icon: <UserX className="h-4 w-4" />,
       onClick: () => {
         const { defaultStart, defaultEnd } = computeDefaultTimes(roomNumber, practitionerId)
@@ -2210,74 +2204,21 @@ export default function ManagerPage() {
   }
 
   const formatRole = (role: string) => {
-    const roleLabels: Record<string, string> = {
-      ORGANIZATION_OWNER: 'Proprietar organizație',
-      MANAGER: 'Manager',
-      PLASTIC_SURGEON: 'Chirurg plastician',
-      SURGEON: 'Chirurg',
-      NURSE: 'Asistent medical',
-      RECEPTIONIST: 'Recepționer',
-      ASSISTANT: 'Asistent',
-      ANESTHESIOLOGIST: 'Anestezist',
-      AESTHETIC_NURSE: 'Asistent estetic',
-      MEDICAL_ASSISTANT: 'Asistent medical',
-      COUNSELOR: 'Consilier',
-      PHOTOGRAPHER: 'Fotograf',
-    }
-    return roleLabels[role] ?? role
+    return role.split('_').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ')
   }
 
   const formatLeaveType = (type: string) => {
-    const leaveTypeLabels: Record<string, string> = {
-      VACATION: 'Concediu de odihnă',
-      SICK_LEAVE: 'Concediu medical',
-      PERSONAL: 'Concediu personal',
-      MATERNITY: 'Concediu de maternitate',
-      PATERNITY: 'Concediu de paternitate',
-      BEREAVEMENT: 'Concediu de deces',
-      EMERGENCY: 'Urgență',
-      UNPAID: 'Concediu fără plată',
-      COMPENSATORY: 'Concediu compensatoriu',
-      STUDY: 'Concediu de studii',
-      OTHER: 'Altele',
-    }
-    return leaveTypeLabels[type] ?? type
+    return type.split('_').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ')
   }
 
   const formatStatus = (status: string) => {
-    const statusLabels: Record<string, string> = {
-      PENDING: 'În așteptare',
-      APPROVED: 'Aprobat',
-      DENIED: 'Refuzat',
-      CANCELLED: 'Anulat',
-      ALTERNATIVE_PROPOSED: 'Alternativă propusă',
-      ALTERNATIVE_ACCEPTED: 'Alternativă acceptată',
-      ALTERNATIVE_REJECTED: 'Alternativă respinsă',
-    }
-    return statusLabels[status] ?? status
-  }
-
-  const formatEntityType = (entityType: string) => {
-    const entityTypeLabels: Record<string, string> = {
-      APPOINTMENT: 'Programări',
-      PATIENT: 'Pacienți',
-      TASK: 'Sarcini',
-      USER: 'Utilizatori',
-      DENTAL_CHART: 'Fișe dentare',
-      NOTE: 'Notițe',
-    }
-    return entityTypeLabels[entityType] ?? entityType
-  }
-
-  const formatSeverity = (severity: string) => {
-    const severityLabels: Record<string, string> = {
-      DEBUG: 'Depanare',
-      INFO: 'Informare',
-      WARN: 'Avertisment',
-      ERROR: 'Eroare',
-      CRITICAL: 'Critic',
-    }
-    return severityLabels[severity] ?? severity
+    return status.split('_').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ')
   }
 
   // Utility function to darken a hex color
@@ -2300,7 +2241,7 @@ export default function ManagerPage() {
     return `#${toHex(darkenedR)}${toHex(darkenedG)}${toHex(darkenedB)}`
   }
 
-  // Jurnale de activitate functions
+  // Activity Logs functions
   const fetchLogs = async (page = 1, filters = logFilters) => {
     setLogsLoading(true)
     try {
@@ -2365,15 +2306,15 @@ export default function ManagerPage() {
         window.URL.revokeObjectURL(url)
 
         toast({
-          title: 'Succes',
-          description: 'Jurnalele au fost descărcate cu succes.',
+          title: 'Success',
+          description: 'Logs downloaded successfully.',
         })
       }
     } catch (error) {
       console.error('Error downloading logs:', error)
       toast({
-        title: 'Eroare',
-        description: 'Descărcarea jurnalelor a eșuat.',
+        title: 'Error',
+        description: 'Failed to download logs.',
         variant: 'destructive',
       })
     }
@@ -2396,7 +2337,7 @@ export default function ManagerPage() {
       if (response.ok) {
         const data = await response.json()
         toast({
-          title: 'Succes',
+          title: 'Success',
           description: data.message,
         })
         fetchLogs(logsPage)
@@ -2406,8 +2347,8 @@ export default function ManagerPage() {
     } catch (error) {
       console.error('Error deleting logs:', error)
       toast({
-        title: 'Eroare',
-        description: 'Ștergerea jurnalelor a eșuat.',
+        title: 'Error',
+        description: 'Failed to delete logs.',
         variant: 'destructive',
       })
     }
@@ -2445,16 +2386,16 @@ export default function ManagerPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Panou manager</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Prezentare completă și gestionarea organizației dvs.
+            Comprehensive overview and management of your organization
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/manager/time-clock">
               <Clock className="h-4 w-4 mr-2" />
-              Pontaj
+              Time clock
             </Link>
           </Button>
           <Button
@@ -2463,39 +2404,39 @@ export default function ManagerPage() {
             onClick={() => fetchAllData()}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            Reîmprospătează datele
+            Refresh Data
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Prezentare generală</TabsTrigger>
-          <TabsTrigger value="users">Gestionare utilizatori</TabsTrigger>
-          <TabsTrigger value="leave-requests">Cereri de concediu</TabsTrigger>
-          <TabsTrigger value="calendar-planning">Planificare calendar</TabsTrigger>
-          <TabsTrigger value="logs">Jurnale de activitate</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="leave-requests">Leave Requests</TabsTrigger>
+          <TabsTrigger value="calendar-planning">Calendar Planning</TabsTrigger>
+          <TabsTrigger value="logs">Activity Logs</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Panou analitice</h2>
-              <p className="text-sm text-gray-500">Prezentare generală cu analize în timp real, statistici și spațiu de lucru personal</p>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Analytics Dashboard</h2>
+              <p className="text-sm text-gray-500">Complete overview with real-time analytics, insights, and personal workspace</p>
             </div>
             <Select value={analyticsFilter} onValueChange={(value) => {
               setAnalyticsFilter(value)
               fetchAnalytics()
             }}>
               <SelectTrigger className="w-[180px] border-2 border-blue-200 hover:border-blue-300 transition-colors">
-                <SelectValue placeholder="Selectați perioada" />
+                <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="week">Săptămâna aceasta</SelectItem>
-                <SelectItem value="month">Luna aceasta</SelectItem>
-                <SelectItem value="quarter">Trimestrul acesta</SelectItem>
-                <SelectItem value="year">Anul acesta</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="quarter">This Quarter</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -2513,11 +2454,11 @@ export default function ManagerPage() {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between text-white">
                         <div>
-                          <p className="text-sm font-medium text-blue-100">Pacienți activi</p>
+                          <p className="text-sm font-medium text-blue-100">Active Patients</p>
                           <p className="text-3xl font-bold">{analytics.summary.activePatients}</p>
                           <p className="text-xs text-blue-200 flex items-center mt-1">
                             <TrendingUp className="h-3 w-3 mr-1" />
-                            +{analytics.summary.newPatientsThisPeriod} noi {analyticsFilter === "week" ? "săptămâna aceasta" : analyticsFilter === "month" ? "luna aceasta" : analyticsFilter === "quarter" ? "trimestrul acesta" : "anul acesta"}
+                            +{analytics.summary.newPatientsThisPeriod} new this {analyticsFilter}
                           </p>
                         </div>
                         <div className="p-3 bg-white/20 rounded-full backdrop-blur">
@@ -2537,7 +2478,7 @@ export default function ManagerPage() {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between text-white">
                         <div>
-                          <p className="text-sm font-medium text-green-100">Venituri {analyticsFilter === "week" ? "săptămâna aceasta" : analyticsFilter === "month" ? "luna aceasta" : analyticsFilter === "quarter" ? "trimestrul acesta" : "anul acesta"}</p>
+                          <p className="text-sm font-medium text-green-100">Revenue This {analyticsFilter}</p>
                           <p className="text-3xl font-bold">${analytics.summary.revenueThisPeriod?.toLocaleString() || '0'}</p>
                           <p className="text-xs text-green-200 flex items-center mt-1">
                             {analytics.summary.revenueThisPeriod > analytics.summary.revenuePreviousPeriod ? (
@@ -2547,8 +2488,8 @@ export default function ManagerPage() {
                             )}
                             {analytics.summary.revenuePreviousPeriod > 0
                               ? `${((analytics.summary.revenueThisPeriod - analytics.summary.revenuePreviousPeriod) / analytics.summary.revenuePreviousPeriod * 100).toFixed(1)}%`
-                              : 'Nou'
-                            } față de {analyticsFilter === "week" ? "săptămâna anterioară" : analyticsFilter === "month" ? "luna anterioară" : analyticsFilter === "quarter" ? "trimestrul anterior" : "anul anterior"}
+                              : 'New'
+                            } from previous {analyticsFilter}
                           </p>
                         </div>
                         <div className="p-3 bg-white/20 rounded-full backdrop-blur">
@@ -2568,9 +2509,9 @@ export default function ManagerPage() {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between text-white">
                         <div>
-                          <p className="text-sm font-medium text-purple-100">Programări</p>
+                          <p className="text-sm font-medium text-purple-100">Appointments</p>
                           <p className="text-3xl font-bold">{analytics.summary.totalAppointments}</p>
-                          <p className="text-xs text-purple-200 mt-1">{analyticsFilter === "week" ? "Săptămâna aceasta" : analyticsFilter === "month" ? "Luna aceasta" : analyticsFilter === "quarter" ? "Trimestrul acesta" : "Anul acesta"}</p>
+                          <p className="text-xs text-purple-200 mt-1">This {analyticsFilter}</p>
                         </div>
                         <div className="p-3 bg-white/20 rounded-full backdrop-blur">
                           <Calendar className="h-8 w-8 text-white" />
@@ -2589,7 +2530,7 @@ export default function ManagerPage() {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between text-white">
                         <div>
-                          <p className="text-sm font-medium text-orange-100">Eficiență personal</p>
+                          <p className="text-sm font-medium text-orange-100">Staff Efficiency</p>
                           <p className="text-3xl font-bold">{analytics.summary.staffEfficiencyPercentage}%</p>
                           <p className="text-xs text-orange-200 flex items-center mt-1">
                             {analytics.summary.staffEfficiencyChange >= 0 ? (
@@ -2598,7 +2539,7 @@ export default function ManagerPage() {
                               <TrendingDown className="h-3 w-3 mr-1" />
                             )}
                             {analytics.summary.staffEfficiencyChange >= 0 ? '+' : ''}
-                            {analytics.summary.staffEfficiencyChange.toFixed(1).replace('.', ',')}% față de perioada anterioară
+                            {analytics.summary.staffEfficiencyChange.toFixed(1)}% vs previous {analyticsFilter}
                           </p>
                         </div>
                         <div className="p-3 bg-white/20 rounded-full backdrop-blur">
@@ -2616,7 +2557,7 @@ export default function ManagerPage() {
                 {/* Analytics Charts - 3/4 width */}
                 <div className="lg:col-span-3 space-y-6">
 
-                  {/* Tendințe venituri organizație */}
+                  {/* Organization Revenue Trends */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -2628,9 +2569,9 @@ export default function ManagerPage() {
                           <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg">
                             <BarChart3 className="h-5 w-5 text-white" />
                           </div>
-                          Tendințe venituri organizație
+                          Organization Revenue Trends
                         </CardTitle>
-                        <CardDescription className="text-gray-600">Venitul total din toate procedurile și serviciile organizației</CardDescription>
+                        <CardDescription className="text-gray-600">Total income from all procedures and services across the organization</CardDescription>
                       </CardHeader>
                       <CardContent className="p-6">
                         <ResponsiveContainer width="100%" height={320}>
@@ -2676,7 +2617,7 @@ export default function ManagerPage() {
                               }}
                               formatter={(value, name) => [
                                 name === 'revenue' ? `$${Number(value).toLocaleString()}` : value,
-                                name === 'revenue' ? 'Venituri' : 'Programări'
+                                name === 'revenue' ? 'Revenue' : 'Appointments'
                               ]}
                             />
                             <Legend />
@@ -2687,7 +2628,7 @@ export default function ManagerPage() {
                               stroke="#10b981"
                               fillOpacity={1}
                               fill="url(#revenueGradient)"
-                              name="Venituri"
+                              name="Revenue"
                               strokeWidth={3}
                             />
                             <Area
@@ -2697,7 +2638,7 @@ export default function ManagerPage() {
                               stroke="#3b82f6"
                               fillOpacity={1}
                               fill="url(#appointmentGradient2)"
-                              name="Programări"
+                              name="Appointments"
                               strokeWidth={2}
                             />
                           </AreaChart>
@@ -2720,9 +2661,9 @@ export default function ManagerPage() {
                             <div className="p-2 bg-gradient-to-r from-pink-500 to-orange-500 rounded-lg">
                               <BarChart3 className="h-4 w-4 text-white" />
                             </div>
-                            Status programări
+                            Appointment Status
                           </CardTitle>
-                          <CardDescription>Distribuția statusurilor programărilor</CardDescription>
+                          <CardDescription>Distribution of appointment statuses</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6">
                           <ResponsiveContainer width="100%" height={250}>
@@ -2769,9 +2710,9 @@ export default function ManagerPage() {
                             <div className="p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg">
                               <Users className="h-4 w-4 text-white" />
                             </div>
-                            Status activitate utilizatori
+                            User Activity Status
                           </CardTitle>
-                          <CardDescription>Defalcare utilizatori activi vs. inactivi</CardDescription>
+                          <CardDescription>Active vs Inactive users breakdown</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6">
                           <ResponsiveContainer width="100%" height={250}>
@@ -2779,12 +2720,12 @@ export default function ManagerPage() {
                               <Pie
                                 data={[
                                   {
-                                    name: 'Utilizatori activi',
+                                    name: 'Active Users',
                                     value: analytics.userActivity?.activeUsers || analytics.summary.activeUsers,
                                     percentage: analytics.userActivity?.activePercentage || Math.round((analytics.summary.activeUsers / analytics.summary.totalUsers) * 100)
                                   },
                                   {
-                                    name: 'Utilizatori inactivi',
+                                    name: 'Inactive Users',
                                     value: analytics.userActivity?.inactiveUsers || (analytics.summary.totalUsers - analytics.summary.activeUsers),
                                     percentage: analytics.userActivity?.inactivePercentage || Math.round(((analytics.summary.totalUsers - analytics.summary.activeUsers) / analytics.summary.totalUsers) * 100)
                                   }
@@ -2810,7 +2751,7 @@ export default function ManagerPage() {
                                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                 }}
                                 formatter={(value, name) => [
-                                  `${value} utilizatori (${name === 'Utilizatori activi' ?
+                                  `${value} users (${name === 'Active Users' ?
                                     analytics.userActivity?.activePercentage || Math.round((analytics.summary.activeUsers / analytics.summary.totalUsers) * 100) :
                                     analytics.userActivity?.inactivePercentage || Math.round(((analytics.summary.totalUsers - analytics.summary.activeUsers) / analytics.summary.totalUsers) * 100)
                                   }%)`,
@@ -2822,11 +2763,11 @@ export default function ManagerPage() {
                           <div className="flex justify-center mt-4 space-x-6">
                             <div className="flex items-center">
                               <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                              <span className="text-sm font-medium">Activi ({analytics.summary.activeUsers})</span>
+                              <span className="text-sm font-medium">Active ({analytics.summary.activeUsers})</span>
                             </div>
                             <div className="flex items-center">
                               <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                              <span className="text-sm font-medium">Inactivi ({analytics.summary.totalUsers - analytics.summary.activeUsers})</span>
+                              <span className="text-sm font-medium">Inactive ({analytics.summary.totalUsers - analytics.summary.activeUsers})</span>
                             </div>
                           </div>
                         </CardContent>
@@ -2834,7 +2775,7 @@ export default function ManagerPage() {
                     </motion.div>
                   </div>
 
-                  {/* Cei mai performanți */}
+                  {/* Top Performers */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -2846,9 +2787,9 @@ export default function ManagerPage() {
                           <div className="p-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-lg">
                             <TrendingUp className="h-4 w-4 text-white" />
                           </div>
-                          Cei mai performanți {analyticsFilter === "week" ? "Săptămâna aceasta" : analyticsFilter === "month" ? "Luna aceasta" : analyticsFilter === "quarter" ? "Trimestrul acesta" : "Anul acesta"}
+                          Top Performers This {analyticsFilter}
                         </CardTitle>
-                        <CardDescription>Cei mai productivi membri ai echipei</CardDescription>
+                        <CardDescription>Most productive team members</CardDescription>
                       </CardHeader>
                       <CardContent className="p-6">
                         <div className="space-y-4">
@@ -2869,7 +2810,7 @@ export default function ManagerPage() {
                               </div>
                               <div className="text-right">
                                 <p className="text-2xl font-bold text-gray-900">{practitioner.appointmentCount}</p>
-                                <p className="text-xs text-gray-500">programări</p>
+                                <p className="text-xs text-gray-500">appointments</p>
                               </div>
                             </div>
                           ))}
@@ -2892,44 +2833,44 @@ export default function ManagerPage() {
                         <div className="p-2 bg-white/20 rounded-lg backdrop-blur">
                           <MessageSquare className="h-5 w-5" />
                         </div>
-                        Spațiu de lucru manager
+                        Manager Workspace
                         {notesLoading && (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                         )}
                       </CardTitle>
                       <CardDescription className="text-indigo-100">
-                        Notițe private și linkuri rapide — salvate automat
+                        Private notes & quick links - auto-saved
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 space-y-6">
 
-                      {/* Personal Notițe */}
+                      {/* Personal Notes */}
                       <div>
                         <Label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                           <Edit2 className="h-4 w-4" />
-                          Notițe rapide
+                          Quick Notes
                         </Label>
                         <Textarea
-                          value={personalNotițe}
-                          onChange={(e) => setPersonalNotițe(e.target.value)}
-                          placeholder="Notițe private... se salvează automat pe măsură ce scrieți!"
+                          value={personalNotes}
+                          onChange={(e) => setPersonalNotes(e.target.value)}
+                          placeholder="Type your private notes here... they'll auto-save as you type!"
                           className="min-h-[140px] bg-white border-2 border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 rounded-lg shadow-sm resize-none"
                         />
                         <div className="flex items-center gap-2 mt-2">
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                            <span className="text-xs text-green-600 font-medium">Se salvează automat</span>
+                            <span className="text-xs text-green-600 font-medium">Auto-saving</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Linkuri rapide */}
+                      {/* Quick Links */}
                       <div>
                         <Label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                           <Button variant="ghost" size="sm" className="h-auto p-0">
                             <CalendarDays className="h-4 w-4" />
                           </Button>
-                          Linkuri rapide
+                          Quick Links
                         </Label>
 
                         {/* Add New Link */}
@@ -2937,7 +2878,7 @@ export default function ManagerPage() {
                           <Input
                             value={newLinkTitle}
                             onChange={(e) => setNewLinkTitle(e.target.value)}
-                            placeholder="Titlul linkului..."
+                            placeholder="Link title..."
                             className="bg-white border-indigo-200 focus:border-indigo-400"
                           />
                           <div className="flex gap-2">
@@ -2983,7 +2924,7 @@ export default function ManagerPage() {
                                       onClick={() => updatePersonalLink(link.id, link.title, link.url)}
                                       className="h-7 px-3 text-xs bg-green-600 hover:bg-green-700"
                                     >
-                                      Salvează
+                                      Save
                                     </Button>
                                     <Button
                                       size="sm"
@@ -2991,7 +2932,7 @@ export default function ManagerPage() {
                                       onClick={() => setEditingLinkId(null)}
                                       className="h-7 px-3 text-xs"
                                     >
-                                      Anulează
+                                      Cancel
                                     </Button>
                                   </div>
                                 </div>
@@ -3032,7 +2973,7 @@ export default function ManagerPage() {
                             <div className="text-center py-6">
                               <CalendarDays className="h-8 w-8 text-gray-300 mx-auto mb-2" />
                               <p className="text-sm text-gray-500">
-                                Niciun link rapid încă.<br />Adăugați unul mai sus!
+                                No quick links yet.<br />Add some above!
                               </p>
                             </div>
                           )}
@@ -3043,7 +2984,7 @@ export default function ManagerPage() {
                 </motion.div>
               </div>
 
-              {/* Activitate recentă */}
+              {/* Recent Activity */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -3055,9 +2996,9 @@ export default function ManagerPage() {
                       <div className="p-2 bg-gradient-to-r from-gray-500 to-blue-500 rounded-lg">
                         <Clock className="h-5 w-5 text-white" />
                       </div>
-                      Activitate recentă
+                      Recent Activity
                     </CardTitle>
-                    <CardDescription>Ultimele actualizări și notificări din organizația dvs.</CardDescription>
+                    <CardDescription>Latest updates and notifications across your organization</CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-3">
@@ -3068,7 +3009,7 @@ export default function ManagerPage() {
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-semibold text-gray-900">
-                              {request.userName} a solicitat {formatLeaveType(request.leaveType)}
+                              {request.userName} requested {formatLeaveType(request.leaveType)}
                             </p>
                             <p className="text-xs text-gray-500">
                               {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
@@ -3091,12 +3032,12 @@ export default function ManagerPage() {
         <TabsContent value="users" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Gestionare utilizatori</h2>
-              <p className="text-sm text-gray-500">Gestionați utilizatorii din organizația dvs.</p>
+              <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+              <p className="text-sm text-gray-500">Manage users in your organization</p>
             </div>
             <Button>
               <UserPlus className="h-4 w-4 mr-2" />
-              Adaugă utilizator
+              Add User
             </Button>
           </div>
 
@@ -3105,13 +3046,13 @@ export default function ManagerPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Utilizator</TableHead>
-                    <TableHead>Rol</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead>Stare</TableHead>
-                    <TableHead>Statistici</TableHead>
-                    <TableHead>Ultima autentificare</TableHead>
-                    <TableHead className="text-right">Acțiuni</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Statistics</TableHead>
+                    <TableHead>Last Login</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -3152,19 +3093,19 @@ export default function ManagerPage() {
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           {user.isDisabled ? (
-                            <Badge variant="destructive">Dezactivat</Badge>
+                            <Badge variant="destructive">Disabled</Badge>
                           ) : user.isActive ? (
-                            <Badge variant="default">Activ</Badge>
+                            <Badge variant="default">Active</Badge>
                           ) : (
-                            <Badge variant="secondary">Inactiv</Badge>
+                            <Badge variant="secondary">Inactive</Badge>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm space-y-1">
-                          <div>Programări: {user._count.appointments}</div>
-                          <div>Sarcini: {user._count.createdTasks}</div>
-                          <div>Cereri de concediu: {user._count.leaveRequests}</div>
+                          <div>Appointments: {user._count.appointments}</div>
+                          <div>Tasks: {user._count.createdTasks}</div>
+                          <div>Leave Requests: {user._count.leaveRequests}</div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -3173,7 +3114,7 @@ export default function ManagerPage() {
                             {new Date(user.lastLoginAt).toLocaleDateString()}
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-500">Niciodată</span>
+                          <span className="text-sm text-gray-500">Never</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
@@ -3203,18 +3144,18 @@ export default function ManagerPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Șterge User</AlertDialogTitle>
+                                <AlertDialogTitle>Delete User</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Sigur doriți să ștergeți pe {user.firstName} {user.lastName}? Această acțiune nu poate fi anulată.
+                                  Are you sure you want to delete {user.firstName} {user.lastName}? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Anulează</AlertDialogCancel>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleUserAction(user.id, 'DELETE')}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
-                                  Șterge
+                                  Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -3231,23 +3172,23 @@ export default function ManagerPage() {
 
 
 
-        {/* Cereri de concediu Tab */}
+        {/* Leave Requests Tab */}
         <TabsContent value="leave-requests" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Gestionare cereri de concediu</h2>
-              <p className="text-sm text-gray-500">Revizuiți și gestionați cererile de concediu ale angajaților</p>
+              <h2 className="text-2xl font-bold text-gray-900">Leave Request Management</h2>
+              <p className="text-sm text-gray-500">Review and manage employee leave requests</p>
             </div>
             <div className="flex items-center space-x-2">
               <Select defaultValue="all">
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrați după status" />
+                  <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toate cererile</SelectItem>
-                  <SelectItem value="pending">În așteptare</SelectItem>
-                  <SelectItem value="approved">Aprobat</SelectItem>
-                  <SelectItem value="denied">Refuzat</SelectItem>
+                  <SelectItem value="all">All Requests</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="denied">Denied</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -3258,13 +3199,13 @@ export default function ManagerPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Angajat</TableHead>
-                    <TableHead>Tip concediu</TableHead>
-                    <TableHead>Perioadă</TableHead>
-                    <TableHead>Durată</TableHead>
-                    <TableHead>Stare</TableHead>
-                    <TableHead>Trimis</TableHead>
-                    <TableHead className="text-right">Acțiuni</TableHead>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Leave Type</TableHead>
+                    <TableHead>Dates</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -3291,7 +3232,7 @@ export default function ManagerPage() {
                       <TableCell>
                         <div className="text-sm">
                           <div>{new Date(request.startDate).toLocaleDateString()}</div>
-                          <div className="text-gray-500">până la {new Date(request.endDate).toLocaleDateString()}</div>
+                          <div className="text-gray-500">to {new Date(request.endDate).toLocaleDateString()}</div>
                           {request.isPartialDay && (
                             <div className="text-xs text-blue-600">
                               {request.startTime} - {request.endTime}
@@ -3300,7 +3241,7 @@ export default function ManagerPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-medium">{request.totalDays} {request.totalDays === 1 ? 'zi' : 'zile'}</span>
+                        <span className="text-sm font-medium">{request.totalDays} days</span>
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(request.status)}>
@@ -3328,14 +3269,14 @@ export default function ManagerPage() {
                             <>
                               <Button
                                 size="sm"
-                                onClick={() => handleLeaveRequestAction(request.id, 'APPROVE', { reviewComentarii: 'Aprobat' })}
+                                onClick={() => handleLeaveRequestAction(request.id, 'APPROVE', { reviewComments: 'Approved' })}
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => handleLeaveRequestAction(request.id, 'DENY', { reviewComentarii: 'Respins' })}
+                                onClick={() => handleLeaveRequestAction(request.id, 'DENY', { reviewComments: 'Denied' })}
                               >
                                 <XCircle className="h-4 w-4" />
                               </Button>
@@ -3360,17 +3301,17 @@ export default function ManagerPage() {
           </Card>
         </TabsContent>
 
-        {/* Jurnale de activitate Tab */}
+        {/* Activity Logs Tab */}
         <TabsContent value="logs" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Jurnale de activitate</h2>
-              <p className="text-sm text-gray-500">Jurnal complet de audit al tuturor activităților din sistem</p>
+              <h2 className="text-2xl font-bold text-gray-900">Activity Logs</h2>
+              <p className="text-sm text-gray-500">Comprehensive audit trail of all system activities</p>
             </div>
             <div className="flex space-x-2">
               <Button variant="outline" size="sm" onClick={handleDownloadLogs}>
                 <Download className="h-4 w-4 mr-2" />
-                Descarcă CSV
+                Download CSV
               </Button>
               <Button
                 variant="destructive"
@@ -3379,7 +3320,7 @@ export default function ManagerPage() {
                 disabled={selectedLogs.length === 0}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Șterge selectate ({selectedLogs.length})
+                Delete Selected ({selectedLogs.length})
               </Button>
             </div>
           </div>
@@ -3389,13 +3330,13 @@ export default function ManagerPage() {
             <CardContent className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <Label htmlFor="user-filter">Utilizator</Label>
+                  <Label htmlFor="user-filter">User</Label>
                   <Select value={logFilters.userId} onValueChange={(value) => handleLogFilterChange('userId', value === 'all' ? '' : value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Toți utilizatorii" />
+                      <SelectValue placeholder="All users" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Toți utilizatorii</SelectItem>
+                      <SelectItem value="all">All users</SelectItem>
                       {(users || []).map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.firstName} {user.lastName}
@@ -3406,52 +3347,52 @@ export default function ManagerPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="action-filter">Acțiune</Label>
+                  <Label htmlFor="action-filter">Action</Label>
                   <Input
                     id="action-filter"
-                    placeholder="Filtrați după acțiune"
+                    placeholder="Filter by action"
                     value={logFilters.action}
                     onChange={(e) => handleLogFilterChange('action', e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="entity-filter">Tip entitate</Label>
+                  <Label htmlFor="entity-filter">Entity Type</Label>
                   <Select value={logFilters.entityType} onValueChange={(value) => handleLogFilterChange('entityType', value === 'all' ? '' : value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Toate tipurile" />
+                      <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Toate tipurile</SelectItem>
-                      <SelectItem value="APPOINTMENT">Programări</SelectItem>
-                      <SelectItem value="PATIENT">Pacienți</SelectItem>
-                      <SelectItem value="TASK">Sarcini</SelectItem>
-                      <SelectItem value="USER">Utilizatori</SelectItem>
-                      <SelectItem value="DENTAL_CHART">Fișe dentare</SelectItem>
-                      <SelectItem value="NOTE">Notițe</SelectItem>
+                      <SelectItem value="all">All types</SelectItem>
+                      <SelectItem value="APPOINTMENT">Appointments</SelectItem>
+                      <SelectItem value="PATIENT">Patients</SelectItem>
+                      <SelectItem value="TASK">Tasks</SelectItem>
+                      <SelectItem value="USER">Users</SelectItem>
+                      <SelectItem value="DENTAL_CHART">Dental Charts</SelectItem>
+                      <SelectItem value="NOTE">Notes</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="severity-filter">Severitate</Label>
+                  <Label htmlFor="severity-filter">Severity</Label>
                   <Select value={logFilters.severity} onValueChange={(value) => handleLogFilterChange('severity', value === 'all' ? '' : value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Toate severitățile" />
+                      <SelectValue placeholder="All severities" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Toate severitățile</SelectItem>
-                      <SelectItem value="DEBUG">Depanare</SelectItem>
-                      <SelectItem value="INFO">Informare</SelectItem>
-                      <SelectItem value="WARN">Avertisment</SelectItem>
-                      <SelectItem value="ERROR">Eroare</SelectItem>
-                      <SelectItem value="CRITICAL">Critic</SelectItem>
+                      <SelectItem value="all">All severities</SelectItem>
+                      <SelectItem value="DEBUG">Debug</SelectItem>
+                      <SelectItem value="INFO">Info</SelectItem>
+                      <SelectItem value="WARN">Warning</SelectItem>
+                      <SelectItem value="ERROR">Error</SelectItem>
+                      <SelectItem value="CRITICAL">Critical</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="start-date">Data început</Label>
+                  <Label htmlFor="start-date">Start Date</Label>
                   <Input
                     id="start-date"
                     type="date"
@@ -3461,7 +3402,7 @@ export default function ManagerPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="end-date">Data sfârșit</Label>
+                  <Label htmlFor="end-date">End Date</Label>
                   <Input
                     id="end-date"
                     type="date"
@@ -3471,10 +3412,10 @@ export default function ManagerPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="page-filter">Pagină</Label>
+                  <Label htmlFor="page-filter">Page</Label>
                   <Input
                     id="page-filter"
-                    placeholder="Filtrați după pagină"
+                    placeholder="Filter by page"
                     value={logFilters.page}
                     onChange={(e) => handleLogFilterChange('page', e.target.value)}
                   />
@@ -3504,7 +3445,7 @@ export default function ManagerPage() {
                       })
                     }}
                   >
-                    Șterge filtrele
+                    Clear Filters
                   </Button>
                 </div>
               </div>
@@ -3537,14 +3478,14 @@ export default function ManagerPage() {
                           )}
                         </div>
                       </TableHead>
-                      <TableHead>Marcaj temporal</TableHead>
-                      <TableHead>Utilizator</TableHead>
-                      <TableHead>Acțiune</TableHead>
-                      <TableHead>Entitate</TableHead>
-                      <TableHead>Descriere</TableHead>
-                      <TableHead>Severitate</TableHead>
-                      <TableHead>Pagină</TableHead>
-                      <TableHead>Detalii</TableHead>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Entity</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Severity</TableHead>
+                      <TableHead>Page</TableHead>
+                      <TableHead>Details</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -3584,7 +3525,7 @@ export default function ManagerPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div className="font-medium">{formatEntityType(log.entityType)}</div>
+                            <div className="font-medium">{log.entityType}</div>
                             {log.entityId && <div className="text-gray-500 truncate max-w-20">{log.entityId}</div>}
                           </div>
                         </TableCell>
@@ -3593,14 +3534,14 @@ export default function ManagerPage() {
                             <div className="truncate">{log.description}</div>
                             {log.patient && (
                               <div className="text-gray-500">
-                                Pacient: {log.patient.firstName} {log.patient.lastName}
+                                Patient: {log.patient.firstName} {log.patient.lastName}
                               </div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge className={getSeverityColor(log.severity)}>
-                            {formatSeverity(log.severity)}
+                            {log.severity}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -3618,27 +3559,27 @@ export default function ManagerPage() {
                               </DialogTrigger>
                               <DialogContent className="max-w-2xl">
                                 <DialogHeader>
-                                  <DialogTitle>Detalii jurnal</DialogTitle>
+                                  <DialogTitle>Log Details</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                   <div>
-                                    <Label>Acțiune</Label>
+                                    <Label>Action</Label>
                                     <p className="text-sm">{log.action}</p>
                                   </div>
                                   <div>
-                                    <Label>Descriere</Label>
+                                    <Label>Description</Label>
                                     <p className="text-sm">{log.description}</p>
                                   </div>
                                   <div>
-                                    <Label>Adresă IP</Label>
-                                    <p className="text-sm">{log.ipAddress || 'Necunoscut'}</p>
+                                    <Label>IP Address</Label>
+                                    <p className="text-sm">{log.ipAddress || 'Unknown'}</p>
                                   </div>
                                   <div>
-                                    <Label>Agent utilizator</Label>
-                                    <p className="text-sm break-all">{log.userAgent || 'Necunoscut'}</p>
+                                    <Label>User Agent</Label>
+                                    <p className="text-sm break-all">{log.userAgent || 'Unknown'}</p>
                                   </div>
                                   <div>
-                                    <Label>Detalii suplimentare</Label>
+                                    <Label>Additional Details</Label>
                                     <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
                                       {JSON.stringify(log.details, null, 2)}
                                     </pre>
@@ -3665,10 +3606,10 @@ export default function ManagerPage() {
                 onClick={() => fetchLogs(logsPage - 1)}
                 disabled={logsPage === 1}
               >
-                Anterior
+                Previous
               </Button>
               <span className="flex items-center px-4 text-sm">
-                Pagina {logsPage} din {logsTotalPages}
+                Page {logsPage} of {logsTotalPages}
               </span>
               <Button
                 variant="outline"
@@ -3676,7 +3617,7 @@ export default function ManagerPage() {
                 onClick={() => fetchLogs(logsPage + 1)}
                 disabled={logsPage === logsTotalPages}
               >
-                Următor
+                Next
               </Button>
             </div>
           )}
@@ -3687,21 +3628,21 @@ export default function ManagerPage() {
           <div className="flex justify-between items-center">
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-gray-900">Planificare calendar</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Calendar Planning</h2>
                 {scheduleLoading && (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                 )}
                 {activeSchedule && (
                   <Badge variant="default" className="bg-green-100 text-green-800">
-                    Program activ încărcat
+                    Active Schedule Loaded
                   </Badge>
                 )}
               </div>
               <p className="text-sm text-gray-500">
-                Configurați programul clinicii cu atribuiri de săli și programul angajaților
+                Set up your clinic schedule with room assignments and worker schedules
                 {activeSchedule && (
                   <span className="ml-2 font-medium text-blue-600">
-                    • Încărcat: {activeSchedule.name}
+                    • Loaded: {activeSchedule.name}
                   </span>
                 )}
               </p>
@@ -3709,7 +3650,7 @@ export default function ManagerPage() {
             <div className="flex space-x-2">
               <Button variant="outline" onClick={() => handleExportSchedule()}>
                 <Download className="h-4 w-4 mr-2" />
-                Export în Excel
+                Export to Excel
               </Button>
               <Button
                 variant="destructive"
@@ -3718,11 +3659,11 @@ export default function ManagerPage() {
                 disabled={scheduleLoading}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Resetează programul
+                Reset Schedule
               </Button>
               <Button onClick={() => handleSaveSchedule()} disabled={scheduleLoading}>
                 <CheckCircle className="h-4 w-4 mr-2" />
-                {activeSchedule ? 'Actualizează programul' : 'Salvează programul'}
+                {activeSchedule ? 'Update Schedule' : 'Save Schedule'}
               </Button>
             </div>
           </div>
@@ -3732,11 +3673,11 @@ export default function ManagerPage() {
             <div className="lg:col-span-1 space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Setări clinică</CardTitle>
+                  <CardTitle>Clinic Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="room-count">Număr de săli</Label>
+                    <Label htmlFor="room-count">Number of Rooms</Label>
                     <Input
                       id="room-count"
                       type="number"
@@ -3749,7 +3690,7 @@ export default function ManagerPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="eur-to-ron-rate">Curs de schimb (1 EUR = RON)</Label>
+                    <Label htmlFor="eur-to-ron-rate">Exchange Rate (1 EUR = RON)</Label>
                     <Input
                       id="eur-to-ron-rate"
                       type="number"
@@ -3761,60 +3702,60 @@ export default function ManagerPage() {
                       className="mt-1"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Folosit pentru afișarea prețurilor procedurilor în lei, cu tooltip în euro.
+                      Used to display procedure prices in lei with euro tooltip.
                     </p>
                   </div>
 
                   <div>
-                    <Label>Perioada programului</Label>
+                    <Label>Schedule Period</Label>
                     <div className="grid grid-cols-2 gap-2 mt-1">
                       <DatePicker
                         selected={startDate}
                         onChange={(date: Date) => setStartDate(date)}
                         className="w-full border rounded-md px-3 py-2"
-                        placeholderText="Data de început"
+                        placeholderText="Start date"
                         dateFormat="MMM d, yyyy"
                       />
                       <DatePicker
                         selected={endDate}
                         onChange={(date: Date) => setEndDate(date)}
                         className="w-full border rounded-md px-3 py-2"
-                        placeholderText="Data de sfârșit"
+                        placeholderText="End date"
                         dateFormat="MMM d, yyyy"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label>Selectare rapidă perioadă</Label>
+                    <Label>Quick Period Select</Label>
                     <div className="grid grid-cols-2 gap-2 mt-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickPeriod('week')}
                       >
-                        Săptămâna aceasta
+                        This Week
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickPeriod('month')}
                       >
-                        Luna aceasta
+                        This Month
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickPeriod('nextWeek')}
                       >
-                        Următoarea săptămână
+                        Next Week
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuickPeriod('nextMonth')}
                       >
-                        Următoarea lună
+                        Next Month
                       </Button>
                     </div>
                   </div>
@@ -3823,8 +3764,8 @@ export default function ManagerPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Program de lucru implicit</CardTitle>
-                  <CardDescription>Setați orele implicite care se vor completa automat pentru toți angajații</CardDescription>
+                  <CardTitle>Default Working Hours</CardTitle>
+                  <CardDescription>Set default times that will auto-populate for all workers</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center space-x-2">
@@ -3834,7 +3775,7 @@ export default function ManagerPage() {
                       onChange={(e) => setDefaultWorkingHours(prev => ({ ...prev, start: e.target.value }))}
                       className="flex-1"
                     />
-                    <span>până la</span>
+                    <span>to</span>
                     <Input
                       type="time"
                       value={defaultWorkingHours.end}
@@ -3848,20 +3789,20 @@ export default function ManagerPage() {
                     onClick={() => applyDefaultHours()}
                     className="w-full"
                   >
-                    Aplică tuturor
+                    Apply to All
                   </Button>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Zile de deschidere</CardTitle>
-                  <CardDescription>Selectați zilele în care clinica este deschisă</CardDescription>
+                  <CardTitle>Opening Days</CardTitle>
+                  <CardDescription>Select which days your clinic is open for business</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
-                      {['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'].map((day) => (
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
                         <Button
                           key={day}
                           variant={openingDays.includes(day) ? "default" : "outline"}
@@ -3877,7 +3818,7 @@ export default function ManagerPage() {
                       ))}
                     </div>
                     <div className="text-xs text-gray-500 mt-2">
-                      {openingDays.length} zile selectate • Zilele neselectate vor fi ascunse din previzualizarea programului
+                      {openingDays.length} days selected • Days not selected will be hidden from the schedule preview
                     </div>
                   </div>
                 </CardContent>
@@ -3890,21 +3831,21 @@ export default function ManagerPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Atribuiri săli</span>
+                    <span>Room Assignments</span>
                     <div className="flex items-center space-x-2">
                       <Button
                         variant={showAdvancedShifts ? "default" : "outline"}
                         size="sm"
                         onClick={() => setShowAdvancedShifts(!showAdvancedShifts)}
                       >
-                        {showAdvancedShifts ? 'Vizualizare simplă' : 'Ture avansate'}
+                        {showAdvancedShifts ? 'Simple View' : 'Advanced Shifts'}
                       </Button>
                     </div>
                   </CardTitle>
                   <CardDescription>
                     {showAdvancedShifts
-                      ? 'Creați mai multe ture pe sală cu practicieni și ore diferite'
-                      : 'Atribuiți practicienii principal și secundar fiecărei săli (program implicit)'
+                      ? 'Create multiple shifts per room with different practitioners and times'
+                      : 'Assign main and side practitioners to each room (default schedule)'
                     }
                   </CardDescription>
                 </CardHeader>
@@ -3924,7 +3865,7 @@ export default function ManagerPage() {
                                 onClick={() => setSelectedScheduleTab(`room-${roomIndex + 1}`)}
                                 className="flex-1 transition-all relative"
                               >
-                                Sala {roomIndex + 1}
+                                Room {roomIndex + 1}
                                 {roomShiftsCount > 0 && (
                                   <Badge variant="secondary" className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs">
                                     {roomShiftsCount}
@@ -3948,13 +3889,13 @@ export default function ManagerPage() {
                         <>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label>Practician principal</Label>
+                              <Label>Main Practitioner</Label>
                               <Select
                                 value={roomAssignments[roomIndex]?.mainPractitioner || ''}
                                 onValueChange={(value) => handleRoomAssignment(roomIndex, 'mainPractitioner', value)}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Selectați practicianul principal" />
+                                  <SelectValue placeholder="Select main practitioner" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {getActivePractitioners().map((p) => (
@@ -3967,16 +3908,16 @@ export default function ManagerPage() {
                             </div>
 
                             <div>
-                              <Label>Practician secundar (opțional)</Label>
+                              <Label>Side Practitioner (Optional)</Label>
                               <Select
                                 value={roomAssignments[roomIndex]?.sidePractitioner || 'none'}
                                 onValueChange={(value) => handleRoomAssignment(roomIndex, 'sidePractitioner', value === 'none' ? undefined : value)}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Selectați practicianul secundar" />
+                                  <SelectValue placeholder="Select side practitioner" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="none">Niciunul</SelectItem>
+                                  <SelectItem value="none">None</SelectItem>
                                   {getActivePractitioners().map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
                                       {p.firstName} {p.lastName}
@@ -3988,7 +3929,7 @@ export default function ManagerPage() {
                           </div>
 
                           <div>
-                            <Label>Program de lucru pentru sala {roomIndex + 1}</Label>
+                            <Label>Working Hours for Room {roomIndex + 1}</Label>
                             <div className="flex items-center space-x-2 mt-1">
                               <Input
                                 type="time"
@@ -3996,7 +3937,7 @@ export default function ManagerPage() {
                                 onChange={(e) => handleRoomAssignment(roomIndex, 'startTime', e.target.value)}
                                 className="flex-1"
                               />
-                              <span>până la</span>
+                              <span>to</span>
                               <Input
                                 type="time"
                                 value={roomAssignments[roomIndex]?.endTime || '17:00'}
@@ -4007,9 +3948,9 @@ export default function ManagerPage() {
                           </div>
 
                           <div>
-                            <Label>Zile de lucru</Label>
+                            <Label>Working Days</Label>
                             <div className="flex flex-row gap-1 mt-2 overflow-x-auto pb-2">
-                              {['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'].map((day) => (
+                              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
                                 <ContextMenu
                                   key={day}
                                   contextMenuItems={getDayOfWeekContextMenuItems(day, roomIndex + 1)}
@@ -4035,7 +3976,7 @@ export default function ManagerPage() {
                               className="text-blue-600 hover:text-blue-700"
                             >
                               <Plus className="h-4 w-4 mr-2" />
-                              Adaugă ture personalizate pentru sala {roomIndex + 1}
+                              Add Custom Shifts for Room {roomIndex + 1}
                             </Button>
                           </div>
                         </>
@@ -4043,7 +3984,7 @@ export default function ManagerPage() {
                         // Advanced View - Shift-based scheduling
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Ture sala {roomIndex + 1}</h4>
+                            <h4 className="font-medium">Room {roomIndex + 1} Shifts</h4>
                             <div className="flex space-x-2">
                               <Button
                                 variant="outline"
@@ -4051,14 +3992,14 @@ export default function ManagerPage() {
                                 onClick={() => setWeekEditorDialog({ isOpen: true, roomNumber: roomIndex + 1 })}
                               >
                                 <Calendar className="h-4 w-4 mr-2" />
-                                Editor săptămânal
+                                Week Editor
                               </Button>
                               <Button
                                 size="sm"
                                 onClick={() => setAddShiftDialog({ isOpen: true, roomNumber: roomIndex + 1 })}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
-                                Adaugă tură
+                                Add Shift
                               </Button>
                             </div>
                           </div>
@@ -4085,11 +4026,11 @@ export default function ManagerPage() {
                                     )}
                                     {shift.dayOfWeek && (
                                       <span className="ml-2 text-green-600">
-                                        🔄 {shift.dayOfWeek}
+                                        🔄 {shift.dayOfWeek}s
                                       </span>
                                     )}
                                     {shift.isOverride && (
-                                      <Badge variant="secondary" className="ml-2">Excepție</Badge>
+                                      <Badge variant="secondary" className="ml-2">Override</Badge>
                                     )}
                                   </div>
                                   {shift.reason && (
@@ -4108,8 +4049,8 @@ export default function ManagerPage() {
 
                             {getShiftsForRoom(roomIndex + 1).length === 0 && (
                               <div className="text-center py-8 text-gray-500">
-                                <div className="text-sm">Nu există ture personalizate pentru această sală</div>
-                                <div className="text-xs">Se folosește atribuirea implicită a sălii, dacă este configurată</div>
+                                <div className="text-sm">No custom shifts defined for this room</div>
+                                <div className="text-xs">Using default room assignment if configured</div>
                               </div>
                             )}
                           </div>
@@ -4120,11 +4061,11 @@ export default function ManagerPage() {
                 </CardContent>
               </Card>
 
-              {/* Alți angajați */}
+              {/* Other Workers */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Alți angajați</CardTitle>
-                  <CardDescription>Programați angajații neatribuiți unor săli specifice</CardDescription>
+                  <CardTitle>Other Workers</CardTitle>
+                  <CardDescription>Schedule workers not assigned to specific rooms</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -4133,13 +4074,13 @@ export default function ManagerPage() {
                         <div className="flex items-center justify-between">
                           <div className="grid grid-cols-3 gap-4 flex-1">
                             <div>
-                              <Label>Angajat</Label>
+                              <Label>Worker</Label>
                               <Select
                                 value={worker.practitionerId}
                                 onValueChange={(value) => handleOtherWorkerChange(index, 'practitionerId', value)}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Selectați angajatul" />
+                                  <SelectValue placeholder="Select worker" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {getActivePractitioners()
@@ -4154,7 +4095,7 @@ export default function ManagerPage() {
                             </div>
 
                             <div>
-                              <Label>Ora de început</Label>
+                              <Label>Start Time</Label>
                               <Input
                                 type="time"
                                 value={worker.startTime}
@@ -4163,7 +4104,7 @@ export default function ManagerPage() {
                             </div>
 
                             <div>
-                              <Label>Ora de sfârșit</Label>
+                              <Label>End Time</Label>
                               <Input
                                 type="time"
                                 value={worker.endTime}
@@ -4183,9 +4124,9 @@ export default function ManagerPage() {
                         </div>
 
                         <div>
-                          <Label>Zile de lucru</Label>
+                          <Label>Working Days</Label>
                           <div className="flex flex-row gap-2 mt-2 overflow-x-auto pb-2">
-                            {['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'].map((day) => (
+                            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
                               <ContextMenu
                                 key={day}
                                 contextMenuItems={getDayOfWeekContextMenuItems(day, undefined, worker.practitionerId)}
@@ -4211,7 +4152,7 @@ export default function ManagerPage() {
                       className="w-full"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Adaugă alt angajat
+                      Add Other Worker
                     </Button>
                   </div>
                 </CardContent>
@@ -4225,16 +4166,16 @@ export default function ManagerPage() {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="h-5 w-5" />
-                  Previzualizare program
+                  Schedule Preview
                 </div>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditSpecificDay()}>
                     <Edit2 className="h-4 w-4 mr-2" />
-                    Editează zi specifică
+                    Edit Specific Day
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => handlePrintSchedule()}>
                     <FileText className="h-4 w-4 mr-2" />
-                    Tipărește programul
+                    Print Schedule
                   </Button>
                 </div>
               </CardTitle>
@@ -4244,14 +4185,14 @@ export default function ManagerPage() {
                 <table className="w-full border-collapse border border-gray-300 text-sm table-fixed">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-3 py-2 text-left font-medium w-20">Data</th>
-                      <th className="border border-gray-300 px-3 py-2 text-left font-medium w-24">Zi</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-medium w-20">Date</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-medium w-24">Day</th>
                       {Array.from({ length: roomCount }, (_, i) => (
                         <th key={i} className="border border-gray-300 px-3 py-2 text-left font-medium w-40">
-                          Sala {i + 1}
+                          Room {i + 1}
                         </th>
                       ))}
-                      <th className="border border-gray-300 px-3 py-2 text-left font-medium w-48">Alți angajați</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left font-medium w-48">Other Workers</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4302,7 +4243,7 @@ export default function ManagerPage() {
                                             >
                                               {shift.main.name}
                                               {shift.main.reason && (
-                                                <Badge variant="secondary" className="ml-1 text-xs h-4" title={`Suprascriere: ${shift.main.reason}`}>O</Badge>
+                                                <Badge variant="secondary" className="ml-1 text-xs h-4" title={`Override: ${shift.main.reason}`}>O</Badge>
                                               )}
                                               {shift.main.priority > 0 && (
                                                 <Badge variant="outline" className="ml-1 text-xs h-4">P{shift.main.priority}</Badge>
@@ -4326,7 +4267,7 @@ export default function ManagerPage() {
                                             >
                                               {shift.side.name}
                                               {shift.side.reason && (
-                                                <Badge variant="secondary" className="ml-1 text-xs h-4" title={`Suprascriere: ${shift.side.reason}`}>O</Badge>
+                                                <Badge variant="secondary" className="ml-1 text-xs h-4" title={`Override: ${shift.side.reason}`}>O</Badge>
                                               )}
                                               {shift.side.priority > 0 && (
                                                 <Badge variant="outline" className="ml-1 text-xs h-4">P{shift.side.priority}</Badge>
@@ -4378,7 +4319,7 @@ export default function ManagerPage() {
                                       )}
                                       {!room.main && !room.side && (
                                         <div className="text-center py-4">
-                                          <span className="text-gray-400 text-xs">Fără atribuire</span>
+                                          <span className="text-gray-400 text-xs">No assignment</span>
                                         </div>
                                       )}
                                     </>
@@ -4413,7 +4354,7 @@ export default function ManagerPage() {
                                 ))}
                                 {day.otherWorkers.length === 0 && (
                                   <div className="text-center py-4">
-                                    <span className="text-gray-400 text-xs">Niciunul</span>
+                                    <span className="text-gray-400 text-xs">None</span>
                                   </div>
                                 )}
                               </div>
@@ -4435,28 +4376,28 @@ export default function ManagerPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {userActionDialog.action === 'DISABLE' ? 'Dezactivează utilizatorul' : 'Activează utilizatorul'}
+              {userActionDialog.action === 'DISABLE' ? 'Disable User' : 'Enable User'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p>
-              Sigur doriți să {userActionDialog.action === 'DISABLE' ? 'dezactivați' : 'activați'} pe {userActionDialog.user?.firstName} {userActionDialog.user?.lastName}?
+              Are you sure you want to {userActionDialog.action.toLowerCase()} {userActionDialog.user?.firstName} {userActionDialog.user?.lastName}?
             </p>
             {userActionDialog.action === 'DISABLE' && (
               <div>
-                <Label htmlFor="reason">Motiv dezactivare</Label>
+                <Label htmlFor="reason">Reason for disabling</Label>
                 <Textarea
                   id="reason"
-                  value={disableMotiv}
-                  onChange={(e) => setDisableMotiv(e.target.value)}
-                  placeholder="Introduceți motivul dezactivării utilizatorului..."
+                  value={disableReason}
+                  onChange={(e) => setDisableReason(e.target.value)}
+                  placeholder="Enter reason for disabling this user..."
                 />
               </div>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUserActionDialog({ isOpen: false, action: '', user: null })}>
-              Anulează
+              Cancel
             </Button>
             <Button
               onClick={() => {
@@ -4464,12 +4405,12 @@ export default function ManagerPage() {
                   handleUserAction(
                     userActionDialog.user.id,
                     userActionDialog.action as 'DISABLE' | 'ENABLE',
-                    userActionDialog.action === 'DISABLE' ? disableMotiv : undefined
+                    userActionDialog.action === 'DISABLE' ? disableReason : undefined
                   )
                 }
               }}
             >
-              {userActionDialog.action === 'DISABLE' ? 'Dezactivează' : 'Activează'}
+              {userActionDialog.action === 'DISABLE' ? 'Disable' : 'Enable'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -4479,7 +4420,7 @@ export default function ManagerPage() {
       <Dialog open={leaveActionDialog} onOpenChange={setLeaveActionDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Revizuire cerere de concediu</DialogTitle>
+            <DialogTitle>Review Leave Request</DialogTitle>
           </DialogHeader>
           {selectedLeaveRequest && (
             <div className="space-y-4">
@@ -4490,27 +4431,27 @@ export default function ManagerPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Angajat</Label>
+                  <Label>Employee</Label>
                   <p>{selectedLeaveRequest.user.firstName} {selectedLeaveRequest.user.lastName}</p>
                 </div>
                 <div>
-                  <Label>Tip concediu</Label>
+                  <Label>Leave Type</Label>
                   <p>{formatLeaveType(selectedLeaveRequest.leaveType)}</p>
                 </div>
                 <div>
-                  <Label>Data început</Label>
+                  <Label>Start Date</Label>
                   <p>{new Date(selectedLeaveRequest.startDate).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <Label>Data sfârșit</Label>
+                  <Label>End Date</Label>
                   <p>{new Date(selectedLeaveRequest.endDate).toLocaleDateString()}</p>
                 </div>
                 <div>
-                  <Label>Durată</Label>
-                  <p>{selectedLeaveRequest.totalDays} zile</p>
+                  <Label>Duration</Label>
+                  <p>{selectedLeaveRequest.totalDays} days</p>
                 </div>
                 <div>
-                  <Label>Stare</Label>
+                  <Label>Status</Label>
                   <Badge className={getStatusColor(selectedLeaveRequest.status)}>
                     {formatStatus(selectedLeaveRequest.status)}
                   </Badge>
@@ -4520,20 +4461,20 @@ export default function ManagerPage() {
               {selectedLeaveRequest.status === 'PENDING' && (
                 <div className="space-y-4 border-t pt-4">
                   <div>
-                    <Label htmlFor="review-comments">Comentarii revizuire</Label>
+                    <Label htmlFor="review-comments">Review Comments</Label>
                     <Textarea
                       id="review-comments"
-                      value={reviewComentarii}
-                      onChange={(e) => setReviewComentarii(e.target.value)}
-                      placeholder="Adăugați comentarii despre decizia dvs..."
+                      value={reviewComments}
+                      onChange={(e) => setReviewComments(e.target.value)}
+                      placeholder="Add comments about your decision..."
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Date alternative (opțional)</Label>
+                    <Label>Alternative Dates (Optional)</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label htmlFor="alt-start">Început alternativ</Label>
+                        <Label htmlFor="alt-start">Alternative Start</Label>
                         <Input
                           id="alt-start"
                           type="date"
@@ -4542,7 +4483,7 @@ export default function ManagerPage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="alt-end">Sfârșit alternativ</Label>
+                        <Label htmlFor="alt-end">Alternative End</Label>
                         <Input
                           id="alt-end"
                           type="date"
@@ -4553,12 +4494,12 @@ export default function ManagerPage() {
                     </div>
                     {(alternativeStartDate || alternativeEndDate) && (
                       <div>
-                        <Label htmlFor="alt-comments">Comentarii alternative</Label>
+                        <Label htmlFor="alt-comments">Alternative Comments</Label>
                         <Textarea
                           id="alt-comments"
-                          value={alternativeComentarii}
-                          onChange={(e) => setAlternativeComentarii(e.target.value)}
-                          placeholder="Explicați datele alternative..."
+                          value={alternativeComments}
+                          onChange={(e) => setAlternativeComments(e.target.value)}
+                          placeholder="Explain the alternative dates..."
                         />
                       </div>
                     )}
@@ -4569,7 +4510,7 @@ export default function ManagerPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setLeaveActionDialog(false)}>
-              Închide
+              Close
             </Button>
             {selectedLeaveRequest?.status === 'PENDING' && (
               <div className="flex space-x-2">
@@ -4577,11 +4518,11 @@ export default function ManagerPage() {
                   variant="destructive"
                   onClick={() => {
                     if (selectedLeaveRequest) {
-                      handleLeaveRequestAction(selectedLeaveRequest.id, 'DENY', { reviewComentarii })
+                      handleLeaveRequestAction(selectedLeaveRequest.id, 'DENY', { reviewComments })
                     }
                   }}
                 >
-                  Respinge
+                  Deny
                 </Button>
                 {(alternativeStartDate || alternativeEndDate) && (
                   <Button
@@ -4589,25 +4530,25 @@ export default function ManagerPage() {
                     onClick={() => {
                       if (selectedLeaveRequest) {
                         handleLeaveRequestAction(selectedLeaveRequest.id, 'PROPOSE_ALTERNATIVE', {
-                          reviewComentarii,
+                          reviewComments,
                           alternativeStartDate,
                           alternativeEndDate,
-                          alternativeComentarii
+                          alternativeComments
                         })
                       }
                     }}
                   >
-                    Propune alternativă
+                    Propose Alternative
                   </Button>
                 )}
                 <Button
                   onClick={() => {
                     if (selectedLeaveRequest) {
-                      handleLeaveRequestAction(selectedLeaveRequest.id, 'APPROVE', { reviewComentarii })
+                      handleLeaveRequestAction(selectedLeaveRequest.id, 'APPROVE', { reviewComments })
                     }
                   }}
                 >
-                  Aprobă
+                  Approve
                 </Button>
               </div>
             )}
@@ -4615,22 +4556,22 @@ export default function ManagerPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Șterge Logs Confirmation Dialog */}
+      {/* Delete Logs Confirmation Dialog */}
       <AlertDialog open={deleteLogsDialog} onOpenChange={setDeleteLogsDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Șterge jurnalele de activitate</AlertDialogTitle>
+            <AlertDialogTitle>Delete Activity Logs</AlertDialogTitle>
             <AlertDialogDescription>
-              Sigur doriți să ștergeți {selectedLogs.length} jurnal(e) selectat(e)? Această acțiune nu poate fi anulată.
+              Are you sure you want to delete {selectedLogs.length} selected log(s)? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleDeleteLogs(selectedLogs)}
               className="bg-red-600 hover:bg-red-700"
             >
-              Șterge
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4666,11 +4607,11 @@ export default function ManagerPage() {
         onOverrideCreated={handleDayOfWeekOverrideCreated}
       />
 
-      {/* Adaugă tură Dialog */}
+      {/* Add Shift Dialog */}
       <Dialog open={addShiftDialog.isOpen} onOpenChange={(open) => setAddShiftDialog(prev => ({ ...prev, isOpen: open }))}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Adaugă tură pentru sala {addShiftDialog.roomNumber}</DialogTitle>
+            <DialogTitle>Add Shift for Room {addShiftDialog.roomNumber}</DialogTitle>
           </DialogHeader>
           <AddShiftForm
             roomNumber={addShiftDialog.roomNumber}
@@ -4684,7 +4625,7 @@ export default function ManagerPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Editor săptămânal Modal */}
+      {/* Week Editor Modal */}
       <WeekEditorModal
         isOpen={weekEditorDialog.isOpen}
         onClose={() => setWeekEditorDialog(prev => ({ ...prev, isOpen: false }))}
@@ -4708,27 +4649,27 @@ export default function ManagerPage() {
         onSaveShifts={(shifts) => handleSaveWeekShifts(weekEditorDialog.roomNumber, shifts as RoomShiftDB[])}
       />
 
-      {/* Resetează programul Confirmation Modal */}
+      {/* Reset Schedule Confirmation Modal */}
       <AlertDialog open={resetScheduleDialog} onOpenChange={setResetScheduleDialog}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-600">
               <RefreshCw className="h-5 w-5" />
-              Resetează programul
+              Reset Schedule
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              <p>Sigur doriți să resetați programul? Aceasta va:</p>
+              <p>Are you sure you want to reset the schedule? This will:</p>
               <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Șterge toate atribuirile sălilor</li>
-                <li>Elimină toate turele personalizate</li>
-                <li>Resetează ceilalți angajați</li>
-                <li>Dezactivează programul curent</li>
+                <li>Clear all room assignments</li>
+                <li>Remove all custom shifts</li>
+                <li>Reset other workers</li>
+                <li>Deactivate the current schedule</li>
               </ul>
-              <p className="font-medium text-red-600">Această acțiune nu poate fi anulată!</p>
+              <p className="font-medium text-red-600">This action cannot be undone!</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 handleResetSchedule()
@@ -4737,7 +4678,7 @@ export default function ManagerPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Resetează programul
+              Reset Schedule
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4747,7 +4688,7 @@ export default function ManagerPage() {
   )
 }
 
-// Adaugă tură Form Component
+// Add Shift Form Component
 function AddShiftForm({
   roomNumber,
   practitioners,
@@ -4766,11 +4707,11 @@ function AddShiftForm({
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('17:00')
   const [shiftType, setShiftType] = useState<'recurring' | 'specific'>('recurring')
-  const [dayOfWeek, setDayOfWeek] = useState('Luni')
+  const [dayOfWeek, setDayOfWeek] = useState('Monday')
   const [date, setDate] = useState('')
   const [isOverride, setIsOverride] = useState(true)
-  const [reason, setMotiv] = useState('')
-  const [priority, setPrioritate] = useState(0)
+  const [reason, setReason] = useState('')
+  const [priority, setPriority] = useState(0)
   const [conflicts, setConflicts] = useState<any[]>([])
 
   // Check for time conflicts whenever time or date changes
@@ -4782,7 +4723,7 @@ function AddShiftForm({
       const timeEnd = new Date(`2000-01-01T${endTime}:00`)
 
       if (timeStart >= timeEnd) {
-        setConflicts([{ type: 'invalid_time', message: 'Ora de sfârșit trebuie să fie după ora de început' }])
+        setConflicts([{ type: 'invalid_time', message: 'End time must be after start time' }])
       } else {
         setConflicts([])
       }
@@ -4802,8 +4743,8 @@ function AddShiftForm({
 
     if (conflicts.length > 0 && !isOverride) {
       appAlert(
-        `Probleme de validare detectate:\n${conflicts.map((c) => c.message).join('\n')}\n\nActivați „Suprascrie atribuirile existente” pentru a continua oricum.`,
-        { title: 'Validare' }
+        `Validation issues detected:\n${conflicts.map((c) => c.message).join('\n')}\n\nEnable "Override existing assignments" to proceed anyway.`,
+        { title: 'Validation' }
       )
       return
     }
@@ -4828,7 +4769,7 @@ function AddShiftForm({
       {/* Conflict warnings */}
       {conflicts.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-          <div className="font-medium text-yellow-800 text-sm mb-1">⚠️ Probleme de validare:</div>
+          <div className="font-medium text-yellow-800 text-sm mb-1">⚠️ Validation Issues:</div>
           {conflicts.map((conflict, index) => (
             <div key={index} className="text-yellow-700 text-sm">
               • {conflict.message}
@@ -4836,7 +4777,7 @@ function AddShiftForm({
           ))}
           {!isOverride && (
             <div className="text-yellow-600 text-xs mt-2">
-              Activați „Suprascrie atribuirile existente” pentru a continua oricum.
+              Enable "Override existing assignments" to proceed anyway.
             </div>
           )}
         </div>
@@ -4844,10 +4785,10 @@ function AddShiftForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="practitioner">Practician principal</Label>
+          <Label htmlFor="practitioner">Main Practitioner</Label>
           <Select value={practitionerId} onValueChange={setPractitionerId}>
             <SelectTrigger>
-              <SelectValue placeholder="Selectați practicianul" />
+              <SelectValue placeholder="Select practitioner" />
             </SelectTrigger>
             <SelectContent>
               {activePractitioners.map((p) => (
@@ -4860,13 +4801,13 @@ function AddShiftForm({
         </div>
 
         <div>
-          <Label htmlFor="sidePractitioner">Practician secundar (opțional)</Label>
+          <Label htmlFor="sidePractitioner">Side Practitioner (Optional)</Label>
           <Select value={sidePractitionerId} onValueChange={setSidePractitionerId}>
             <SelectTrigger>
-              <SelectValue placeholder="Niciunul" />
+              <SelectValue placeholder="None" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Niciunul</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {activePractitioners
                 .filter(p => p.id !== practitionerId)
                 .map((p) => (
@@ -4881,7 +4822,7 @@ function AddShiftForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="startTime">Ora de început</Label>
+          <Label htmlFor="startTime">Start Time</Label>
           <Input
             id="startTime"
             type="time"
@@ -4891,7 +4832,7 @@ function AddShiftForm({
         </div>
 
         <div>
-          <Label htmlFor="endTime">Ora de sfârșit</Label>
+          <Label htmlFor="endTime">End Time</Label>
           <Input
             id="endTime"
             type="time"
@@ -4902,27 +4843,27 @@ function AddShiftForm({
       </div>
 
       <div>
-        <Label>Program tură</Label>
+        <Label>Shift Schedule</Label>
         <Select value={shiftType} onValueChange={(value: 'recurring' | 'specific') => setShiftType(value)}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recurring">Recurent (în fiecare săptămână)</SelectItem>
-            <SelectItem value="specific">Dată specifică</SelectItem>
+            <SelectItem value="recurring">Recurring (Every Week)</SelectItem>
+            <SelectItem value="specific">Specific Date</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {shiftType === 'recurring' ? (
         <div>
-          <Label htmlFor="dayOfWeek">Ziua săptămânii</Label>
+          <Label htmlFor="dayOfWeek">Day of Week</Label>
           <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'].map(day => (
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                 <SelectItem key={day} value={day}>{day}</SelectItem>
               ))}
             </SelectContent>
@@ -4930,7 +4871,7 @@ function AddShiftForm({
         </div>
       ) : (
         <div>
-          <Label htmlFor="date">Dată specifică</Label>
+          <Label htmlFor="date">Specific Date</Label>
           <Input
             id="date"
             type="date"
@@ -4943,12 +4884,12 @@ function AddShiftForm({
 
 
       <div>
-        <Label htmlFor="priority">Prioritate (valoare mai mare = mai important)</Label>
+        <Label htmlFor="priority">Priority (higher = more important)</Label>
         <Input
           id="priority"
           type="number"
           value={priority}
-          onChange={(e) => setPrioritate(Number(e.target.value))}
+          onChange={(e) => setPriority(Number(e.target.value))}
           min="0"
           max="10"
         />
@@ -4956,22 +4897,22 @@ function AddShiftForm({
 
       {isOverride && (
         <div>
-          <Label htmlFor="reason">Motiv (opțional)</Label>
+          <Label htmlFor="reason">Reason (Optional)</Label>
           <Textarea
             id="reason"
             value={reason}
-            onChange={(e) => setMotiv(e.target.value)}
-            placeholder="De ce este necesară această tură?"
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Why is this shift needed?"
           />
         </div>
       )}
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Anulează
+          Cancel
         </Button>
         <Button type="submit" disabled={!practitionerId}>
-          Adaugă tură
+          Add Shift
         </Button>
       </DialogFooter>
     </form>

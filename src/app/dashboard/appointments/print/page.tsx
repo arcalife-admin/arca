@@ -10,9 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 // Configure the date-fns localiser (same as main calendar)
-import { ro as dateFnsRo } from 'date-fns/locale';
-import { calendarCulture, calendarMessages } from '@/lib/date-locale';
-const locales = { ro: dateFnsRo };
+const locales = { 'en-US': require('date-fns/locale/en-US') };
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -48,7 +46,7 @@ export default function PrintCalendarPage() {
   }, [searchParams]);
 
   // Printer is purely cosmetic – we only display it in header if provided
-  const printer = searchParams.get('printer') || 'Imprimantă demo';
+  const printer = searchParams.get('printer') || 'Demo printer';
 
   const [practitioners, setPractitioners] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -84,7 +82,7 @@ export default function PrintCalendarPage() {
   const eventsByPractitioner: Record<string, any[]> = useMemo(() => {
     const map: Record<string, any[]> = {};
     appointments.forEach((appt: any) => {
-      const patientName = appt.patient ? `${appt.patient.firstName} ${appt.patient.lastName}` : 'Rezervare';
+      const patientName = appt.patient ? `${appt.patient.firstName} ${appt.patient.lastName}` : 'Reservation';
       const notes = appt.notes ? ` – ${appt.notes}` : '';
       const title = `${patientName}${notes}`;
       const event = {
@@ -116,9 +114,6 @@ export default function PrintCalendarPage() {
   // Print style – one page per practitioner
   const printStyles = `
     @media print {
-      @page {
-        margin: 0;
-      }
       .print-page { page-break-after: always; }
     }
   `;
@@ -129,10 +124,10 @@ export default function PrintCalendarPage() {
       <div className="print:hidden mb-4 flex items-center gap-2">
         <Button variant="ghost" size="sm" onClick={() => router.back()} className="flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />
-          Înapoi
+          Back
         </Button>
       </div>
-      <h1 className="text-xl font-semibold mb-4">Previzualizare tipărire – {new Date(dateStr).toLocaleDateString()} ({printer})</h1>
+      <h1 className="text-xl font-semibold mb-4">Print preview – {new Date(dateStr).toLocaleDateString()} ({printer})</h1>
 
       {practitionerIds.map((id) => {
         const practitioner = practitioners.find((p) => p.id === id);
@@ -143,8 +138,6 @@ export default function PrintCalendarPage() {
             <h2 className="text-lg font-medium mb-2 text-center">{name}</h2>
             <Calendar
               localizer={localizer}
-              culture={calendarCulture}
-              messages={calendarMessages}
               events={events}
               defaultView={Views.DAY}
               view={Views.DAY}

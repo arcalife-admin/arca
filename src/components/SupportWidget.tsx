@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LifeBuoy,
+  MessageCircleQuestion,
   X,
   MessageCircle,
   BookOpen,
@@ -74,7 +74,7 @@ export default function SupportWidget() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <LifeBuoy className="w-6 h-6" />
+        <MessageCircleQuestion className="w-6 h-6" />
       </motion.button>
 
       <AnimatePresence>
@@ -89,7 +89,7 @@ export default function SupportWidget() {
             <div className="bg-slate-700 text-white p-4 sticky top-0">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <LifeBuoy className="w-5 h-5" />
+                  <MessageCircleQuestion className="w-5 h-5" />
                   Suport
                 </h3>
                 <button
