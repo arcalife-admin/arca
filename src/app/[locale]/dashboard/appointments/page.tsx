@@ -27,6 +27,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AppointmentStatusType, AppointmentStatusMetadata, APPOINTMENT_STATUS_CONFIGS, getStatusConfig, getStatusDisplay, getStatusTooltip } from '@/types/appointment-status';
 import { RunningLateModal, ImportantNoteModal, StatusConfirmationModal, ClearImportantModal } from '@/components/appointments/AppointmentStatusModals';
 import { logActivityClient, LOG_ACTIONS, ENTITY_TYPES, LOG_SEVERITY } from '@/lib/activity-logger';
+import {
+  DEFAULT_VISIBLE_DAYS,
+  getPractitionersAvailableOnDate,
+} from '@/lib/calendar-availability';
 import QuickFindEmptySpotModal from '@/components/appointments/QuickFindEmptySpotModal';
 import {
   fetchLeaveBlocks,
@@ -300,6 +304,8 @@ function AppointmentContent({
   );
 }
 
+const DEFAULT_VISIBLE_DAYS_LIST = [...DEFAULT_VISIBLE_DAYS];
+
 export default function AppointmentsPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -327,10 +333,11 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [calendarColor, setCalendarColor] = useState<string | null>(null);
   const [practitionerColors, setPractitionerColors] = useState<Record<string, string>>({});
+  const [practitionerVisibleDays, setPractitionerVisibleDays] = useState<Record<string, string[]>>({});
   const [leaveBlocks, setLeaveBlocks] = useState<LeaveBlock[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [colorLoaded, setColorLoaded] = useState(false);
-  const [visibleDays, setVisibleDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
+  const [visibleDays, setVisibleDays] = useState<string[]>(DEFAULT_VISIBLE_DAYS_LIST);
   const tooltipAnimationFrame = useRef<number>();
   const [clipboardData, setClipboardData] = useState<ClipboardData>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -530,56 +537,13 @@ export default function AppointmentsPage() {
 
   // REMOVED: More complex styling - using simple solution instead
 
-  const getAvailablePractitioners = (date: Date) => {
-    // Find applicable schedule rules for the given date
-    const applicableRules = scheduleRules.filter(rule => {
-      const ruleStart = new Date(rule.startDate);
-      const ruleEnd = new Date(rule.endDate);
-      return isWithinInterval(date, { start: ruleStart, end: ruleEnd });
-    });
-
-    if (applicableRules.length === 0) {
-      return practitioners; // If no rules apply, show all practitioners
-    }
-
-    // Get the day of week for the date
-    const dayOfWeek = format(date, 'EEEE');
-
-    // Find practitioners assigned for this day
-    const availablePractitioners = new Set<string>();
-
-    applicableRules.forEach(rule => {
-      if (rule.repeatType === 'weekly' && rule.daysOfWeek.includes(dayOfWeek)) {
-        // For weekly rules, check the schedule for the specific day
-        const daySchedule = rule.schedule?.[dayOfWeek];
-        if (daySchedule) {
-          Object.values(daySchedule).forEach((room: any) => {
-            if (room.userId) {
-              availablePractitioners.add(room.userId);
-            }
-          });
-        }
-      } else if (rule.repeatType === 'daily') {
-        // For daily rules, check the 'ALL' schedule
-        const allSchedule = rule.schedule?.['ALL'];
-        if (allSchedule) {
-          Object.values(allSchedule).forEach((room: any) => {
-            if (room.userId) {
-              availablePractitioners.add(room.userId);
-            }
-          });
-        }
-      }
-    });
-
-    // If no practitioners are assigned in the rules, show all practitioners
-    if (availablePractitioners.size === 0) {
-      return practitioners;
-    }
-
-    // Filter practitioners based on the schedule rules
-    return practitioners.filter(p => availablePractitioners.has(p.id));
-  };
+  const getAvailablePractitioners = (date: Date) =>
+    getPractitionersAvailableOnDate(
+      practitioners,
+      scheduleRules,
+      practitionerVisibleDays,
+      date
+    );
 
   const getAvailableResourcesForCurrentDate = () => {
     if (view === 'week' && selectedPractitionerId) {
@@ -596,6 +560,8 @@ export default function AppointmentsPage() {
   }, [session?.user?.id]);
 
   useEffect(() => {
+    if (!session?.user?.id) return;
+
     const initializeData = async () => {
       // Fetch practitioners first and wait for completion (includes color loading)
       await fetchPractitioners();
@@ -610,7 +576,7 @@ export default function AppointmentsPage() {
     };
 
     initializeData();
-  }, []);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (selectedPractitionerId) {
@@ -684,15 +650,17 @@ export default function AppointmentsPage() {
   }, [appointments, patients, leaveBlocks, procedureTypes]);
 
   useEffect(() => {
-    const practitioners = getAvailablePractitioners(currentDate);
-    setAvailablePractitionerIds(practitioners.map(p => p.id));
-  }, [currentDate, scheduleRules]);
+    const available = getAvailablePractitioners(currentDate);
+    setAvailablePractitionerIds(available.map(p => p.id));
+  }, [currentDate, scheduleRules, practitioners, practitionerVisibleDays]);
 
   const fetchPractitioners = async () => {
     try {
-      // Fetch practitioners
+      if (!session?.user?.id) return;
+
       const response = await fetch('/api/practitioners');
       const data = await response.json();
+
       setPractitioners(data);
       setPractitionerSchedule(prev => {
         if (Object.keys(prev).length === 0) {
@@ -703,28 +671,34 @@ export default function AppointmentsPage() {
         return prev;
       });
 
-      // Fetch color settings for each practitioner
       const colorMap: Record<string, string> = {};
+      const visibleDaysMap: Record<string, string[]> = {};
 
-      // Sequential fetches to avoid rate limiting
       for (const practitioner of data) {
         try {
-          const colorRes = await fetch(`/api/calendar-settings/personal?userId=${practitioner.id}`);
+          const settingsRes = await fetch(`/api/calendar-settings/personal?userId=${practitioner.id}`);
 
-          if (colorRes.ok) {
-            const colorData = await colorRes.json();
-            colorMap[practitioner.id] = colorData.color || '#ffffff';
+          if (settingsRes.ok) {
+            const settingsData = await settingsRes.json();
+            colorMap[practitioner.id] = settingsData.color || '#ffffff';
+            visibleDaysMap[practitioner.id] = settingsData.visibleDays || DEFAULT_VISIBLE_DAYS_LIST;
           } else {
             colorMap[practitioner.id] = '#ffffff';
+            visibleDaysMap[practitioner.id] = DEFAULT_VISIBLE_DAYS_LIST;
           }
         } catch (error) {
-          console.error(`Error fetching color for ${practitioner.id}:`, error);
+          console.error(`Error fetching settings for ${practitioner.id}:`, error);
           colorMap[practitioner.id] = '#ffffff';
+          visibleDaysMap[practitioner.id] = DEFAULT_VISIBLE_DAYS_LIST;
         }
       }
       setPractitionerColors(colorMap);
+      setPractitionerVisibleDays(visibleDaysMap);
 
-      // Apply the colors to calendar columns immediately
+      if (visibleDaysMap[session.user.id]) {
+        setVisibleDays(visibleDaysMap[session.user.id]);
+      }
+
       applyPractitionerColorsToDOM(colorMap);
     } catch (error) {
       console.error('Error fetching practitioners:', error);
@@ -826,7 +800,7 @@ export default function AppointmentsPage() {
 
   const fetchAppointments = async () => {
     try {
-      const response = await fetch('/api/appointments'); // No filters
+      const response = await fetch('/api/appointments');
       const data = await response.json();
       setAppointments(data);
     } catch (error) {
@@ -852,9 +826,14 @@ export default function AppointmentsPage() {
       if (response.ok) {
         const data = await response.json();
         setCalendarColor(data.color || '#ffffff');
-
-        // Don't override practitioner colors here - they're set in fetchPractitioners
-        // This was causing the issue where only one practitioner color was shown
+        const days = data.visibleDays || DEFAULT_VISIBLE_DAYS_LIST;
+        setVisibleDays(days);
+        if (session?.user?.id) {
+          setPractitionerVisibleDays(prev => ({
+            ...prev,
+            [session.user.id]: days,
+          }));
+        }
       } else {
         setCalendarColor('#ffffff');
       }
@@ -1077,17 +1056,28 @@ export default function AppointmentsPage() {
     return isLightColor(backgroundColor) ? '#333333' : 'white';
   };
 
+  const getVisibleDaysForResource = (resourceId?: string | null) => {
+    if (resourceId && practitionerVisibleDays[resourceId]) {
+      return practitionerVisibleDays[resourceId];
+    }
+    return visibleDays;
+  };
+
   const effectivePractitionerId = view === 'week' ? selectedPractitionerId : null;
   const filteredResources = getAvailableResourcesForCurrentDate();
+  const visibleResourceIds = new Set(filteredResources.map(resource => resource.resourceId));
   const filteredEvents = calendarEvents.filter(event => {
-    // Filter by practitioner if in week view
+    if (!visibleResourceIds.has(event.resourceId)) {
+      return false;
+    }
+
     if (view === 'week' && event.resourceId !== effectivePractitionerId) {
       return false;
     }
 
-    // Filter by visible days
     const eventDay = format(event.start, 'EEEE').toLowerCase();
-    if (!visibleDays.includes(eventDay)) {
+    const resourceVisibleDays = getVisibleDaysForResource(event.resourceId);
+    if (!resourceVisibleDays.includes(eventDay)) {
       return false;
     }
 
@@ -2174,10 +2164,14 @@ export default function AppointmentsPage() {
         fetchAppointments();
         fetchPendingAppointments();
       }
+      if (e.key === 'calendar_settings_refresh') {
+        fetchCalendarSettings();
+        fetchPractitioners();
+      }
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
-  }, []);
+  }, [session?.user?.id]);
 
   // Listen for leave requests refresh (personal blocked times)
   useEffect(() => {
@@ -2566,7 +2560,7 @@ export default function AppointmentsPage() {
                 </div>
               </div>
               <DnDCalendar
-                key={`${calendarColor}-${visibleDays.join(',')}-${JSON.stringify(practitionerColors)}`}
+                key={`${calendarColor}-${JSON.stringify(practitionerVisibleDays)}-${JSON.stringify(practitionerColors)}`}
                 localizer={localizer}
                 culture={calendarCulture}
                 messages={calendarMessages}
@@ -3308,7 +3302,8 @@ export default function AppointmentsPage() {
                 formats={{
                   weekdayFormat: (date, culture, localizer) => {
                     const day = localizer.format(date, 'EEEE', culture).toLowerCase();
-                    return visibleDays.includes(day) ? localizer.format(date, 'EEEE', culture) : '';
+                    const weekViewDays = getVisibleDaysForResource(selectedPractitionerId || session?.user?.id);
+                    return weekViewDays.includes(day) ? localizer.format(date, 'EEEE', culture) : '';
                   },
                   // OVERRIDE ALL TIME FORMATS TO RETURN EMPTY STRINGS - NO TIMES ANYWHERE
                   eventTimeRangeFormat: () => '',
@@ -3332,7 +3327,10 @@ export default function AppointmentsPage() {
                   // Style each day column according to the practitioner's color from CalendarSettings
                   const day = format(date, 'EEEE').toLowerCase();
                   const isToday = isSameDay(date, new Date());
-                  const isVisible = visibleDays.includes(day);
+                  const resourceForVisibility = view === 'week'
+                    ? (selectedPractitionerId || session?.user?.id)
+                    : resourceId;
+                  const isVisible = getVisibleDaysForResource(resourceForVisibility).includes(day);
 
                   if (resourceId) {
                     // Always use the practitioner's specific color from the CalendarSettings table
