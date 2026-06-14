@@ -5,6 +5,12 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import CallPlayer from '@/components/CallPlayer'
 import SupportWidget from '@/components/SupportWidget'
 import SafeSearchParams from '@/components/layout/SafeSearchParams'
@@ -71,12 +77,10 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false)
   const [avatarColor, setAvatarColor] = useState("#cfdbff") // Default color matches Prisma schema
   const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
   const [isWorkspaceView, setIsWorkspaceView] = useState(false)
   const [isInIframe, setIsInIframe] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement>(null)
   const dynamicPaneRef = useRef<DynamicPaneRef>(null)
 
   const { startCall } = useCall()
@@ -100,23 +104,6 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
 
   // Initialize task reminders checking - always call the hook but pass isEmbedded flag
   useTaskReminders(isEmbedded)
-
-  // Handle clicking outside user menu to close it
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false)
-      }
-    }
-
-    if (isUserMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isUserMenuOpen])
 
   // Fetch user's calendar settings for the avatar color
   useEffect(() => {
@@ -242,7 +229,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation */}
-      <nav className="w-full px-2 bg-white shadow-sm print:hidden">
+      <nav className="relative z-50 w-full px-2 bg-white shadow-sm print:hidden overflow-visible">
         <div className="max-w-8xl px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex">
@@ -295,63 +282,51 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
                 <span className="text-sm text-gray-700">
                   Bună ziua, {session?.user?.firstName}
                 </span>
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <span className="sr-only">Deschide meniul</span>
-                    <div
-                      className="h-8 w-8 rounded-full flex items-center justify-center text-white"
-                      style={{ backgroundColor: avatarColor }}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      {session?.user?.firstName ? (session?.user?.firstName[0] + session?.user?.lastName[0]).toUpperCase() : ''}
-                    </div>
-                  </button>
-
-                  <AnimatePresence>
-                    {isUserMenuOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                      <span className="sr-only">Deschide meniul</span>
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-white"
+                        style={{ backgroundColor: avatarColor }}
                       >
-                        <div className="py-1">
-                          <Link
-                            href="/dashboard/profile"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            👤 Profilul meu
-                          </Link>
-                          {(session?.user?.role === 'ORGANIZATION_OWNER' || session?.user?.role === 'MANAGER') && (
-                            <Link
-                              href="/dashboard/manager"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => setIsUserMenuOpen(false)}
-                            >
-                              🛠️ Panou manager
-                            </Link>
-                          )}
-                          <WorkspaceToggleMenuItem
-                            isWorkspaceView={isWorkspaceView}
-                            onToggle={handleWorkspaceToggle}
-                            label="Vizualizare spațiu de lucru"
-                          />
-                          <button
-                            onClick={() => {
-                              signOut({ callbackUrl: '/login' })
-                            }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            🚪 Deconectare
-                          </button>
-                        </div>
-                      </motion.div>
+                        {session?.user?.firstName ? (session?.user?.firstName[0] + session?.user?.lastName[0]).toUpperCase() : ''}
+                      </div>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 z-[100]">
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/profile">
+                        👤 Profilul meu
+                      </Link>
+                    </DropdownMenuItem>
+                    {(session?.user?.role === 'ORGANIZATION_OWNER' || session?.user?.role === 'MANAGER') && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/manager">
+                          🛠️ Panou manager
+                        </Link>
+                      </DropdownMenuItem>
                     )}
-                  </AnimatePresence>
-                </div>
+                    <DropdownMenuItem
+                      onSelect={(event) => event.preventDefault()}
+                      className="p-0 focus:bg-transparent data-[highlighted]:bg-transparent"
+                    >
+                      <WorkspaceToggleMenuItem
+                        isWorkspaceView={isWorkspaceView}
+                        onToggle={handleWorkspaceToggle}
+                        label="Vizualizare spațiu de lucru"
+                      />
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => signOut({ callbackUrl: '/login' })}
+                    >
+                      🚪 Deconectare
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             {!showWorkspaceView && (
@@ -453,10 +428,10 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps) {
       <SafeSearchParams {...{
         children: (
           <main className={showWorkspaceView
-            ? "h-[calc(100vh-4rem)] overflow-hidden"
+            ? "relative z-0 h-[calc(100vh-4rem)] overflow-hidden"
             : isPatientDetailPage
-              ? "h-[calc(100vh-4rem)] overflow-hidden px-2 py-1"
-              : "max-w-8xl py-6 sm:px-6 lg:px-8"
+              ? "relative z-0 h-[calc(100vh-4rem)] overflow-hidden px-2 py-1"
+              : "relative z-0 max-w-8xl py-6 sm:px-6 lg:px-8"
           }>
             {showWorkspaceView ? (
               <SplitPane initialPrimarySize={300} minPrimarySize={250}>
