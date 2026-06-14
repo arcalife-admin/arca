@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { db } from '@/lib/db'
-import { DEFAULT_THEME_VALUES } from '@/lib/theme'
+import { DEFAULT_THEME_VALUES, pickThemeValues } from '@/lib/theme'
 import { z } from 'zod'
 
 const themeUpdateSchema = z.object({
@@ -42,7 +42,7 @@ const themeUpdateSchema = z.object({
   animationSpeed: z.string().optional(),
   calendarTodayBg: z.string().optional(),
   calendarAccentBg: z.string().optional(),
-  customVariables: z.record(z.string()).optional(),
+  customVariables: z.record(z.string()).nullish(),
 })
 
 export async function GET() {
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validatedData = themeUpdateSchema.parse(body)
+    const validatedData = themeUpdateSchema.parse(pickThemeValues(body))
 
     const themeSettings = await db.executeWithRetry(async () => {
       const prisma = db.getPrismaClient()

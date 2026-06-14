@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { db } from '@/lib/db'
+import { DEFAULT_THEME_VALUES, pickThemeValues } from '@/lib/theme'
 import { z } from 'zod'
 
 const themeUpdateSchema = z.object({
@@ -60,7 +61,7 @@ const themeUpdateSchema = z.object({
   calendarAccentBg: z.string().optional(),
 
   // Custom CSS Variables
-  customVariables: z.record(z.string()).optional(),
+  customVariables: z.record(z.string()).nullish(),
 })
 
 export async function GET() {
@@ -91,6 +92,7 @@ export async function GET() {
         return await prisma.organizationThemeSettings.create({
           data: {
             organizationId: session.user.organizationId,
+            ...DEFAULT_THEME_VALUES,
           },
         })
       })
@@ -118,7 +120,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json()
-    const validatedData = themeUpdateSchema.parse(body)
+    const validatedData = themeUpdateSchema.parse(pickThemeValues(body))
 
     // Upsert theme settings (create if doesn't exist, update if it does)
     const themeSettings = await db.executeWithRetry(async () => {

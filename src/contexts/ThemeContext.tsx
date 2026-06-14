@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { apiErrors } from '@/lib/api-errors'
-import { applyThemeToDOM, DEFAULT_THEME_VALUES, toThemeValues, type ThemeValues } from '@/lib/theme'
+import { applyThemeToDOM, DEFAULT_THEME_VALUES, pickThemeValues, toThemeValues, type ThemeValues } from '@/lib/theme'
 import type { PersonalThemeSettings } from '@/types/theme'
 
 export interface OrganizationThemeSettings {
@@ -105,7 +105,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(pickThemeValues(updates as Record<string, unknown>)),
     })
 
     if (!response.ok) {
@@ -129,7 +129,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(pickThemeValues(updates as Record<string, unknown>)),
     })
 
     if (!response.ok) {

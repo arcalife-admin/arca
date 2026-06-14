@@ -36,6 +36,59 @@ export interface ThemeValues {
   customVariables?: Record<string, string>
 }
 
+export const THEME_VALUE_KEYS = [
+  'primaryColor',
+  'primaryForeground',
+  'secondaryColor',
+  'secondaryForeground',
+  'accentColor',
+  'accentForeground',
+  'backgroundColor',
+  'surfaceColor',
+  'borderColor',
+  'textPrimary',
+  'textSecondary',
+  'textMuted',
+  'successColor',
+  'warningColor',
+  'errorColor',
+  'infoColor',
+  'fontFamily',
+  'headingFontFamily',
+  'fontSize',
+  'headingScale',
+  'lineHeight',
+  'letterSpacing',
+  'borderRadius',
+  'spacing',
+  'maxWidth',
+  'sidebarWidth',
+  'buttonSize',
+  'inputSize',
+  'avatarSize',
+  'iconSize',
+  'shadowLevel',
+  'animationSpeed',
+  'calendarTodayBg',
+  'calendarAccentBg',
+  'customVariables',
+] as const satisfies readonly (keyof ThemeValues)[]
+
+export function pickThemeValues(
+  settings: Record<string, unknown> | null | undefined
+): Partial<ThemeValues> {
+  if (!settings) return {}
+
+  const picked: Partial<ThemeValues> = {}
+  for (const key of THEME_VALUE_KEYS) {
+    const value = settings[key]
+    if (value !== undefined && value !== null) {
+      ;(picked as Record<string, unknown>)[key] = value
+    }
+  }
+  return picked
+}
+
 export const DEFAULT_THEME_VALUES: ThemeValues = {
   primaryColor: '#ef4444',
   primaryForeground: '#ffffff',
@@ -156,7 +209,7 @@ export function applyThemeToDOM(settings: Partial<ThemeValues>) {
 }
 
 export function toThemeValues(
-  settings: Partial<ThemeValues> | null | undefined
+  settings: Partial<ThemeValues> | Record<string, unknown> | null | undefined
 ): ThemeValues {
-  return { ...DEFAULT_THEME_VALUES, ...settings }
+  return { ...DEFAULT_THEME_VALUES, ...pickThemeValues(settings as Record<string, unknown>) }
 }
