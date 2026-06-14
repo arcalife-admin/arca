@@ -12,9 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight, Palette, Settings, FileText, Shield, Euro } from 'lucide-react'
+import { ChevronDown, ChevronRight, Palette, Settings, Euro } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import Link from 'next/link'
 
 interface User {
   id: string
@@ -270,48 +269,6 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Profil</h1>
-
-        {/* Quick Access Tools */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Instrumente acces rapid</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              href="/dashboard/file-management"
-              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex-shrink-0">
-                <FileText className="h-8 w-8 text-blue-600 group-hover:text-blue-700" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-700">Gestionare fișiere</h3>
-                <p className="text-xs text-gray-500">Gestionați șabloane și documente</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/dashboard/finance"
-              className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-green-300 hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex-shrink-0">
-                <Euro className="h-8 w-8 text-green-600 group-hover:text-green-700" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-900 group-hover:text-green-700">Finanțe</h3>
-                <p className="text-xs text-gray-500">Facturi, plăți și rapoarte</p>
-              </div>
-            </Link>
-
-            <div className="flex items-center p-4 border border-gray-200 rounded-lg opacity-50 cursor-not-allowed">
-              <div className="flex-shrink-0">
-                <Shield className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-400">Setări securitate</h3>
-                <p className="text-xs text-gray-400">În curând...</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* User Information Section */}
         {user && (
