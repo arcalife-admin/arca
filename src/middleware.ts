@@ -34,6 +34,9 @@ export async function middleware(request: NextRequest) {
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
+      // NEXTAUTH_URL=http://localhost on Vercel makes auto-detection pick the
+      // dev cookie name; production cookies use the __Secure- prefix instead.
+      secureCookie: process.env.NODE_ENV === 'production',
     })
 
     if (isDashboard && !token) {

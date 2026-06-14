@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { translateAuthError } from '@/lib/auth-errors'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -28,10 +28,12 @@ export default function LoginPage() {
         redirect: false,
       })
 
-      if (result?.error) {
-        setError(translateAuthError(result.error))
+      if (!result?.ok || result?.error) {
+        setError(translateAuthError(result?.error ?? 'CredentialsSignin'))
       } else {
-        router.push('/dashboard')
+        const callbackUrl = searchParams.get('callbackUrl') ?? '/dashboard'
+        // Full navigation ensures middleware sees the freshly-set session cookie.
+        window.location.href = callbackUrl
       }
     } catch {
       setError('A apărut o eroare. Încercați din nou.')
