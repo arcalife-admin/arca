@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import type { HealthFormData } from '@/lib/intake/health-defaults'
 import { HEALTH_SECTIONS } from '@/lib/intake/field-registry'
 import type { Form1YesNoKey, YesNoValue } from '@/lib/intake/form1-questionnaire'
+import { ALL_FORM1_YES_NO_QUESTIONS } from '@/lib/intake/form1-questionnaire'
 import { appAlert } from '@/lib/app-alert'
 
 type Props = {
@@ -87,10 +88,22 @@ export default function HealthAssessmentStep({ healthFormData, onChange, onBack,
     onNext()
   }
 
+  const selectAllNo = () => {
+    const updates = Object.fromEntries(
+      ALL_FORM1_YES_NO_QUESTIONS.map((q) => [q.key, 'no' as const])
+    ) as Partial<HealthFormData>
+    onChange(updates)
+  }
+
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold">Chestionar medical inițial</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-semibold">Chestionar medical inițial</h2>
+          <Button variant="outline" type="button" size="sm" onClick={selectAllNo}>
+            Selectează «Nu» la toate
+          </Button>
+        </div>
 
         {HEALTH_SECTIONS.map((section) => (
           <div key={section.id} className="space-y-4">

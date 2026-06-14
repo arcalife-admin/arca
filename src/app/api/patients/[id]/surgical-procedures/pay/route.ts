@@ -2,6 +2,7 @@ export { dynamic } from '@/lib/api-config'
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth, isAuthError } from '@/lib/require-auth';
 
 interface PaymentRequest {
   procedureIds: string[];
@@ -30,6 +31,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireAuth();
+    if (isAuthError(auth)) return auth;
+
     const body: PaymentRequest = await request.json();
     const { procedureIds, paymentMethod, sendEmail, printInvoice } = body;
     const patientId = params.id;
@@ -46,6 +50,9 @@ export async function POST(
         id: { in: procedureIds },
         patientId,
         isPaid: false,
+        patient: {
+          organizationId: auth.user.organizationId,
+        },
       },
       include: {
         code: true,

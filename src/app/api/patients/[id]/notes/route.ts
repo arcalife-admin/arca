@@ -4,6 +4,11 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
+import { findPatientInOrganization } from '@/lib/patient-access'
+
+async function ensurePatientAccess(patientId: string, organizationId: string) {
+  return findPatientInOrganization(patientId, organizationId)
+}
 
 // Get all notes for a patient
 export async function GET(
@@ -12,8 +17,13 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session?.user?.organizationId) {
       return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    const patient = await ensurePatientAccess(params.id, session.user.organizationId)
+    if (!patient) {
+      return new NextResponse('Not Found', { status: 404 })
     }
 
     const notes = await prisma.note.findMany({
@@ -50,8 +60,13 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session?.user?.organizationId) {
       return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    const patient = await ensurePatientAccess(params.id, session.user.organizationId)
+    if (!patient) {
+      return new NextResponse('Not Found', { status: 404 })
     }
 
     const data = await request.json()
@@ -81,8 +96,13 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session?.user?.organizationId) {
       return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    const patient = await ensurePatientAccess(params.id, session.user.organizationId)
+    if (!patient) {
+      return new NextResponse('Not Found', { status: 404 })
     }
 
     const data = await request.json()
@@ -114,8 +134,13 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    if (!session?.user?.organizationId) {
       return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    const patient = await ensurePatientAccess(params.id, session.user.organizationId)
+    if (!patient) {
+      return new NextResponse('Not Found', { status: 404 })
     }
 
     const { searchParams } = new URL(request.url)

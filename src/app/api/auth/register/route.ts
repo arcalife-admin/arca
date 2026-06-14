@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { uploadImage } from '@/lib/cloudinary'
 import { isPublicRegistrationEnabled } from '@/lib/require-auth'
 
+const PRIVILEGED_JOIN_ROLES = new Set(['ORGANIZATION_OWNER', 'MANAGER'])
+
 const addressSchema = z.object({
   display_name: z.string(),
   lat: z.string(),
@@ -91,6 +93,16 @@ export async function POST(req: Request) {
         logoUrl,
       } : undefined,
     })
+
+    if (
+      validatedData.organizationId &&
+      PRIVILEGED_JOIN_ROLES.has(validatedData.role)
+    ) {
+      return NextResponse.json(
+        { message: 'Nu vă puteți înregistra cu acest rol fără invitație de la administrator' },
+        { status: 403 }
+      )
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({

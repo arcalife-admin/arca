@@ -1,16 +1,10 @@
 export { dynamic } from '@/lib/api-config'
 
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { deletePatientMedia, getSignedPatientMediaUrl } from '@/lib/cloudinary-patient-media';
 
 export async function DELETE(
   request: NextRequest,
@@ -33,8 +27,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Imaginea nu a fost găsită' }, { status: 404 });
     }
 
-    const publicId = image.url.split('/').slice(-1)[0].split('.')[0];
-    await cloudinary.uploader.destroy(publicId);
+    await deletePatientMedia(image.url);
 
     await prisma.image.delete({
       where: { id: params.imageId },
@@ -77,7 +70,10 @@ export async function PATCH(
       data: updateData,
     });
 
-    return NextResponse.json(image);
+    return NextResponse.json({
+      ...image,
+      url: getSignedPatientMediaUrl(image.url),
+    });
   } catch (error) {
     console.error('Error updating image:', error);
     return NextResponse.json({ error: 'Actualizarea imaginii a eșuat' }, { status: 500 });

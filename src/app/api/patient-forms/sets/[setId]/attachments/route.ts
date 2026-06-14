@@ -12,6 +12,7 @@ import {
 import { promises as fs } from 'fs'
 import path from 'path'
 import { prisma } from '@/lib/prisma'
+import { DEFAULT_COUNTRY } from '@/lib/intake/field-registry'
 
 type IntakeFieldValues = Record<string, string | boolean>
 
@@ -92,7 +93,7 @@ async function createPatientFromIntake(params: {
   const phone = getFieldValue(params.fieldValues, ['telefon', 'phone', 'telefonMobil']) || null
   const addressText = getFieldValue(params.fieldValues, ['adresa', 'address'])
   const cnp = getFieldValue(params.fieldValues, ['cnp']) || `TEMP-${Date.now()}`
-  const country = getFieldValue(params.fieldValues, ['tara', 'country']) || 'Romania'
+  const country = getFieldValue(params.fieldValues, ['tara', 'country']) || DEFAULT_COUNTRY
   const genderRaw = getFieldValue(params.fieldValues, ['sex', 'gender', 'gen'])
 
   const patientCount = await prisma.patient.count({

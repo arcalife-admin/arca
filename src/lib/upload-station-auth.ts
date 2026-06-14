@@ -5,7 +5,19 @@ export const UPLOAD_STATION_COOKIE = 'upload-station-session';
 const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 function getSecret() {
-  return process.env.UPLOAD_STATION_SECRET || process.env.NEXTAUTH_SECRET || 'upload-station-dev-secret';
+  if (process.env.UPLOAD_STATION_SECRET) {
+    return process.env.UPLOAD_STATION_SECRET;
+  }
+
+  if (process.env.NEXTAUTH_SECRET) {
+    return process.env.NEXTAUTH_SECRET;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('UPLOAD_STATION_SECRET or NEXTAUTH_SECRET must be set in production');
+  }
+
+  return 'upload-station-dev-secret';
 }
 
 export function createUploadStationToken(): string {

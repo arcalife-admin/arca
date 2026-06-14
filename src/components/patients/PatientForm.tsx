@@ -47,7 +47,7 @@ const patientSchema = z.object({
     altitude: z.number(),
   }),
   cnp: z.string().min(1, 'CNP-ul este obligatoriu'),
-  country: z.string().default('Netherlands'),
+  country: z.string().default(DEFAULT_COUNTRY),
   healthInsurance: healthInsuranceSchema,
   medicalHistory: z.any().optional(),
 })

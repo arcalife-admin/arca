@@ -16,4 +16,4 @@ export const BASIC_FIELD_KEYS = [
 export { FORM1_QUESTIONNAIRE_SECTIONS as HEALTH_SECTIONS } from './form1-questionnaire'
 export type { Form1Section as HealthSectionDef } from './form1-questionnaire'
 
-export const DEFAULT_COUNTRY = 'Netherlands'
+export const DEFAULT_COUNTRY = 'România'

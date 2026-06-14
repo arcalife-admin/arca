@@ -2,17 +2,24 @@ export { dynamic } from '@/lib/api-config'
 
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { findPatientInOrganization } from '@/lib/patient-access'
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
 
-    if (!session?.user) {
+    if (!session?.user?.organizationId) {
       return new NextResponse('Unauthorized', { status: 401 })
+    }
+
+    const patient = await findPatientInOrganization(params.id, session.user.organizationId)
+    if (!patient) {
+      return new NextResponse('Not Found', { status: 404 })
     }
 
     let userId = session.user.id

@@ -3,6 +3,8 @@ export { dynamic } from '@/lib/api-config'
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isUploadStationAuthenticated } from '@/lib/upload-station-auth';
+import { resolveUploadStationOrganizationId } from '@/lib/upload-station-org';
+import { findPatientInOrganization } from '@/lib/patient-access';
 import { uploadPatientImage } from '@/lib/upload-patient-image';
 
 const ALLOWED_TYPES = new Set(['BEFORE_PHOTO', 'AFTER_PHOTO']);
@@ -30,14 +32,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nu au fost încărcate fișiere' }, { status: 400 });
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-      select: { id: true, firstName: true, lastName: true },
-    });
+    const organizationId = await resolveUploadStationOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Stația de încărcare nu este configurată complet (UPLOAD_STATION_ORGANIZATION_ID)' },
+        { status: 503 }
+      );
+    }
 
+    const patient = await findPatientInOrganization(patientId, organizationId);
     if (!patient) {
       return NextResponse.json({ error: 'Pacientul nu a fost găsit' }, { status: 404 });
     }
+
+    const patientDetails = await prisma.patient.findUnique({
+      where: { id: patientId },
+      select: { firstName: true, lastName: true },
+    });
 
     const uploaded = [];
     for (const file of files) {
@@ -53,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       count: uploaded.length,
-      patient: `${patient.firstName} ${patient.lastName}`,
+      patient: `${patientDetails?.firstName ?? ''} ${patientDetails?.lastName ?? ''}`.trim(),
       type,
       images: uploaded,
     });

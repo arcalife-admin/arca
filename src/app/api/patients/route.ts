@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { authOptions } from '@/lib/auth-config'
 import { db } from '@/lib/db'
 import crypto from 'crypto'
+import { DEFAULT_COUNTRY } from '@/lib/intake/field-registry'
 
 const patientSchema = z.object({
   firstName: z.string().min(1, 'Prenumele este obligatoriu'),
@@ -20,7 +21,7 @@ const patientSchema = z.object({
     lon: z.string(),
   }),
   cnp: z.string().min(1, 'CNP is required'),
-  country: z.string().default('Netherlands'),
+  country: z.string().default(DEFAULT_COUNTRY),
   healthInsurance: z.object({
     provider: z.string().min(1, 'Provider is required'),
     policyNumber: z.string().min(1, 'Policy number is required'),

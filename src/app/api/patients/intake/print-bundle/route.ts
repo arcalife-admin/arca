@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth-config'
 import { INTAKE_DOCUMENT_LIST } from '@/lib/intake/documents'
 import { generateBasicInfoPdf, generateHealthAssessmentPdf } from '@/lib/intake/generate-print-pdf'
 import { createDefaultHealthFormData } from '@/lib/intake/health-defaults'
+import { DEFAULT_COUNTRY } from '@/lib/intake/field-registry'
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
       dateOfBirth: '',
       gender: '',
       cnp: '',
-      country: 'Netherlands',
+      country: DEFAULT_COUNTRY,
       email: '',
       phone: '',
       address: { display_name: '' },

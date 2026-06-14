@@ -3,6 +3,7 @@ export { dynamic } from '@/lib/api-config'
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isUploadStationAuthenticated } from '@/lib/upload-station-auth';
+import { resolveUploadStationOrganizationId } from '@/lib/upload-station-org';
 
 export async function GET() {
   try {
@@ -10,8 +11,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
     }
 
+    const organizationId = await resolveUploadStationOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Stația de încărcare nu este configurată complet (UPLOAD_STATION_ORGANIZATION_ID)' },
+        { status: 503 }
+      );
+    }
+
     const patients = await prisma.patient.findMany({
-      where: { isDisabled: false },
+      where: { isDisabled: false, organizationId },
       select: {
         id: true,
         firstName: true,

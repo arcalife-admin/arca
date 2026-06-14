@@ -1,11 +1,8 @@
-import { v2 as cloudinary } from 'cloudinary';
 import { prisma } from '@/lib/prisma';
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import {
+  getSignedPatientMediaUrl,
+  uploadPatientMediaBuffer,
+} from '@/lib/cloudinary-patient-media';
 
 export async function uploadPatientImage(
   patientId: string,
@@ -15,27 +12,23 @@ export async function uploadPatientImage(
 ) {
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: 'image',
-        folder: `patient-images/${patientId}`,
-      },
-      (error, uploadResult) => {
-        if (error) reject(error);
-        else resolve(uploadResult as { secure_url: string });
-      }
-    );
-    uploadStream.end(buffer);
+  const result = await uploadPatientMediaBuffer(buffer, {
+    folder: `patient-images/${patientId}`,
+    resource_type: 'image',
   });
 
-  return prisma.image.create({
+  const image = await prisma.image.create({
     data: {
-      url: result.secure_url,
+      url: result.public_id,
       type: type as never,
       patientId,
       notes: notes || null,
       dateTaken: new Date(),
     },
   });
+
+  return {
+    ...image,
+    url: getSignedPatientMediaUrl(image.url),
+  };
 }

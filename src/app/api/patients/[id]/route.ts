@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth-config'
+import { withSignedPatientMediaUrls } from '@/lib/cloudinary-patient-media'
+import { DEFAULT_COUNTRY } from '@/lib/intake/field-registry'
 
 const patientSchema = z.object({
   firstName: z.string().min(1, 'Prenumele este obligatoriu'),
@@ -19,7 +21,7 @@ const patientSchema = z.object({
     lon: z.string(),
   }),
   cnp: z.string().min(1, 'CNP is required'),
-  country: z.string().default('Netherlands'),
+  country: z.string().default(DEFAULT_COUNTRY),
   healthInsurance: z.object({
     provider: z.string().min(1, 'Provider is required'),
     policyNumber: z.string().min(1, 'Policy number is required'),
@@ -41,7 +43,7 @@ const patientUpdateSchema = z.object({
     lon: z.string(),
   }).optional(),
   cnp: z.string().min(1, 'CNP is required'),
-  country: z.string().default('Netherlands'),
+  country: z.string().default(DEFAULT_COUNTRY),
   allowEarlySpotContact: z.boolean().optional(),
   isLongTermCareAct: z.boolean().optional(),
   statusPraesens: z.any().optional(),
@@ -79,6 +81,9 @@ export async function GET(
       include: {
         asaHistory: {
           orderBy: { date: 'desc' }
+        },
+        files: {
+          orderBy: { createdAt: 'desc' },
         },
       }
     })
@@ -130,6 +135,7 @@ export async function GET(
         ...record,
         date: record.date.toISOString()
       })) || [],
+      files: withSignedPatientMediaUrls(patient.files ?? []),
     }
 
     return NextResponse.json(transformedPatient)

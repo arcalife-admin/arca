@@ -3,6 +3,20 @@ export { dynamic } from '@/lib/api-config'
 import { NextRequest } from 'next/server'
 import { requireAuth, isAuthError } from '@/lib/require-auth'
 
+const ALLOWED_FETCH_HOSTS = new Set([
+  'www.farmacotherapeutischkompas.nl',
+  'farmacotherapeutischkompas.nl',
+])
+
+function isAllowedFetchUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString)
+    return parsed.protocol === 'https:' && ALLOWED_FETCH_HOSTS.has(parsed.hostname.toLowerCase())
+  } catch {
+    return false
+  }
+}
+
 // Medical terminology and their variations
 const MEDICAL_TERMS = {
   extractie: ['extractie', 'extracties', 'trekken', 'getrokken', 'verwijderen', 'verwijderd', 'verwijdering', 'chirurgie', 'operatie', 'ingreep'],
@@ -104,6 +118,13 @@ export async function POST(req: NextRequest) {
     if (isAuthError(auth)) return auth
 
     const { url, question } = await req.json()
+
+    if (!url || typeof url !== 'string' || !isAllowedFetchUrl(url)) {
+      return new Response(
+        JSON.stringify({ error: 'URL nevalid sau nepermis' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Fetch the webpage content
     const response = await fetch(url)
