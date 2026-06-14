@@ -1,7 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { PersonalThemeSettings as PersonalThemeSettingsType } from '@/types/theme'
+import { useTheme } from '@/contexts/ThemeContext'
+import { DEFAULT_THEME_VALUES, toThemeValues } from '@/lib/theme'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,7 +61,7 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
           <button
             className="w-full px-4 py-2 rounded text-white font-medium"
             style={{
-              backgroundColor: formData.primaryColor || '#3b82f6',
+              backgroundColor: formData.primaryColor || DEFAULT_THEME_VALUES.primaryColor,
               color: formData.primaryForeground || '#ffffff',
               borderRadius: `${formData.borderRadius || '6'}px`,
             }}
@@ -164,7 +166,7 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
           </Badge>
           <Badge
             className="w-full justify-center"
-            style={{ backgroundColor: formData.infoColor || '#3b82f6', color: '#ffffff' }}
+            style={{ backgroundColor: formData.infoColor || DEFAULT_THEME_VALUES.infoColor, color: '#ffffff' }}
           >
             Informare
           </Badge>
@@ -175,40 +177,37 @@ function LivePreview({ formData }: { formData: Partial<PersonalThemeSettingsType
 }
 
 export default function PersonalThemeSettings() {
-  const [themeSettings, setThemeSettings] = useState<PersonalThemeSettingsType | null>(null)
-  const [formData, setFormData] = useState<Partial<PersonalThemeSettingsType>>({})
-  const [isLoading, setIsLoading] = useState(true)
+  const {
+    themeSettings: organizationTheme,
+    personalThemeSettings,
+    isLoading,
+    updatePersonalTheme,
+    resetPersonalTheme,
+  } = useTheme()
+
+  const savedFormBaseline = useMemo(() => {
+    if (personalThemeSettings) {
+      return toThemeValues(personalThemeSettings)
+    }
+    if (organizationTheme) {
+      return toThemeValues(organizationTheme)
+    }
+    return DEFAULT_THEME_VALUES
+  }, [personalThemeSettings, organizationTheme])
+
+  const [formData, setFormData] = useState<Partial<PersonalThemeSettingsType>>(savedFormBaseline)
   const [isSaving, setIsSaving] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  // Load personal theme settings
-  const loadThemeSettings = async () => {
-    try {
-      const response = await fetch('/api/personal-theme')
-      if (response.ok) {
-        const settings = await response.json()
-        setThemeSettings(settings)
-        setFormData(settings)
-      }
-    } catch (error) {
-      console.error('Failed to load personal theme settings:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Initialize settings
   useEffect(() => {
-    loadThemeSettings()
-  }, [])
+    setFormData(savedFormBaseline)
+  }, [savedFormBaseline])
 
-  // Track changes
   useEffect(() => {
-    if (themeSettings) {
-      const hasChanged = JSON.stringify(formData) !== JSON.stringify(themeSettings)
-      setHasChanges(hasChanged)
-    }
-  }, [formData, themeSettings])
+    const hasChanged = JSON.stringify(formData) !== JSON.stringify(savedFormBaseline)
+    setHasChanges(hasChanged)
+  }, [formData, savedFormBaseline])
 
   const handleInputChange = (field: keyof PersonalThemeSettingsType, value: any) => {
     setFormData(prev => ({
@@ -222,37 +221,19 @@ export default function PersonalThemeSettings() {
 
     setIsSaving(true)
     try {
-      const response = await fetch('/api/personal-theme', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const updatedSettings = await updatePersonalTheme(formData)
+      setFormData(toThemeValues(updatedSettings))
+      setHasChanges(false)
+
+      toast({
+        title: 'Succes',
+        description: 'Setările temei personale au fost salvate cu succes',
       })
-
-      if (response.ok) {
-        const updatedSettings = await response.json()
-        setThemeSettings(updatedSettings)
-        setFormData(updatedSettings)
-        setHasChanges(false)
-
-        toast({
-          title: 'Succes',
-          description: 'Setările temei personale au fost salvate cu succes',
-        })
-      } else {
-        const error = await response.json()
-        toast({
-          title: 'Eroare',
-          description: error.message || 'Nu s-au putut salva setările temei',
-          variant: 'destructive',
-        })
-      }
     } catch (error) {
       console.error('Failed to save theme:', error)
       toast({
         title: 'Eroare',
-        description: 'A apărut o eroare neașteptată',
+        description: error instanceof Error ? error.message : 'A apărut o eroare neașteptată',
         variant: 'destructive',
       })
     } finally {
@@ -260,9 +241,31 @@ export default function PersonalThemeSettings() {
     }
   }
 
-  const handleReset = () => {
-    if (themeSettings) {
-      setFormData(themeSettings)
+  const handleDiscardChanges = () => {
+    setFormData(savedFormBaseline)
+  }
+
+  const handleResetToDefaults = async () => {
+    setIsResetting(true)
+    try {
+      await resetPersonalTheme()
+      const baseline = organizationTheme ? toThemeValues(organizationTheme) : DEFAULT_THEME_VALUES
+      setFormData(baseline)
+      setHasChanges(false)
+
+      toast({
+        title: 'Succes',
+        description: 'Tema personală a fost resetată la valorile implicite',
+      })
+    } catch (error) {
+      console.error('Failed to reset theme:', error)
+      toast({
+        title: 'Eroare',
+        description: error instanceof Error ? error.message : 'A apărut o eroare neașteptată',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsResetting(false)
     }
   }
 
@@ -283,13 +286,20 @@ export default function PersonalThemeSettings() {
         </div>
         <div className="flex space-x-3">
           {hasChanges && (
-            <Button variant="outline" onClick={handleReset}>
-              Resetează
+            <Button variant="outline" onClick={handleDiscardChanges}>
+              Anulează
             </Button>
           )}
           <Button
+            variant="outline"
+            onClick={handleResetToDefaults}
+            disabled={isResetting || isSaving || (!personalThemeSettings && !hasChanges)}
+          >
+            {isResetting ? 'Se resetează...' : 'Resetează la implicit'}
+          </Button>
+          <Button
             onClick={handleSave}
-            disabled={!hasChanges || isSaving}
+            disabled={!hasChanges || isSaving || isResetting}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isSaving ? 'Se salvează...' : 'Salvează modificările'}
@@ -318,7 +328,7 @@ export default function PersonalThemeSettings() {
                     <h4 className="font-medium text-gray-800">Culori principale</h4>
                     <ColorInput
                       label="Culoare principală"
-                      value={formData.primaryColor || '#3b82f6'}
+                      value={formData.primaryColor || DEFAULT_THEME_VALUES.primaryColor}
                       onChange={(value) => handleInputChange('primaryColor', value)}
                       description="Culoarea principală a brandului"
                     />
@@ -414,7 +424,7 @@ export default function PersonalThemeSettings() {
                     />
                     <ColorInput
                       label="Informare"
-                      value={formData.infoColor || '#3b82f6'}
+                      value={formData.infoColor || DEFAULT_THEME_VALUES.infoColor}
                       onChange={(value) => handleInputChange('infoColor', value)}
                     />
                   </div>

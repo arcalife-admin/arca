@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTheme, OrganizationThemeSettings as OrganizationThemeSettingsType } from '@/contexts/ThemeContext'
+import { DEFAULT_THEME_VALUES } from '@/lib/theme'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,7 +60,7 @@ function LivePreview({ formData }: { formData: Partial<OrganizationThemeSettings
           <button
             className="w-full px-4 py-2 rounded text-white font-medium"
             style={{
-              backgroundColor: formData.primaryColor || '#3b82f6',
+              backgroundColor: formData.primaryColor || DEFAULT_THEME_VALUES.primaryColor,
               color: formData.primaryForeground || '#ffffff',
               borderRadius: `${formData.borderRadius || '6'}px`,
             }}
@@ -165,7 +166,7 @@ function LivePreview({ formData }: { formData: Partial<OrganizationThemeSettings
           </Badge>
           <Badge
             className="w-full justify-center"
-            style={{ backgroundColor: formData.infoColor || '#3b82f6', color: '#ffffff' }}
+            style={{ backgroundColor: formData.infoColor || DEFAULT_THEME_VALUES.infoColor, color: '#ffffff' }}
           >
             Informare
           </Badge>
@@ -302,7 +303,7 @@ export default function OrganizationThemeSettings() {
                     <h4 className="font-medium text-gray-800">Culori principale</h4>
                     <ColorInput
                       label="Culoare principală"
-                      value={formData.primaryColor || '#3b82f6'}
+                      value={formData.primaryColor || DEFAULT_THEME_VALUES.primaryColor}
                       onChange={(value) => handleInputChange('primaryColor', value)}
                       description="Culoarea principală a brandului"
                     />
@@ -398,7 +399,7 @@ export default function OrganizationThemeSettings() {
                     />
                     <ColorInput
                       label="Informare"
-                      value={formData.infoColor || '#3b82f6'}
+                      value={formData.infoColor || DEFAULT_THEME_VALUES.infoColor}
                       onChange={(value) => handleInputChange('infoColor', value)}
                     />
                   </div>

@@ -511,7 +511,7 @@ model Annotation {
 model OrganizationThemeSettings {
   id                  String       @id @default(cuid())
   organizationId      String       @unique
-  primaryColor        String       @default("#3b82f6")
+  primaryColor        String       @default("#ef4444")
   primaryForeground   String       @default("#ffffff")
   secondaryColor      String       @default("#f1f5f9")
   secondaryForeground String       @default("#0f172a")
@@ -526,7 +526,7 @@ model OrganizationThemeSettings {
   successColor        String       @default("#10b981")
   warningColor        String       @default("#f59e0b")
   errorColor          String       @default("#ef4444")
-  infoColor           String       @default("#3b82f6")
+  infoColor           String       @default("#ef4444")
   fontFamily          String       @default("Inter")
   headingFontFamily   String       @default("Inter")
   fontSize            String       @default("14")
@@ -556,7 +556,7 @@ model OrganizationThemeSettings {
 model PersonalThemeSettings {
   id                  String   @id @default(cuid())
   userId              String   @unique
-  primaryColor        String   @default("#3b82f6")
+  primaryColor        String   @default("#ef4444")
   primaryForeground   String   @default("#ffffff")
   secondaryColor      String   @default("#f1f5f9")
   secondaryForeground String   @default("#0f172a")
@@ -571,7 +571,7 @@ model PersonalThemeSettings {
   successColor        String   @default("#10b981")
   warningColor        String   @default("#f59e0b")
   errorColor          String   @default("#ef4444")
-  infoColor           String   @default("#3b82f6")
+  infoColor           String   @default("#ef4444")
   fontFamily          String   @default("Inter")
   headingFontFamily   String   @default("Inter")
   fontSize            String   @default("14")
